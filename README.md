@@ -1,6 +1,10 @@
 # my_cross_platform_app
 
-A new Flutter project.
+A new Flutter project, which is implemented fully with the help of AI. I will try to keep track
+of the prompts to the coding AI in the commit messages, and record additional AI input in the 
+`chats` directory.
+
+The goal is, to create a fully synced, offline first collaborative application. The usecase is a time tracking app, but the main point here is the technology. Even though time is typically tracked by a single person, I view it as a collaborative activity since a user may use multiple devices with some of them possibly being offline - think of taking a short break, realizing that you did not track time yet and doing it on your mobile which happens to not have a network connection in your current location.
 
 ## Getting Started
 
