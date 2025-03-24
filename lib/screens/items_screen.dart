@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:solid_auth/solid_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/item.dart';
 import '../services/crdt_service.dart';
 import '../screens/login_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
+import 'package:solid_auth/solid_auth.dart';
 
 class ItemsScreen extends StatefulWidget {
   final String? webId;
   final String? accessToken;
   final Map<String, dynamic>? decodedToken;
+  final Map<String, dynamic>? authData;
 
   const ItemsScreen({
     super.key,
     this.webId,
     this.accessToken,
     this.decodedToken,
+    this.authData,
   });
 
   @override
@@ -77,6 +81,28 @@ class _ItemsScreenState extends State<ItemsScreen> {
     }
   }
 
+  Future<void> _disconnectFromPod() async {
+    try {
+      await logout(widget.authData!['logoutUrl']);
+      // Reset the screen without Solid credentials
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ItemsScreen()),
+        );
+      }
+    } catch (e) {
+      // Handle any logout errors
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.errorDisconnecting),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -89,30 +115,29 @@ class _ItemsScreenState extends State<ItemsScreen> {
           l10n.appTitle,
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
-        centerTitle: true,
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: IconButton.filledTonal(
-              icon:
-                  _isConnectedToSolid
-                      ? (_isSyncing
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Icon(Icons.cloud_done))
-                      : const Icon(Icons.cloud_off),
-              onPressed:
-                  _isConnectedToSolid
-                      ? (_isSyncing ? null : _syncFromPod)
-                      : _navigateToLogin,
-              tooltip:
-                  _isConnectedToSolid
-                      ? 'Synced with Solid Pod'
-                      : 'Connect to Solid Pod',
-            ),
+          IconButton(
+            icon:
+                _isConnectedToSolid
+                    ? (_isSyncing
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.cloud_off))
+                    : const Icon(Icons.cloud_upload),
+            onPressed:
+                _isSyncing
+                    ? null
+                    : (_isConnectedToSolid
+                        ? _disconnectFromPod
+                        : _navigateToLogin),
+            tooltip:
+                _isConnectedToSolid
+                    ? l10n.disconnectFromPod
+                    : l10n.connectToPod,
           ),
         ],
       ),

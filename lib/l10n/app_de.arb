@@ -19,5 +19,7 @@
   "syncedWithPod": "Mit Solid Pod synchronisiert",
   "connectToPod": "Mit Solid Pod verbinden",
   "chooseProvider": "Wähle deinen Solid Pod-Anbieter",
-  "orEnterManually": "Oder gib deine WebID manuell ein"
+  "orEnterManually": "Oder gib deine WebID manuell ein",
+  "disconnectFromPod": "Solid Pod trennen",
+  "errorDisconnecting": "Fehler beim Trennen vom Solid Pod"
 }

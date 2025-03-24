@@ -59,12 +59,17 @@ class _LoginPageState extends State<LoginPage> {
       String accessToken = authData['accessToken'];
       Map<String, dynamic> decodedToken = JwtDecoder.decode(accessToken);
       String webId = decodedToken['webid'];
+      print('Auth data: $authData');
+      print('Decoded token: $decodedToken');
+      var profilePage = await fetchProfileData(webId);
 
+      print('Profile page: $profilePage');
       if (!mounted) return;
       Navigator.of(context).pop({
         'webId': webId,
         'accessToken': accessToken,
         'decodedToken': decodedToken,
+        authData: authData,
       });
     } catch (e) {
       setState(() {

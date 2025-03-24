@@ -107,5 +107,13 @@
   "orEnterManually": "Or enter your WebID manually",
   "@orEnterManually": {
     "description": "Text shown above the manual WebID input field"
+  },
+  "disconnectFromPod": "Disconnect from Solid Pod",
+  "@disconnectFromPod": {
+    "description": "Tooltip for disconnect button"
+  },
+  "errorDisconnecting": "Error disconnecting from Solid Pod",
+  "@errorDisconnecting": {
+    "description": "Error message shown when disconnecting fails"
   }
 }
