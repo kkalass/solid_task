@@ -3,6 +3,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/item.dart';
 import '../services/crdt_service.dart';
 import '../screens/login_page.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:intl/intl.dart';
 
 class ItemsScreen extends StatefulWidget {
   final String? webId;
@@ -78,13 +80,14 @@ class _ItemsScreenState extends State<ItemsScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
-          'My Tasks',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          l10n.appTitle,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         actions: [
@@ -121,7 +124,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
             child: TextField(
               controller: _textController,
               decoration: InputDecoration(
-                hintText: 'Add a new task...',
+                hintText: l10n.addTaskHint,
                 filled: true,
                 fillColor: colorScheme.surface,
                 prefixIcon: const Icon(Icons.add_task),
@@ -168,7 +171,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No tasks yet',
+                          l10n.noTasks,
                           style: TextStyle(
                             fontSize: 16,
                             color: colorScheme.outline,
@@ -242,18 +245,24 @@ class _ItemsScreenState extends State<ItemsScreen> {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
+    final l10n = AppLocalizations.of(context)!;
 
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
-        return '${difference.inMinutes} minutes ago';
+        final minutes = difference.inMinutes;
+        return l10n.createdAgo(l10n.minutes(minutes));
       }
-      return '${difference.inHours} hours ago';
+      final hours = difference.inHours;
+      return l10n.createdAgo(l10n.hours(hours));
     } else if (difference.inDays == 1) {
-      return 'Yesterday';
+      return l10n.yesterday;
     } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
+      final days = difference.inDays;
+      return l10n.createdAgo(l10n.days(days));
     } else {
-      return '${date.day}/${date.month}/${date.year}';
+      return DateFormat.yMd(
+        Localizations.localeOf(context).languageCode,
+      ).format(date);
     }
   }
 

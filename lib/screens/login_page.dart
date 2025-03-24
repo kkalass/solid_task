@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:solid_auth/solid_auth.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'items_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -45,7 +46,9 @@ class _LoginPageState extends State<LoginPage> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error connecting to Solid: $e';
+        _errorMessage = AppLocalizations.of(
+          context,
+        )!.errorConnectingSolid(e.toString());
       });
     } finally {
       setState(() {
@@ -57,12 +60,13 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Connect to Solid Pod',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          l10n.connectToSolid,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
       ),
@@ -80,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Sync your tasks across devices',
+                l10n.syncAcrossDevices,
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
@@ -88,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Enter your WebID or Solid Pod issuer URL to enable cloud synchronization',
+                l10n.enterWebId,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -101,9 +105,8 @@ class _LoginPageState extends State<LoginPage> {
                 key: _formKey,
                 controller: _urlController,
                 decoration: InputDecoration(
-                  hintText: 'Enter your WebID or Pod URL',
-                  helperText:
-                      'e.g., https://your-pod-provider.com/profile/card#me',
+                  hintText: l10n.webIdHint,
+                  helperText: l10n.webIdExample,
                   helperMaxLines: 2,
                   helperStyle: TextStyle(color: colorScheme.onSurfaceVariant),
                   prefixIcon: const Icon(Icons.link_rounded),
@@ -162,7 +165,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         )
                         : const Text(
-                          'Connect',
+                          l10n.connect,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -174,7 +177,7 @@ class _LoginPageState extends State<LoginPage> {
               if (!_isLoading) ...[
                 const SizedBox(height: 24),
                 Text(
-                  'Don\'t have a Solid Pod yet?',
+                  l10n.noPod,
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
@@ -182,7 +185,7 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                     // TODO: Add link to Solid Pod providers
                   },
-                  child: const Text('Get one here'),
+                  child: Text(l10n.getPod),
                 ),
               ],
             ],
