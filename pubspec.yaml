@@ -103,3 +103,6 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 
   generate: true
+
+  assets:
+    - assets/solid_providers.json

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:solid_auth/solid_auth.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import 'items_screen.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'dart:convert';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,6 +16,27 @@ class _LoginPageState extends State<LoginPage> {
   final _urlController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+  List<Map<String, dynamic>>? _providers;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProviders();
+  }
+
+  Future<void> _loadProviders() async {
+    try {
+      final String jsonString = await DefaultAssetBundle.of(
+        context,
+      ).loadString('assets/solid_providers.json');
+      final data = json.decode(jsonString);
+      setState(() {
+        _providers = List<Map<String, dynamic>>.from(data['providers']);
+      });
+    } catch (e) {
+      print('Error loading providers: $e');
+    }
+  }
 
   Future<void> _login(String input) async {
     setState(() {
@@ -100,14 +121,57 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 32),
 
-              // Input field
+              // Quick access provider buttons
+              if (_providers != null) ...[
+                Text(
+                  l10n.chooseProvider,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ...(_providers!.map(
+                  (provider) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: OutlinedButton(
+                      onPressed:
+                          _isLoading ? null : () => _login(provider['url']),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.all(16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            provider['name'],
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )),
+                const SizedBox(height: 24),
+                Text(
+                  l10n.orEnterManually,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Manual WebID input
               TextFormField(
                 key: _formKey,
                 controller: _urlController,
                 decoration: InputDecoration(
                   hintText: l10n.webIdHint,
                   helperText: l10n.webIdExample,
-                  helperMaxLines: 2,
                   helperStyle: TextStyle(color: colorScheme.onSurfaceVariant),
                   prefixIcon: const Icon(Icons.link_rounded),
                   filled: true,
@@ -131,7 +195,6 @@ class _LoginPageState extends State<LoginPage> {
                   errorMaxLines: 3,
                 ),
                 enabled: !_isLoading,
-                autofocus: true,
                 keyboardType: TextInputType.url,
                 textInputAction: TextInputAction.go,
                 onFieldSubmitted: (value) {
@@ -140,12 +203,12 @@ class _LoginPageState extends State<LoginPage> {
                   }
                 },
               ),
-              const SizedBox(height: 24),
-
-              // Connect button
+              const SizedBox(height: 16),
               FilledButton(
                 onPressed:
-                    _isLoading ? null : () => _login(_urlController.text),
+                    _isLoading || _urlController.text.isEmpty
+                        ? null
+                        : () => _login(_urlController.text),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(

@@ -17,5 +17,7 @@
   "noPod": "Noch keinen Solid Pod?",
   "getPod": "Hier einen erstellen",
   "syncedWithPod": "Mit Solid Pod synchronisiert",
-  "connectToPod": "Mit Solid Pod verbinden"
+  "connectToPod": "Mit Solid Pod verbinden",
+  "chooseProvider": "Wähle deinen Solid Pod-Anbieter",
+  "orEnterManually": "Oder gib deine WebID manuell ein"
 }
