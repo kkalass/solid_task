@@ -7,15 +7,17 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 class CrdtService {
   final Box<Item> _box;
   final String _webId;
-  final String _podUrl;
+  final String? _podUrl;
+  final String? _accessToken;
   final http.Client _client;
-  final String _accessToken;
+
+  bool get _isSolidConnected => _podUrl != null && _accessToken != null;
 
   CrdtService({
     required Box<Item> box,
     required String webId,
-    required String podUrl,
-    required String accessToken,
+    String? podUrl,
+    String? accessToken,
     http.Client? client,
   }) : _box = box,
        _webId = webId,
@@ -28,7 +30,9 @@ class CrdtService {
     final item = Item(text: text, lastModifiedBy: _webId);
     item.incrementClock(_webId);
     await _box.put(item.id, item);
-    await _syncToPod();
+    if (_isSolidConnected) {
+      await _syncToPod();
+    }
     return item;
   }
 
@@ -36,7 +40,9 @@ class CrdtService {
   Future<void> updateItem(Item item) async {
     item.incrementClock(_webId);
     await _box.put(item.id, item);
-    await _syncToPod();
+    if (_isSolidConnected) {
+      await _syncToPod();
+    }
   }
 
   // Delete an item (soft delete)
@@ -46,12 +52,16 @@ class CrdtService {
       item.isDeleted = true;
       item.incrementClock(_webId);
       await _box.put(id, item);
-      await _syncToPod();
+      if (_isSolidConnected) {
+        await _syncToPod();
+      }
     }
   }
 
   // Sync with Solid pod
   Future<void> _syncToPod() async {
+    if (!_isSolidConnected) return;
+
     try {
       final items = _box.values.where((item) => !item.isDeleted).toList();
       final jsonData = items.map((item) => item.toJson()).toList();
@@ -70,12 +80,13 @@ class CrdtService {
       }
     } catch (e) {
       print('Error syncing with pod: $e');
-      // In a real app, you might want to queue failed syncs for retry
     }
   }
 
   // Sync from Solid pod
   Future<void> syncFromPod() async {
+    if (!_isSolidConnected) return;
+
     try {
       final response = await _client.get(
         Uri.parse('$_podUrl/todos.json'),
@@ -87,7 +98,6 @@ class CrdtService {
         final remoteItems =
             jsonData.map((json) => Item.fromJson(json)).toList();
 
-        // Merge remote items with local items
         for (final remoteItem in remoteItems) {
           final localItem = _box.get(remoteItem.id);
           if (localItem == null) {

@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/item.dart';
 import '../services/crdt_service.dart';
+import '../screens/login_page.dart';
 
 class ItemsScreen extends StatefulWidget {
-  final String webId;
-  final String accessToken;
-  final Map<String, dynamic> decodedToken;
+  final String? webId;
+  final String? accessToken;
+  final Map<String, dynamic>? decodedToken;
 
   const ItemsScreen({
     super.key,
-    required this.webId,
-    required this.accessToken,
-    required this.decodedToken,
+    this.webId,
+    this.accessToken,
+    this.decodedToken,
   });
 
   @override
@@ -24,20 +25,23 @@ class _ItemsScreenState extends State<ItemsScreen> {
   bool _isAdding = false;
   late CrdtService _crdtService;
   bool _isSyncing = false;
+  bool get _isConnectedToSolid => widget.webId != null;
 
   @override
   void initState() {
     super.initState();
     _initializeCrdtService();
-    _syncFromPod();
+    if (_isConnectedToSolid) {
+      _syncFromPod();
+    }
   }
 
   void _initializeCrdtService() {
     final box = Hive.box<Item>('items');
     _crdtService = CrdtService(
       box: box,
-      webId: widget.webId,
-      podUrl: widget.decodedToken['iss'], // Use the issuer URL as the pod URL
+      webId: widget.webId ?? 'local',
+      podUrl: widget.decodedToken?['iss'],
       accessToken: widget.accessToken,
     );
   }
@@ -51,6 +55,27 @@ class _ItemsScreenState extends State<ItemsScreen> {
     }
   }
 
+  void _navigateToLogin() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+
+    if (result != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => ItemsScreen(
+                webId: result['webId'],
+                accessToken: result['accessToken'],
+                decodedToken: result['decodedToken'],
+              ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,14 +85,19 @@ class _ItemsScreenState extends State<ItemsScreen> {
         actions: [
           IconButton(
             icon:
-                _isSyncing
-                    ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                    : const Icon(Icons.sync),
-            onPressed: _isSyncing ? null : _syncFromPod,
+                _isConnectedToSolid
+                    ? (_isSyncing
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.sync))
+                    : const Icon(Icons.cloud_off),
+            onPressed:
+                _isConnectedToSolid
+                    ? (_isSyncing ? null : _syncFromPod)
+                    : _navigateToLogin,
           ),
         ],
       ),

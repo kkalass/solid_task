@@ -5,13 +5,14 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'models/item.dart';
 import 'screens/login_page.dart';
+import 'screens/items_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Hive
   if (kIsWeb) {
-    await Hive.initFlutter(); // Web initialization
+    await Hive.initFlutter();
   } else {
     final appDocumentDir =
         await path_provider.getApplicationDocumentsDirectory();
@@ -33,12 +34,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Solid Login Demo',
+      title: 'Todo List',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const LoginPage(),
+      home: const ItemsScreen(),
     );
   }
 }
