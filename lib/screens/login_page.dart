@@ -3,6 +3,7 @@ import 'package:solid_auth/solid_auth.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -82,6 +83,132 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWideScreen = screenWidth > 600;
+
+    Widget loginContent = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Icon(Icons.cloud_sync_rounded, size: 48, color: colorScheme.primary),
+        const SizedBox(height: 16),
+        Text(
+          l10n.syncAcrossDevices,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 32),
+
+        // Quick access provider buttons
+        if (_providers != null) ...[
+          Text(
+            l10n.chooseProvider,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ..._providers!.map(
+            (provider) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : () => _login(provider['url']),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  backgroundColor: colorScheme.surfaceVariant,
+                ),
+                child: Text(provider['name']),
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Divider(),
+          ),
+        ],
+
+        // Manual WebID input
+        Text(
+          l10n.orEnterManually,
+          style: Theme.of(
+            context,
+          ).textTheme.labelLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          key: _formKey,
+          controller: _urlController,
+          decoration: InputDecoration(
+            hintText: l10n.webIdHint,
+            errorText: _errorMessage,
+            errorMaxLines: 2,
+          ),
+          enabled: !_isLoading,
+          keyboardType: TextInputType.url,
+          textInputAction: TextInputAction.go,
+        ),
+        const SizedBox(height: 16),
+        FilledButton(
+          onPressed:
+              _isLoading
+                  ? null
+                  : () {
+                    if (_urlController.text.isNotEmpty) {
+                      _login(_urlController.text);
+                    }
+                  },
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+          child:
+              _isLoading
+                  ? const SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                  : Text(l10n.connect),
+        ),
+
+        // "Get a Pod" section
+        const SizedBox(height: 24),
+        Text(
+          l10n.noPod,
+          style: Theme.of(context).textTheme.bodyMedium,
+          textAlign: TextAlign.center,
+        ),
+        TextButton(
+          onPressed: () {
+            launchUrl(Uri.parse('https://solidproject.org/users/get-a-pod'));
+          },
+          child: Text(l10n.getPod),
+        ),
+      ],
+    );
+
+    // For wider screens, wrap the content in a constrained box
+    if (isWideScreen) {
+      loginContent = Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Card(
+            elevation: 4,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: loginContent,
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -92,168 +219,11 @@ class _LoginPageState extends State<LoginPage> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Icon and description
-              Icon(
-                Icons.cloud_sync_rounded,
-                size: 64,
-                color: colorScheme.primary,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                l10n.syncAcrossDevices,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                l10n.enterWebId,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-
-              // Quick access provider buttons
-              if (_providers != null) ...[
-                Text(
-                  l10n.chooseProvider,
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                ...(_providers!.map(
-                  (provider) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: OutlinedButton(
-                      onPressed:
-                          _isLoading ? null : () => _login(provider['url']),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.all(16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            provider['name'],
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )),
-                const SizedBox(height: 24),
-                Text(
-                  l10n.orEnterManually,
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Manual WebID input
-              TextFormField(
-                key: _formKey,
-                controller: _urlController,
-                decoration: InputDecoration(
-                  hintText: l10n.webIdHint,
-                  helperText: l10n.webIdExample,
-                  helperStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-                  prefixIcon: const Icon(Icons.link_rounded),
-                  filled: true,
-                  fillColor: colorScheme.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: colorScheme.outline),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: colorScheme.outline),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: colorScheme.primary,
-                      width: 2,
-                    ),
-                  ),
-                  errorText: _errorMessage,
-                  errorMaxLines: 3,
-                ),
-                enabled: !_isLoading,
-                keyboardType: TextInputType.url,
-                textInputAction: TextInputAction.go,
-                onFieldSubmitted: (value) {
-                  if (value.isNotEmpty) {
-                    _login(value);
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed:
-                    _isLoading || _urlController.text.isEmpty
-                        ? null
-                        : () => _login(_urlController.text),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child:
-                    _isLoading
-                        ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                        : Text(
-                          l10n.connect,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-              ),
-
-              // Help text
-              if (!_isLoading) ...[
-                const SizedBox(height: 24),
-                Text(
-                  l10n.noPod,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                TextButton(
-                  onPressed: () {
-                    // TODO: Add link to Solid Pod providers
-                  },
-                  child: Text(l10n.getPod),
-                ),
-              ],
-            ],
-          ),
+        padding: EdgeInsets.symmetric(
+          horizontal: isWideScreen ? 24 : 16,
+          vertical: 24,
         ),
+        child: loginContent,
       ),
     );
   }

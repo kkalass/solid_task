@@ -1,12 +1,12 @@
 {
   "providers": [
     {
-      "name": "iGrant.io DataPod",
+      "name": "iGrant.io",
       "url": "https://datapod.igrant.io",
       "icon": "igrant"
     },
     {
-      "name": "Inrupt Pod",
+      "name": "Inrupt",
       "url": "https://inrupt.net",
       "icon": "inrupt"
     },

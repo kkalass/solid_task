@@ -26,3 +26,11 @@ samples, guidance on mobile development, and a full API reference.
 flutter gen-l10n # only needed when i18n was changed
 flutter run -d macos
 ```
+
+## Required Rights
+
+### NSAllowsArbitraryLoads
+This is necessary because:
+* Users can enter any Solid Pod provider URL
+* The app needs to fetch favicons from these URLs
+* The app needs to communicate with the Pod for authentication and data synchronization
