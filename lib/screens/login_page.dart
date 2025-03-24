@@ -164,9 +164,9 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                         )
-                        : const Text(
+                        : Text(
                           l10n.connect,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),

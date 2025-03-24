@@ -49,6 +49,7 @@ class MyApp extends StatelessWidget {
       ],
       supportedLocales: const [
         Locale('en'), // English
+        Locale('de'), // German
         // Add more locales here
       ],
       home: const ItemsScreen(),
