@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/item.dart';
+import '../services/crdt_service.dart';
 
 class ItemsScreen extends StatefulWidget {
   final String webId;
@@ -21,6 +22,34 @@ class ItemsScreen extends StatefulWidget {
 class _ItemsScreenState extends State<ItemsScreen> {
   final _textController = TextEditingController();
   bool _isAdding = false;
+  late CrdtService _crdtService;
+  bool _isSyncing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCrdtService();
+    _syncFromPod();
+  }
+
+  void _initializeCrdtService() {
+    final box = Hive.box<Item>('items');
+    _crdtService = CrdtService(
+      box: box,
+      webId: widget.webId,
+      podUrl: widget.decodedToken['iss'], // Use the issuer URL as the pod URL
+      accessToken: widget.accessToken,
+    );
+  }
+
+  Future<void> _syncFromPod() async {
+    setState(() => _isSyncing = true);
+    try {
+      await _crdtService.syncFromPod();
+    } finally {
+      setState(() => _isSyncing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +57,19 @@ class _ItemsScreenState extends State<ItemsScreen> {
       appBar: AppBar(
         title: const Text('My Items'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon:
+                _isSyncing
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.sync),
+            onPressed: _isSyncing ? null : _syncFromPod,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -43,10 +85,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         hintText: 'Enter item text',
                         border: OutlineInputBorder(),
                       ),
-                      onSubmitted: (value) {
+                      onSubmitted: (value) async {
                         if (value.isNotEmpty) {
-                          final item = Item(text: value);
-                          Hive.box<Item>('items').add(item);
+                          await _crdtService.addItem(value);
                           _textController.clear();
                           setState(() => _isAdding = false);
                         }
@@ -67,16 +108,21 @@ class _ItemsScreenState extends State<ItemsScreen> {
             child: ValueListenableBuilder(
               valueListenable: Hive.box<Item>('items').listenable(),
               builder: (context, box, _) {
+                final items =
+                    box.values.where((item) => !item.isDeleted).toList();
                 return ListView.builder(
-                  itemCount: box.length,
+                  itemCount: items.length,
                   itemBuilder: (context, index) {
-                    final item = box.getAt(index) as Item;
+                    final item = items[index];
                     return ListTile(
                       title: Text(item.text),
-                      subtitle: Text(item.createdAt.toString()),
+                      subtitle: Text(
+                        'Created: ${item.createdAt.toString()}\n'
+                        'Last modified by: ${item.lastModifiedBy}',
+                      ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete),
-                        onPressed: () => box.deleteAt(index),
+                        onPressed: () => _crdtService.deleteItem(item.id),
                       ),
                     );
                   },
@@ -99,6 +145,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
   @override
   void dispose() {
     _textController.dispose();
+    _crdtService.dispose();
     super.dispose();
   }
 }

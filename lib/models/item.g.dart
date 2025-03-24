@@ -18,21 +18,30 @@ class ItemAdapter extends TypeAdapter<Item> {
     };
     return Item(
       text: fields[1] as String,
+      lastModifiedBy: fields[5] as String,
     )
       ..id = fields[0] as String
-      ..createdAt = fields[2] as DateTime;
+      ..createdAt = fields[2] as DateTime
+      ..vectorClock = (fields[3] as Map).cast<String, int>()
+      ..isDeleted = fields[4] as bool;
   }
 
   @override
   void write(BinaryWriter writer, Item obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.text)
       ..writeByte(2)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(3)
+      ..write(obj.vectorClock)
+      ..writeByte(4)
+      ..write(obj.isDeleted)
+      ..writeByte(5)
+      ..write(obj.lastModifiedBy);
   }
 
   @override
