@@ -2,6 +2,7 @@ import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/item.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class CrdtService {
   final Box<Item> _box;
@@ -105,5 +106,14 @@ class CrdtService {
   // Close the service
   void dispose() {
     _client.close();
+  }
+
+  Future<void> _checkStorageQuota() async {
+    if (kIsWeb) {
+      // Implement web storage quota check if needed
+      // You can use window.navigator.storage.estimate()
+
+      // FIXME: Implement web storage quota check (and call this method)
+    }
   }
 }
