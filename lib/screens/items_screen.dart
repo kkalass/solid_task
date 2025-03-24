@@ -22,7 +22,6 @@ class ItemsScreen extends StatefulWidget {
 
 class _ItemsScreenState extends State<ItemsScreen> {
   final _textController = TextEditingController();
-  bool _isAdding = false;
   late CrdtService _crdtService;
   bool _isSyncing = false;
   bool get _isConnectedToSolid => widget.webId != null;
@@ -78,81 +77,156 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('My Items'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text(
+          'My Tasks',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
         actions: [
-          IconButton(
-            icon:
-                _isConnectedToSolid
-                    ? (_isSyncing
-                        ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Icon(Icons.sync))
-                    : const Icon(Icons.cloud_off),
-            onPressed:
-                _isConnectedToSolid
-                    ? (_isSyncing ? null : _syncFromPod)
-                    : _navigateToLogin,
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: IconButton.filledTonal(
+              icon:
+                  _isConnectedToSolid
+                      ? (_isSyncing
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Icon(Icons.cloud_done))
+                      : const Icon(Icons.cloud_off),
+              onPressed:
+                  _isConnectedToSolid
+                      ? (_isSyncing ? null : _syncFromPod)
+                      : _navigateToLogin,
+              tooltip:
+                  _isConnectedToSolid
+                      ? 'Synced with Solid Pod'
+                      : 'Connect to Solid Pod',
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
-          if (_isAdding)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      decoration: const InputDecoration(
-                        hintText: 'Enter item text',
-                        border: OutlineInputBorder(),
-                      ),
-                      onSubmitted: (value) async {
-                        if (value.isNotEmpty) {
-                          await _crdtService.addItem(value);
-                          _textController.clear();
-                          setState(() => _isAdding = false);
-                        }
-                      },
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      _textController.clear();
-                      setState(() => _isAdding = false);
-                    },
-                  ),
-                ],
+          // Add task input field
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _textController,
+              decoration: InputDecoration(
+                hintText: 'Add a new task...',
+                filled: true,
+                fillColor: colorScheme.surface,
+                prefixIcon: const Icon(Icons.add_task),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: colorScheme.outline),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: colorScheme.outline),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                ),
               ),
+              onSubmitted: (value) async {
+                if (value.isNotEmpty) {
+                  await _crdtService.addItem(value);
+                  _textController.clear();
+                }
+              },
             ),
+          ),
+
+          // Tasks list
           Expanded(
             child: ValueListenableBuilder(
               valueListenable: Hive.box<Item>('items').listenable(),
               builder: (context, box, _) {
                 final items =
-                    box.values.where((item) => !item.isDeleted).toList();
+                    box.values.where((item) => !item.isDeleted).toList()
+                      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+                if (items.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.task_outlined,
+                          size: 64,
+                          color: colorScheme.outline,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No tasks yet',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: colorScheme.outline,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
                 return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
-                    return ListTile(
-                      title: Text(item.text),
-                      subtitle: Text(
-                        'Created: ${item.createdAt.toString()}\n'
-                        'Last modified by: ${item.lastModifiedBy}',
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _crdtService.deleteItem(item.id),
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Dismissible(
+                        key: Key(item.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          decoration: BoxDecoration(
+                            color: colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 16),
+                          child: Icon(
+                            Icons.delete_outline,
+                            color: colorScheme.error,
+                          ),
+                        ),
+                        onDismissed: (_) => _crdtService.deleteItem(item.id),
+                        child: Card(
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: colorScheme.outline.withOpacity(0.2),
+                            ),
+                          ),
+                          child: ListTile(
+                            title: Text(
+                              item.text,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            subtitle: Text(
+                              'Created ${_formatDate(item.createdAt)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.outline,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -162,14 +236,25 @@ class _ItemsScreenState extends State<ItemsScreen> {
           ),
         ],
       ),
-      floatingActionButton:
-          !_isAdding
-              ? FloatingActionButton(
-                onPressed: () => setState(() => _isAdding = true),
-                child: const Icon(Icons.add),
-              )
-              : null,
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        return '${difference.inMinutes} minutes ago';
+      }
+      return '${difference.inHours} hours ago';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 
   @override
