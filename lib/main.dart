@@ -8,9 +8,13 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'models/item.dart';
 import 'screens/login_page.dart';
 import 'screens/items_screen.dart';
+import 'services/logger_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize logger
+  await LoggerService().init();
 
   // Initialize Hive
   if (kIsWeb) {

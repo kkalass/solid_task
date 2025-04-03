@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import '../services/profile_parser.dart';
+import '../services/logger_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,6 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   String? _errorMessage;
   List<Map<String, dynamic>>? _providers;
+  final _logger = LoggerService();
 
   @override
   void initState() {
@@ -36,8 +38,8 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         _providers = List<Map<String, dynamic>>.from(data['providers']);
       });
-    } catch (e) {
-      print('Error loading providers: $e');
+    } catch (e, stackTrace) {
+      _logger.error('Error loading providers', e, stackTrace);
     }
   }
 
@@ -51,7 +53,7 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (response.statusCode != 200) {
-        print('Failed to fetch profile: ${response.statusCode}');
+        _logger.warning('Failed to fetch profile: ${response.statusCode}');
         return null;
       }
 
@@ -59,8 +61,8 @@ class _LoginPageState extends State<LoginPage> {
       final data = response.body;
 
       return await ProfileParser.parseProfile(webId, data, contentType);
-    } catch (e) {
-      print('Error fetching pod URL: $e');
+    } catch (e, stackTrace) {
+      _logger.error('Error fetching pod URL', e, stackTrace);
       return null;
     }
   }
@@ -85,13 +87,13 @@ class _LoginPageState extends State<LoginPage> {
       String accessToken = authData['accessToken'];
       Map<String, dynamic> decodedToken = JwtDecoder.decode(accessToken);
       String webId = decodedToken['webid'];
-      print('Auth data: $authData');
-      print('Decoded token: $decodedToken');
+      _logger.info('Auth data: $authData');
+      _logger.info('Decoded token: $decodedToken');
       var profilePage = await fetchProfileData(webId);
 
-      print('Profile page: $profilePage');
+      _logger.info('Profile page: $profilePage');
       var podUrl = await _getPodUrl(webId);
-      print('Pod URL: $podUrl');
+      _logger.info('Pod URL: $podUrl');
       if (!mounted) return;
       Navigator.of(context).pop({
         'webId': webId,
@@ -99,7 +101,8 @@ class _LoginPageState extends State<LoginPage> {
         'decodedToken': decodedToken,
         authData: authData,
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error('Login error', e, stackTrace);
       setState(() {
         _errorMessage = AppLocalizations.of(
           context,

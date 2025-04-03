@@ -1,9 +1,12 @@
 // lib/services/profile_parser.dart
 
 import 'dart:convert';
+import 'logger_service.dart';
 
 /// Service for parsing Solid profile documents to extract pod storage URLs.
 class ProfileParser {
+  static final _logger = LoggerService();
+
   /// Common predicates used to identify storage locations in Solid profiles
   static const _storagePredicates = [
     'http://www.w3.org/ns/pim/space#storage',
@@ -34,37 +37,36 @@ class ProfileParser {
   ) async {
     try {
       if (contentType.contains('text/turtle')) {
-        print('Attempting to parse Turtle profile for WebID: $webId');
+        _logger.info('Attempting to parse Turtle profile for WebID: $webId');
         final result = _parseTurtle(content, webId);
         if (result == null) {
-          print('No storage URL found in Turtle profile');
+          _logger.warning('No storage URL found in Turtle profile');
         }
         return result;
       } else if (contentType.contains('application/ld+json')) {
-        print('Attempting to parse JSON-LD profile for WebID: $webId');
+        _logger.info('Attempting to parse JSON-LD profile for WebID: $webId');
         final result = _parseJsonLd(content);
         if (result == null) {
-          print('No storage URL found in JSON-LD profile');
+          _logger.warning('No storage URL found in JSON-LD profile');
         }
         return result;
       } else {
-        print('Unknown content type: $contentType, trying both formats');
+        _logger.info('Unknown content type: $contentType, trying both formats');
         final turtleResult = _parseTurtle(content, webId);
         if (turtleResult != null) {
-          print('Found storage URL in Turtle format');
+          _logger.info('Found storage URL in Turtle format');
           return turtleResult;
         }
         final jsonLdResult = _parseJsonLd(content);
         if (jsonLdResult != null) {
-          print('Found storage URL in JSON-LD format');
+          _logger.info('Found storage URL in JSON-LD format');
           return jsonLdResult;
         }
-        print('No storage URL found in either format');
+        _logger.warning('No storage URL found in either format');
         return null;
       }
     } catch (e, stackTrace) {
-      print('Error parsing profile: $e');
-      print('Stack trace: $stackTrace');
+      _logger.error('Error parsing profile', e, stackTrace);
       return null;
     }
   }
@@ -72,19 +74,19 @@ class ProfileParser {
   /// Parse a Turtle format profile document
   static String? _parseTurtle(String turtle, String webId) {
     try {
-      print('Starting Turtle parsing for WebID: $webId');
+      _logger.debug('Starting Turtle parsing for WebID: $webId');
 
       // First, handle prefix definitions
       final prefixMap = _extractPrefixes(turtle);
-      print('Found ${prefixMap.length} prefix definitions');
+      _logger.debug('Found ${prefixMap.length} prefix definitions');
 
       // Clean the WebID for matching
       final cleanWebId = webId.split('#')[0];
-      print('Using clean WebID: $cleanWebId');
+      _logger.debug('Using clean WebID: $cleanWebId');
 
       // Look for storage predicates using different syntax patterns
       for (final predicate in _storagePredicates) {
-        print('Trying predicate: $predicate');
+        _logger.debug('Trying predicate: $predicate');
 
         // Try with full URIs
         String? storage = _findStorageWithPattern(
@@ -93,7 +95,7 @@ class ProfileParser {
           '<$predicate>',
         );
         if (storage != null) {
-          print('Found storage URL with full URI predicate: $storage');
+          _logger.info('Found storage URL with full URI predicate: $storage');
           return storage;
         }
 
@@ -104,14 +106,16 @@ class ProfileParser {
               prefix.value,
               '${prefix.key}:',
             );
-            print('Trying prefixed predicate: $shortPredicate');
+            _logger.debug('Trying prefixed predicate: $shortPredicate');
             storage = _findStorageWithPattern(
               turtle,
               '<$cleanWebId>',
               shortPredicate,
             );
             if (storage != null) {
-              print('Found storage URL with prefixed predicate: $storage');
+              _logger.info(
+                'Found storage URL with prefixed predicate: $storage',
+              );
               return storage;
             }
           }
@@ -119,21 +123,20 @@ class ProfileParser {
       }
 
       // Try finding storage in type declarations
-      print('Checking for StorageContainer type declarations');
+      _logger.debug('Checking for StorageContainer type declarations');
       for (final line in turtle.split('\n')) {
         if (line.contains('a') && line.contains('solid:StorageContainer')) {
           final uri = _extractUri(line);
           if (uri != null) {
-            print('Found storage URL in type declaration: $uri');
+            _logger.info('Found storage URL in type declaration: $uri');
             return uri;
           }
         }
       }
 
-      print('No storage URL found in Turtle document');
+      _logger.warning('No storage URL found in Turtle document');
     } catch (e, stackTrace) {
-      print('Error parsing Turtle: $e');
-      print('Stack trace: $stackTrace');
+      _logger.error('Error parsing Turtle', e, stackTrace);
     }
     return null;
   }
@@ -200,35 +203,35 @@ class ProfileParser {
   /// Parse a JSON-LD format profile document
   static String? _parseJsonLd(String jsonLd) {
     try {
-      print('Starting JSON-LD parsing');
+      _logger.debug('Starting JSON-LD parsing');
       final data = json.decode(jsonLd) as Map<String, dynamic>;
 
       // Try different JSON-LD structures
       if (data is Map<String, dynamic>) {
-        print('Checking direct storage properties');
+        _logger.debug('Checking direct storage properties');
         // Try direct storage property
         for (final predicate in _storagePredicates) {
-          print('Trying predicate: $predicate');
+          _logger.debug('Trying predicate: $predicate');
           final storage = _findStorageInObject(data, predicate);
           if (storage != null) {
-            print('Found storage URL with direct predicate: $storage');
+            _logger.info('Found storage URL with direct predicate: $storage');
             return storage;
           }
         }
 
         // Try @graph structure
         if (data.containsKey('@graph')) {
-          print('Checking @graph structure');
+          _logger.debug('Checking @graph structure');
           final graph = data['@graph'] as List<dynamic>;
           if (graph is List<dynamic>) {
             for (final node in graph) {
               if (node is Map<String, dynamic>) {
-                print('Checking node: ${node['@id']}');
+                _logger.debug('Checking node: ${node['@id']}');
                 // Try each predicate in the node
                 for (final predicate in _storagePredicates) {
                   final storage = _findStorageInObject(node, predicate);
                   if (storage != null) {
-                    print('Found storage URL in @graph node: $storage');
+                    _logger.info('Found storage URL in @graph node: $storage');
                     return storage;
                   }
                 }
@@ -238,7 +241,7 @@ class ProfileParser {
                     node['@type'] == 'pim:Storage') {
                   final id = node['@id'];
                   if (id is String) {
-                    print('Found storage URL in type declaration: $id');
+                    _logger.info('Found storage URL in type declaration: $id');
                     return id;
                   }
                 }
@@ -247,31 +250,30 @@ class ProfileParser {
           }
         }
 
-        print('Checking compact IRIs');
+        _logger.debug('Checking compact IRIs');
         // Try compact IRIs
         for (final entry in data.entries) {
           if (entry.key.startsWith('solid:') ||
               entry.key.startsWith('space:') ||
               entry.key.startsWith('pim:')) {
-            print('Found compact IRI: ${entry.key}');
+            _logger.debug('Found compact IRI: ${entry.key}');
             final value = entry.value;
             if (value is String) {
-              print('Found storage URL in compact IRI: $value');
+              _logger.info('Found storage URL in compact IRI: $value');
               return value;
             }
             if (value is Map && value.containsKey('@id')) {
               final id = value['@id'];
-              print('Found storage URL in compact IRI object: $id');
+              _logger.info('Found storage URL in compact IRI object: $id');
               return id;
             }
           }
         }
       }
 
-      print('No storage URL found in JSON-LD document');
+      _logger.warning('No storage URL found in JSON-LD document');
     } catch (e, stackTrace) {
-      print('Error parsing JSON-LD: $e');
-      print('Stack trace: $stackTrace');
+      _logger.error('Error parsing JSON-LD', e, stackTrace);
     }
     return null;
   }

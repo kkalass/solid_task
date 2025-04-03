@@ -7,6 +7,7 @@ import '../screens/login_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:solid_auth/solid_auth.dart';
+import '../services/logger_service.dart';
 
 class ItemsScreen extends StatefulWidget {
   final String? webId;
@@ -31,6 +32,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
   late CrdtService _crdtService;
   bool _isSyncing = false;
   bool get _isConnectedToSolid => widget.webId != null;
+  final _logger = LoggerService();
 
   @override
   void initState() {
@@ -91,8 +93,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
           MaterialPageRoute(builder: (context) => const ItemsScreen()),
         );
       }
-    } catch (e) {
-      // Handle any logout errors
+    } catch (e, stackTrace) {
+      _logger.error('Error disconnecting from pod', e, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
