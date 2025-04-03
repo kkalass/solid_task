@@ -7,9 +7,13 @@ class TurtleParserFacade {
   static final _logger = LoggerService();
 
   /// Parse a Turtle document and return an RDF graph
-  static RdfGraph parse(String input) {
+  ///
+  /// [input] is the Turtle document to parse.
+  /// [documentUrl] is the absolute URL of the document, used for resolving relative IRIs.
+  /// If not provided, relative IRIs will be kept as-is.
+  static RdfGraph parse(String input, {String? documentUrl}) {
     try {
-      final parser = TurtleParser(input);
+      final parser = TurtleParser(input, baseUri: documentUrl);
       final triples = parser.parse();
 
       final graph = RdfGraph();
@@ -31,15 +35,22 @@ class TurtleParserFacade {
   }
 
   /// Find storage URLs in a Turtle document
-  static List<String> findStorageUrls(String input) {
+  ///
+  /// [input] is the Turtle document to parse.
+  /// [documentUrl] is the absolute URL of the document, used for resolving relative IRIs.
+  /// If not provided, relative IRIs will be kept as-is.
+  static List<String> findStorageUrls(String input, {String? documentUrl}) {
     try {
-      final graph = parse(input);
+      final graph = parse(input, documentUrl: documentUrl);
       final storageTriples = graph.findTriples(
         predicate: 'http://www.w3.org/ns/solid/terms#storage',
       );
+      final spaceStorageTriples = graph.findTriples(
+        predicate: 'http://www.w3.org/ns/pim/space#storage',
+      );
 
       final urls = <String>[];
-      for (final triple in storageTriples) {
+      for (final triple in [...storageTriples, ...spaceStorageTriples]) {
         if (triple.object.startsWith('_:')) {
           // If the storage points to a blank node, look for location triples
           final locationTriples = graph.findTriples(

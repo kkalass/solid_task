@@ -92,7 +92,7 @@ class Token {
 /// }
 /// ```
 class TurtleTokenizer {
-  static final _logger = LoggerService();
+  static final _logger = LoggerService().createLogger('TurtleTokenizer');
   final String _input;
   int _position = 0;
   int _line = 1;
@@ -495,8 +495,7 @@ class TurtleTokenizer {
   /// - Digits (0-9)
   /// - Underscore (_)
   /// - Hyphen (-)
-  /// - Period (.)
   bool _isNameChar(String char) {
-    return RegExp(r'[a-zA-Z0-9_\-.]').hasMatch(char);
+    return RegExp(r'[a-zA-Z0-9_\-]').hasMatch(char);
   }
 }

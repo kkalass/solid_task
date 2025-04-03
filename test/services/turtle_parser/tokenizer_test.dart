@@ -91,5 +91,22 @@ void main() {
       expect(tokenizer.nextToken().type, equals(TokenType.dot));
       expect(tokenizer.nextToken().type, equals(TokenType.eof));
     });
+
+    test('should not include dots in prefixed names', () {
+      final tokenizer = TurtleTokenizer(
+        'pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.',
+      );
+      expect(tokenizer.nextToken().type, equals(TokenType.prefixedName));
+      expect(tokenizer.nextToken().type, equals(TokenType.a));
+      expect(tokenizer.nextToken().type, equals(TokenType.prefixedName));
+      expect(tokenizer.nextToken().type, equals(TokenType.semicolon));
+      expect(tokenizer.nextToken().type, equals(TokenType.prefixedName));
+      expect(tokenizer.nextToken().type, equals(TokenType.prefixedName));
+      expect(tokenizer.nextToken().type, equals(TokenType.semicolon));
+      expect(tokenizer.nextToken().type, equals(TokenType.prefixedName));
+      expect(tokenizer.nextToken().type, equals(TokenType.prefixedName));
+      expect(tokenizer.nextToken().type, equals(TokenType.dot));
+      expect(tokenizer.nextToken().type, equals(TokenType.eof));
+    });
   });
 }

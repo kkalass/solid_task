@@ -15,7 +15,7 @@ void main() {
       ''';
 
       final storageUrls = TurtleParserFacade.findStorageUrls(input);
-      expect(storageUrls.length, equals(1));
+      expect(storageUrls.length, equals(2));
       expect(storageUrls, everyElement(equals('https://example.com/storage/')));
     });
     test('should parse a real life profile', () {
@@ -54,7 +54,10 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
     foaf:name "Klas Kala\u00df".
       ''';
 
-      final storageUrls = TurtleParserFacade.findStorageUrls(input);
+      final storageUrls = TurtleParserFacade.findStorageUrls(
+        input,
+        documentUrl: 'https://kkalass.datapod.igrant.io/profile/card',
+      );
       expect(storageUrls.length, equals(1));
       expect(
         storageUrls,
@@ -124,7 +127,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
       ''';
 
       final storageUrls = TurtleParserFacade.findStorageUrls(input);
-      expect(storageUrls.length, equals(1));
+      expect(storageUrls.length, equals(2));
       expect(storageUrls, everyElement(equals('https://example.com/storage/')));
     });
   });
