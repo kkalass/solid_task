@@ -1,9 +1,10 @@
 // lib/services/profile_parser.dart
 
 import 'dart:convert';
-import 'logger_service.dart';
+import 'package:my_cross_platform_app/services/logger_service.dart';
+import 'turtle_parser/turtle_parser.dart';
 
-/// Service for parsing Solid profile documents to extract pod storage URLs.
+/// Service for parsing Solid profile documents
 class ProfileParser {
   static final _logger = LoggerService();
 
@@ -36,26 +37,19 @@ class ProfileParser {
     String contentType,
   ) async {
     try {
+      _logger.info('Parsing profile with content type: $contentType');
+
       if (contentType.contains('text/turtle')) {
-        _logger.info('Attempting to parse Turtle profile for WebID: $webId');
-        final result = _parseTurtle(content, webId);
-        if (result == null) {
-          _logger.warning('No storage URL found in Turtle profile');
-        }
-        return result;
+        final storageUrls = TurtleParserFacade.findStorageUrls(content);
+        return storageUrls.isNotEmpty ? storageUrls.first : null;
       } else if (contentType.contains('application/ld+json')) {
-        _logger.info('Attempting to parse JSON-LD profile for WebID: $webId');
-        final result = _parseJsonLd(content);
-        if (result == null) {
-          _logger.warning('No storage URL found in JSON-LD profile');
-        }
-        return result;
+        return _parseJsonLd(content);
       } else {
         _logger.info('Unknown content type: $contentType, trying both formats');
-        final turtleResult = _parseTurtle(content, webId);
-        if (turtleResult != null) {
+        final turtleUrls = TurtleParserFacade.findStorageUrls(content);
+        if (turtleUrls.isNotEmpty) {
           _logger.info('Found storage URL in Turtle format');
-          return turtleResult;
+          return turtleUrls.first;
         }
         final jsonLdResult = _parseJsonLd(content);
         if (jsonLdResult != null) {
@@ -66,214 +60,106 @@ class ProfileParser {
         return null;
       }
     } catch (e, stackTrace) {
-      _logger.error('Error parsing profile', e, stackTrace);
+      _logger.error('Failed to parse profile', e, stackTrace);
       return null;
     }
-  }
-
-  /// Parse a Turtle format profile document
-  static String? _parseTurtle(String turtle, String webId) {
-    try {
-      _logger.debug('Starting Turtle parsing for WebID: $webId');
-
-      // First, handle prefix definitions
-      final prefixMap = _extractPrefixes(turtle);
-      _logger.debug('Found ${prefixMap.length} prefix definitions');
-
-      // Clean the WebID for matching
-      final cleanWebId = webId.split('#')[0];
-      _logger.debug('Using clean WebID: $cleanWebId');
-
-      // Look for storage predicates using different syntax patterns
-      for (final predicate in _storagePredicates) {
-        _logger.debug('Trying predicate: $predicate');
-
-        // Try with full URIs
-        String? storage = _findStorageWithPattern(
-          turtle,
-          '<$cleanWebId>',
-          '<$predicate>',
-        );
-        if (storage != null) {
-          _logger.info('Found storage URL with full URI predicate: $storage');
-          return storage;
-        }
-
-        // Try with prefixed notation
-        for (final prefix in prefixMap.entries) {
-          if (predicate.startsWith(prefix.value)) {
-            final shortPredicate = predicate.replaceFirst(
-              prefix.value,
-              '${prefix.key}:',
-            );
-            _logger.debug('Trying prefixed predicate: $shortPredicate');
-            storage = _findStorageWithPattern(
-              turtle,
-              '<$cleanWebId>',
-              shortPredicate,
-            );
-            if (storage != null) {
-              _logger.info(
-                'Found storage URL with prefixed predicate: $storage',
-              );
-              return storage;
-            }
-          }
-        }
-      }
-
-      // Try finding storage in type declarations
-      _logger.debug('Checking for StorageContainer type declarations');
-      for (final line in turtle.split('\n')) {
-        if (line.contains('a') && line.contains('solid:StorageContainer')) {
-          final uri = _extractUri(line);
-          if (uri != null) {
-            _logger.info('Found storage URL in type declaration: $uri');
-            return uri;
-          }
-        }
-      }
-
-      _logger.warning('No storage URL found in Turtle document');
-    } catch (e, stackTrace) {
-      _logger.error('Error parsing Turtle', e, stackTrace);
-    }
-    return null;
-  }
-
-  /// Extract prefix definitions from a Turtle document
-  static Map<String, String> _extractPrefixes(String turtle) {
-    final prefixes = Map<String, String>.from(_commonPrefixes);
-
-    // Look for @prefix declarations
-    final prefixRegex = RegExp(
-      r'@prefix\s+(\w+):\s*<([^>]+)>\s*\.',
-      multiLine: true,
-    );
-
-    for (final match in prefixRegex.allMatches(turtle)) {
-      if (match.groupCount == 2) {
-        prefixes[match.group(1)!] = match.group(2)!;
-      }
-    }
-
-    return prefixes;
-  }
-
-  /// Find storage URL using a specific pattern in Turtle syntax
-  static String? _findStorageWithPattern(
-    String turtle,
-    String subject,
-    String predicate,
-  ) {
-    // Pattern for quoted literals
-    final regexQuoted = RegExp(
-      '$subject\\s*$predicate\\s*"([^"]+)"\\s*\\.',
-      caseSensitive: false,
-    );
-
-    // Pattern for URI references
-    final regexAngled = RegExp(
-      '$subject\\s*$predicate\\s*<([^>]+)>\\s*\\.',
-      caseSensitive: false,
-    );
-
-    // Try quoted literal pattern
-    final matchQuoted = regexQuoted.firstMatch(turtle);
-    if (matchQuoted != null) {
-      return matchQuoted.group(1);
-    }
-
-    // Try URI reference pattern
-    final matchAngled = regexAngled.firstMatch(turtle);
-    if (matchAngled != null) {
-      return matchAngled.group(1);
-    }
-
-    return null;
-  }
-
-  /// Extract a URI from a line of Turtle
-  static String? _extractUri(String line) {
-    final uriRegex = RegExp(r'<([^>]+)>');
-    final match = uriRegex.firstMatch(line);
-    return match?.group(1);
   }
 
   /// Parse a JSON-LD format profile document
   static String? _parseJsonLd(String jsonLd) {
     try {
       _logger.debug('Starting JSON-LD parsing');
-      final data = json.decode(jsonLd) as Map<String, dynamic>;
+      final decoded = json.decode(jsonLd);
 
-      // Try different JSON-LD structures
-      if (data is Map<String, dynamic>) {
-        _logger.debug('Checking direct storage properties');
-        // Try direct storage property
-        for (final predicate in _storagePredicates) {
-          _logger.debug('Trying predicate: $predicate');
-          final storage = _findStorageInObject(data, predicate);
-          if (storage != null) {
-            _logger.info('Found storage URL with direct predicate: $storage');
-            return storage;
+      // Handle array at root level
+      if (decoded is List) {
+        _logger.debug('Found array at root level');
+        for (final item in decoded) {
+          if (item is Map<String, dynamic>) {
+            _logger.debug('Checking array item: ${item['@id']}');
+            final result = _parseJsonLdObject(item);
+            if (result != null) return result;
           }
         }
+      }
 
-        // Try @graph structure
-        if (data.containsKey('@graph')) {
-          _logger.debug('Checking @graph structure');
-          final graph = data['@graph'] as List<dynamic>;
-          if (graph is List<dynamic>) {
-            for (final node in graph) {
-              if (node is Map<String, dynamic>) {
-                _logger.debug('Checking node: ${node['@id']}');
-                // Try each predicate in the node
-                for (final predicate in _storagePredicates) {
-                  final storage = _findStorageInObject(node, predicate);
-                  if (storage != null) {
-                    _logger.info('Found storage URL in @graph node: $storage');
-                    return storage;
-                  }
-                }
-
-                // Try type-based detection
-                if (node['@type'] == 'solid:StorageContainer' ||
-                    node['@type'] == 'pim:Storage') {
-                  final id = node['@id'];
-                  if (id is String) {
-                    _logger.info('Found storage URL in type declaration: $id');
-                    return id;
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        _logger.debug('Checking compact IRIs');
-        // Try compact IRIs
-        for (final entry in data.entries) {
-          if (entry.key.startsWith('solid:') ||
-              entry.key.startsWith('space:') ||
-              entry.key.startsWith('pim:')) {
-            _logger.debug('Found compact IRI: ${entry.key}');
-            final value = entry.value;
-            if (value is String) {
-              _logger.info('Found storage URL in compact IRI: $value');
-              return value;
-            }
-            if (value is Map && value.containsKey('@id')) {
-              final id = value['@id'];
-              _logger.info('Found storage URL in compact IRI object: $id');
-              return id;
-            }
-          }
-        }
+      // Handle object at root level
+      if (decoded is Map<String, dynamic>) {
+        return _parseJsonLdObject(decoded);
       }
 
       _logger.warning('No storage URL found in JSON-LD document');
     } catch (e, stackTrace) {
       _logger.error('Error parsing JSON-LD', e, stackTrace);
+    }
+    return null;
+  }
+
+  /// Parse a JSON-LD object to find storage URL
+  static String? _parseJsonLdObject(Map<String, dynamic> obj) {
+    _logger.debug('Checking direct storage properties');
+    // Try direct storage property
+    final directResult = _findStorageInObjectWithPredicates(obj);
+    if (directResult != null) {
+      _logger.info('Found storage URL with direct predicate: $directResult');
+      return directResult;
+    }
+
+    // Try @graph structure
+    if (obj.containsKey('@graph')) {
+      _logger.debug('Checking @graph structure');
+      final graph = obj['@graph'] as List<dynamic>;
+      for (final node in graph) {
+        if (node is Map<String, dynamic>) {
+          _logger.debug('Checking node: ${node['@id']}');
+          final result = _findStorageInObjectWithPredicates(node);
+          if (result != null) {
+            _logger.info('Found storage URL in @graph node: $result');
+            return result;
+          }
+
+          // Try type-based detection
+          if (node['@type'] == 'solid:StorageContainer' ||
+              node['@type'] == 'pim:Storage') {
+            final id = node['@id'];
+            if (id is String) {
+              _logger.info('Found storage URL in type declaration: $id');
+              return id;
+            }
+          }
+        }
+      }
+    }
+
+    _logger.debug('Checking compact IRIs');
+    // Try compact IRIs
+    for (final entry in obj.entries) {
+      if (entry.key.startsWith('solid:') ||
+          entry.key.startsWith('space:') ||
+          entry.key.startsWith('pim:')) {
+        _logger.debug('Found compact IRI: ${entry.key}');
+        final value = entry.value;
+        if (value is String) {
+          _logger.info('Found storage URL in compact IRI: $value');
+          return value;
+        }
+        if (value is Map && value.containsKey('@id')) {
+          final id = value['@id'];
+          _logger.info('Found storage URL in compact IRI object: $id');
+          return id;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /// Find storage URL in a JSON-LD object using all storage predicates
+  static String? _findStorageInObjectWithPredicates(Map<String, dynamic> obj) {
+    for (final predicate in _storagePredicates) {
+      _logger.debug('Trying predicate: $predicate');
+      final storage = _findStorageInObject(obj, predicate);
+      if (storage != null) return storage;
     }
     return null;
   }
