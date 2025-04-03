@@ -3,6 +3,8 @@ import 'package:my_cross_platform_app/services/logger_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'dart:io';
+import 'dart:async';
+import 'package:logging/logging.dart';
 
 class MockPathProvider extends PathProviderPlatform {
   late Directory _tempDir;
@@ -273,6 +275,98 @@ void main() {
 
       // The logger should not crash and should handle the error
       expect(await logFile.exists(), isFalse);
+    });
+  });
+
+  group('ContextLogger', () {
+    late ContextLogger contextLogger;
+    late List<LogRecord> capturedLogs;
+    late StreamSubscription<LogRecord> logSubscription;
+
+    setUp(() {
+      contextLogger = logger.createLogger('TestContext');
+      capturedLogs = [];
+
+      // Capture logs instead of printing them
+      logSubscription = Logger.root.onRecord.listen((record) {
+        capturedLogs.add(record);
+      });
+    });
+
+    tearDown(() {
+      // Clean up the log listener
+      logSubscription.cancel();
+      capturedLogs.clear();
+    });
+
+    test('should prepend context to debug messages', () {
+      contextLogger.debug('Test message');
+      expect(capturedLogs.length, equals(1));
+      expect(capturedLogs[0].message, equals('[TestContext] Test message'));
+      expect(capturedLogs[0].level, equals(Level.FINE));
+    });
+
+    test('should prepend context to info messages', () {
+      contextLogger.info('Test message');
+      expect(capturedLogs.length, equals(1));
+      expect(capturedLogs[0].message, equals('[TestContext] Test message'));
+      expect(capturedLogs[0].level, equals(Level.INFO));
+    });
+
+    test('should prepend context to warning messages', () {
+      contextLogger.warning('Test message');
+      expect(capturedLogs.length, equals(1));
+      expect(capturedLogs[0].message, equals('[TestContext] Test message'));
+      expect(capturedLogs[0].level, equals(Level.WARNING));
+    });
+
+    test('should prepend context to error messages', () {
+      contextLogger.error('Test message');
+      expect(capturedLogs.length, equals(1));
+      expect(capturedLogs[0].message, equals('[TestContext] Test message'));
+      expect(capturedLogs[0].level, equals(Level.SEVERE));
+    });
+
+    test('should include error object in log record', () {
+      final error = Exception('Test error');
+      contextLogger.error('Test message', error);
+      expect(capturedLogs.length, equals(1));
+      expect(capturedLogs[0].error, equals(error));
+    });
+
+    test('should include stack trace in log record', () {
+      final stackTrace = StackTrace.current;
+      contextLogger.error('Test message', null, stackTrace);
+      expect(capturedLogs.length, equals(1));
+      expect(capturedLogs[0].stackTrace, equals(stackTrace));
+    });
+
+    test('should handle multiple contexts', () {
+      final logger1 = logger.createLogger('Context1');
+      final logger2 = logger.createLogger('Context2');
+
+      logger1.debug('Message 1');
+      logger2.debug('Message 2');
+
+      expect(capturedLogs.length, equals(2));
+      expect(capturedLogs[0].message, equals('[Context1] Message 1'));
+      expect(capturedLogs[1].message, equals('[Context2] Message 2'));
+    });
+
+    test('should handle empty messages', () {
+      contextLogger.debug('');
+      expect(capturedLogs.length, equals(1));
+      expect(capturedLogs[0].message, equals('[TestContext] '));
+    });
+
+    test('should handle special characters in context', () {
+      final specialLogger = logger.createLogger('Special-Context_123');
+      specialLogger.debug('Test message');
+      expect(capturedLogs.length, equals(1));
+      expect(
+        capturedLogs[0].message,
+        equals('[Special-Context_123] Test message'),
+      );
     });
   });
 }

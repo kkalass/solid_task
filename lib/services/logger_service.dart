@@ -5,6 +5,30 @@ import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:synchronized/synchronized.dart';
 
+/// A logger that adds context to log messages.
+class ContextLogger {
+  final String _context;
+  final LoggerService _logger;
+
+  ContextLogger(this._context, this._logger);
+
+  void debug(String message, [Object? error, StackTrace? stackTrace]) {
+    _logger.debug('[$_context] $message', error, stackTrace);
+  }
+
+  void info(String message, [Object? error, StackTrace? stackTrace]) {
+    _logger.info('[$_context] $message', error, stackTrace);
+  }
+
+  void warning(String message, [Object? error, StackTrace? stackTrace]) {
+    _logger.warning('[$_context] $message', error, stackTrace);
+  }
+
+  void error(String message, [Object? error, StackTrace? stackTrace]) {
+    _logger.error('[$_context] $message', error, stackTrace);
+  }
+}
+
 class LoggerService {
   static final LoggerService _instance = LoggerService._internal();
   static final _logger = Logger('MyAppLogger');
@@ -28,6 +52,12 @@ class LoggerService {
 
   factory LoggerService() {
     return _instance;
+  }
+
+  /// Creates a new logger with the given context.
+  /// The context will be prepended to all log messages.
+  ContextLogger createLogger(String context) {
+    return ContextLogger(context, this);
   }
 
   LoggerService._internal() {
