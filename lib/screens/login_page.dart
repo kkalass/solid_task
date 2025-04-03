@@ -4,6 +4,8 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import '../services/profile_parser.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -39,6 +41,30 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<String?> _getPodUrl(String webId) async {
+    try {
+      final response = await http.get(
+        Uri.parse(webId),
+        headers: {
+          'Accept': 'text/turtle, application/ld+json;q=0.9, */*;q=0.8',
+        },
+      );
+
+      if (response.statusCode != 200) {
+        print('Failed to fetch profile: ${response.statusCode}');
+        return null;
+      }
+
+      final contentType = response.headers['content-type'] ?? '';
+      final data = response.body;
+
+      return await ProfileParser.parseProfile(webId, data, contentType);
+    } catch (e) {
+      print('Error fetching pod URL: $e');
+      return null;
+    }
+  }
+
   Future<void> _login(String input) async {
     setState(() {
       _isLoading = true;
@@ -64,6 +90,8 @@ class _LoginPageState extends State<LoginPage> {
       var profilePage = await fetchProfileData(webId);
 
       print('Profile page: $profilePage');
+      var podUrl = await _getPodUrl(webId);
+      print('Pod URL: $podUrl');
       if (!mounted) return;
       Navigator.of(context).pop({
         'webId': webId,
