@@ -14,13 +14,14 @@ class ItemsScreen extends StatefulWidget {
   final String? accessToken;
   final Map<String, dynamic>? decodedToken;
   final Map<String, dynamic>? authData;
-
+  final String? podUrl;
   const ItemsScreen({
     super.key,
     this.webId,
     this.accessToken,
     this.decodedToken,
     this.authData,
+    this.podUrl,
   });
 
   @override
@@ -68,13 +69,14 @@ class _ItemsScreenState extends State<ItemsScreen> {
       MaterialPageRoute(builder: (context) => const LoginPage()),
     );
 
-    if (result != null) {
+    if (result != null && mounted) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder:
               (context) => ItemsScreen(
                 webId: result['webId'],
+                podUrl: result['podUrl'],
                 accessToken: result['accessToken'],
                 decodedToken: result['decodedToken'],
               ),

@@ -24,7 +24,7 @@ void main() {
     a solid:StorageContainer.
 ''';
 
-      final result = await ProfileParser.parseProfile(
+      final result = await ProfileParser.parseStorageUrl(
         webId,
         turtleProfile,
         'text/turtle',
@@ -68,8 +68,8 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
     foaf:name "Klas Kala\u00df".
 ''';
 
-      final result = await ProfileParser.parseProfile(
-        webId,
+      final result = await ProfileParser.parseStorageUrl(
+        'https://kkalass.datapod.igrant.io/profile/card#me',
         turtleProfile,
         'text/turtle',
       );
@@ -191,7 +191,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 ]
 ''';
 
-      final result = await ProfileParser.parseProfile(
+      final result = await ProfileParser.parseStorageUrl(
         webId,
         jsonLdProfile,
         'application/ld+json',
@@ -217,7 +217,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 }
 ''';
 
-      final result = await ProfileParser.parseProfile(
+      final result = await ProfileParser.parseStorageUrl(
         webId,
         jsonLdProfile,
         'application/ld+json',
@@ -244,7 +244,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 }
 ''';
 
-      final result = await ProfileParser.parseProfile(
+      final result = await ProfileParser.parseStorageUrl(
         webId,
         jsonLdGraphProfile,
         'application/ld+json',
@@ -266,7 +266,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 }
 ''';
 
-      final result = await ProfileParser.parseProfile(
+      final result = await ProfileParser.parseStorageUrl(
         webId,
         jsonLdCompactProfile,
         'application/ld+json',
@@ -275,7 +275,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
     });
 
     test('handles invalid JSON-LD gracefully', () async {
-      final result = await ProfileParser.parseProfile(
+      final result = await ProfileParser.parseStorageUrl(
         webId,
         'invalid json',
         'application/ld+json',
@@ -284,7 +284,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
     });
 
     test('handles invalid Turtle gracefully', () async {
-      final result = await ProfileParser.parseProfile(
+      final result = await ProfileParser.parseStorageUrl(
         webId,
         'invalid turtle',
         'text/turtle',
@@ -310,7 +310,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 }
 ''';
 
-      final result = await ProfileParser.parseProfile(
+      final result = await ProfileParser.parseStorageUrl(
         webId,
         jsonLdProfile,
         'application/octet-stream',

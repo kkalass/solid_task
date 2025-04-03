@@ -60,7 +60,7 @@ class _LoginPageState extends State<LoginPage> {
       final contentType = response.headers['content-type'] ?? '';
       final data = response.body;
 
-      return await ProfileParser.parseProfile(webId, data, contentType);
+      return await ProfileParser.parseStorageUrl(webId, data, contentType);
     } catch (e, stackTrace) {
       _logger.error('Error fetching pod URL', e, stackTrace);
       return null;
@@ -93,12 +93,12 @@ class _LoginPageState extends State<LoginPage> {
 
       _logger.info('Profile page: $profilePage');
       var podUrl = await _getPodUrl(webId);
-      _logger.info('Pod URL: $podUrl');
       if (!mounted) return;
       Navigator.of(context).pop({
         'webId': webId,
         'accessToken': accessToken,
         'decodedToken': decodedToken,
+        'podUrl': podUrl,
         authData: authData,
       });
     } catch (e, stackTrace) {

@@ -31,7 +31,7 @@ class ProfileParser {
   /// [webId] The WebID URL of the profile
   /// [content] The profile document content
   /// [contentType] The content type of the document
-  static Future<String?> parseProfile(
+  static Future<String?> parseStorageUrl(
     String webId,
     String content,
     String contentType,
@@ -40,13 +40,28 @@ class ProfileParser {
       _logger.info('Parsing profile with content type: $contentType');
 
       if (contentType.contains('text/turtle')) {
-        final storageUrls = TurtleParserFacade.findStorageUrls(content);
+        final storageUrls = TurtleParserFacade.findStorageUrls(
+          content,
+          documentUrl: webId,
+        );
         return storageUrls.isNotEmpty ? storageUrls.first : null;
       } else if (contentType.contains('application/ld+json')) {
         return _parseJsonLd(content);
       } else {
         _logger.info('Unknown content type: $contentType, trying both formats');
-        final turtleUrls = TurtleParserFacade.findStorageUrls(content);
+        List<String> turtleUrls = [];
+        try {
+          turtleUrls = TurtleParserFacade.findStorageUrls(
+            content,
+            documentUrl: webId,
+          );
+        } catch (e, stackTrace) {
+          _logger.debug(
+            'Failed to parse as Turtle, trying JSON-LD',
+            e,
+            stackTrace,
+          );
+        }
         if (turtleUrls.isNotEmpty) {
           _logger.info('Found storage URL in Turtle format');
           return turtleUrls.first;
