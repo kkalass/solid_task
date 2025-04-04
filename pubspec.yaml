@@ -1,5 +1,5 @@
-name: my_cross_platform_app
-description: "A new Flutter project."
+name: solid_task
+description: A cross-platform todo app with Solid pod integration.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

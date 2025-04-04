@@ -1,7 +1,7 @@
 // lib/services/profile_parser.dart
 
 import 'dart:convert';
-import 'package:my_cross_platform_app/services/logger_service.dart';
+import 'package:solid_task/services/logger_service.dart';
 import 'turtle_parser/turtle_parser.dart';
 
 /// Service for parsing Solid profile documents

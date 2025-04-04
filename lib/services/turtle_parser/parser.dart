@@ -1,4 +1,4 @@
-import 'package:my_cross_platform_app/services/logger_service.dart';
+import 'package:solid_task/services/logger_service.dart';
 import 'tokenizer.dart';
 
 /// Represents an RDF triple in Turtle syntax.
@@ -422,7 +422,7 @@ class TurtleParser {
     if (_baseUri != null && !expanded.startsWith('http')) {
       if (expanded.startsWith('/')) {
         // Path-absolute IRI
-        final baseUri = Uri.parse(_baseUri!);
+        final baseUri = Uri.parse(_baseUri);
         final resolved =
             Uri(
               scheme: baseUri.scheme,
@@ -433,7 +433,7 @@ class TurtleParser {
         return resolved;
       } else {
         // Relative IRI
-        final resolved = Uri.parse(_baseUri!).resolve(expanded).toString();
+        final resolved = Uri.parse(_baseUri).resolve(expanded).toString();
         _logger.debug('Resolved relative IRI: $expanded -> $resolved');
         return resolved;
       }

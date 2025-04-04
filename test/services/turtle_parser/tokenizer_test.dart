@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:my_cross_platform_app/services/turtle_parser/tokenizer.dart';
+import 'package:solid_task/services/turtle_parser/tokenizer.dart';
 
 void main() {
   group('TurtleTokenizer', () {

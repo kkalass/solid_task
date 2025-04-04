@@ -1,4 +1,4 @@
-import 'package:my_cross_platform_app/services/logger_service.dart';
+import 'package:solid_task/services/logger_service.dart';
 
 /// Token types in Turtle syntax.
 ///

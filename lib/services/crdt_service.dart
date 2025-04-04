@@ -5,7 +5,7 @@ import '../models/item.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:solid_auth/solid_auth.dart';
 import 'package:fast_rsa/fast_rsa.dart';
-import 'package:my_cross_platform_app/services/logger_service.dart';
+import 'package:solid_task/services/logger_service.dart';
 
 class CrdtService {
   final Box<Item> _box;

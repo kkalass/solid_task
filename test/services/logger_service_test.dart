@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_cross_platform_app/services/logger_service.dart';
+import 'package:solid_task/services/logger_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'dart:io';
@@ -221,7 +221,7 @@ void main() {
     test('should maintain max number of rotated files', () async {
       // Fill the log file multiple times to trigger multiple rotations
       final largeMessage = 'x' * 5000; // Large message to trigger rotation
-      for (var i = 0; i < 7; i++) {
+      for (var i = 0; i < 10; i++) {
         logger.info(largeMessage);
         await Future.delayed(const Duration(milliseconds: 100));
       }
@@ -248,14 +248,11 @@ void main() {
     });
 
     test('should retrieve all rotated log contents', () async {
-      var allContentsOrig = await logger.getAllLogContents();
       // Create multiple log files
       final largeMessage = 'x' * 5000; // Large message to trigger rotation
       for (var i = 0; i < 3; i++) {
         logger.info('Message $i');
-        allContentsOrig = await logger.getAllLogContents();
         logger.info(largeMessage);
-        allContentsOrig = await logger.getAllLogContents();
         await Future.delayed(const Duration(milliseconds: 100));
       }
 

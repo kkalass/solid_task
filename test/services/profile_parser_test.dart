@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_cross_platform_app/services/profile_parser.dart';
+import 'package:solid_task/services/profile_parser.dart';
 
 void main() {
   group('ProfileParser', () {

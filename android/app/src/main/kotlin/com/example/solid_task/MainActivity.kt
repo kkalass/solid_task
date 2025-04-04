@@ -1,4 +1,4 @@
-package com.example.my_cross_platform_app
+package com.example.solid_task
 
 import io.flutter.embedding.android.FlutterActivity
 
