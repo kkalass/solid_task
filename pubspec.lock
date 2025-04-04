@@ -215,7 +215,7 @@ packages:
     source: hosted
     version: "1.3.2"
   fast_rsa:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: fast_rsa
       sha256: "205a36c0412b9fabebf3e18ccb5221d819cc28cfb3da988c0bf7b646368d0270"

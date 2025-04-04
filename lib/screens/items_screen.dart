@@ -6,8 +6,9 @@ import '../services/crdt_service.dart';
 import '../screens/login_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
-import 'package:solid_auth/solid_auth.dart';
 import '../services/logger_service.dart';
+import 'package:http/http.dart' as http;
+import '../models/login_result.dart';
 
 class ItemsScreen extends StatefulWidget {
   final String? webId;
@@ -15,14 +16,22 @@ class ItemsScreen extends StatefulWidget {
   final Map<String, dynamic>? decodedToken;
   final Map<String, dynamic>? authData;
   final String? podUrl;
-  const ItemsScreen({
+
+  const ItemsScreen.authenticated({
     super.key,
-    this.webId,
-    this.accessToken,
-    this.decodedToken,
-    this.authData,
-    this.podUrl,
+    required this.webId,
+    required this.accessToken,
+    required this.decodedToken,
+    required this.authData,
+    required this.podUrl,
   });
+
+  const ItemsScreen.unauthenticated({super.key})
+    : webId = null,
+      accessToken = null,
+      decodedToken = null,
+      authData = null,
+      podUrl = null;
 
   @override
   State<ItemsScreen> createState() => _ItemsScreenState();
@@ -46,11 +55,23 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
   void _initializeCrdtService() {
     final box = Hive.box<Item>('items');
-    _crdtService = CrdtService(
+    if (widget.webId == null ||
+        widget.podUrl == null ||
+        widget.accessToken == null) {
+      _crdtService = CrdtService.unconnected(box: box);
+      return;
+    }
+    var rsaInfo = widget.authData!['rsaInfo'];
+    var rsaKeyPair = rsaInfo['rsa']!;
+    var publicKeyJwk = rsaInfo['pubKeyJwk']!;
+    _crdtService = CrdtService.connected(
       box: box,
-      webId: widget.webId ?? 'local',
-      podUrl: widget.decodedToken?['iss'],
-      accessToken: widget.accessToken,
+      webId: widget.webId!,
+      podUrl: widget.podUrl!,
+      accessToken: widget.accessToken!,
+      client: http.Client(),
+      rsaKeyPair: rsaKeyPair,
+      publicKeyJwk: publicKeyJwk,
     );
   }
 
@@ -58,27 +79,29 @@ class _ItemsScreenState extends State<ItemsScreen> {
     setState(() => _isSyncing = true);
     try {
       await _crdtService.syncFromPod();
+      await _crdtService.syncToPod();
     } finally {
       setState(() => _isSyncing = false);
     }
   }
 
   void _navigateToLogin() async {
-    final result = await Navigator.push(
+    final result = await Navigator.push<LoginResult>(
       context,
       MaterialPageRoute(builder: (context) => const LoginPage()),
     );
 
-    if (result != null && mounted) {
+    if (result != null && result.isSuccess && mounted) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder:
-              (context) => ItemsScreen(
-                webId: result['webId'],
-                podUrl: result['podUrl'],
-                accessToken: result['accessToken'],
-                decodedToken: result['decodedToken'],
+              (context) => ItemsScreen.authenticated(
+                webId: result.webId!,
+                podUrl: result.podUrl!,
+                accessToken: result.accessToken!,
+                decodedToken: result.decodedToken!,
+                authData: result.authData!,
               ),
         ),
       );
@@ -92,7 +115,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ItemsScreen()),
+          MaterialPageRoute(
+            builder: (context) => const ItemsScreen.unauthenticated(),
+          ),
         );
       }
     } catch (e, stackTrace) {

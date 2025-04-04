@@ -3,7 +3,7 @@ import 'parser.dart';
 
 /// Represents an RDF graph with prefix handling
 class RdfGraph {
-  static final _logger = LoggerService();
+  static final _logger = LoggerService().createLogger("RdfGraph");
   final Map<String, String> _prefixes = {};
   final List<Triple> _triples = [];
 

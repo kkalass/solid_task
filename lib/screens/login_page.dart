@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import '../services/profile_parser.dart';
 import '../services/logger_service.dart';
+import '../models/login_result.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -67,7 +68,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _login(String input) async {
+  Future<LoginResult> _performLogin(String input) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -81,26 +82,29 @@ class _LoginPageState extends State<LoginPage> {
         'offline_access',
       ];
 
-      if (!mounted) return;
+      if (!mounted) return LoginResult.error('Login cancelled');
 
       var authData = await authenticate(Uri.parse(issuerUri), scopes, context);
       String accessToken = authData['accessToken'];
       Map<String, dynamic> decodedToken = JwtDecoder.decode(accessToken);
-      String webId = decodedToken['webid'];
+      String webId =
+          decodedToken.containsKey('webid')
+              ? decodedToken['webid']
+              : decodedToken['sub'];
       _logger.info('Auth data: $authData');
       _logger.info('Decoded token: $decodedToken');
       var profilePage = await fetchProfileData(webId);
 
       _logger.info('Profile page: $profilePage');
       var podUrl = await _getPodUrl(webId);
-      if (!mounted) return;
-      Navigator.of(context).pop({
-        'webId': webId,
-        'accessToken': accessToken,
-        'decodedToken': decodedToken,
-        'podUrl': podUrl,
-        authData: authData,
-      });
+      if (!mounted) return LoginResult.error('Login cancelled');
+      return LoginResult(
+        webId: webId,
+        podUrl: podUrl,
+        accessToken: accessToken,
+        decodedToken: decodedToken,
+        authData: Map<String, dynamic>.from(authData),
+      );
     } catch (e, stackTrace) {
       _logger.error('Login error', e, stackTrace);
       setState(() {
@@ -108,9 +112,23 @@ class _LoginPageState extends State<LoginPage> {
           context,
         )!.errorConnectingSolid(e.toString());
       });
+      return LoginResult.error(e.toString());
     } finally {
       setState(() {
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _login(String input) async {
+    final result = await _performLogin(input);
+    if (!mounted) return;
+
+    if (result.isSuccess) {
+      Navigator.of(context).pop(result);
+    } else {
+      setState(() {
+        _errorMessage = result.error;
       });
     }
   }
@@ -190,14 +208,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 16),
         FilledButton(
-          onPressed:
-              _isLoading
-                  ? null
-                  : () {
-                    if (_urlController.text.isNotEmpty) {
-                      _login(_urlController.text);
-                    }
-                  },
+          onPressed: _isLoading ? null : () => _login(_urlController.text),
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),

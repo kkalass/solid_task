@@ -56,7 +56,7 @@ class MyApp extends StatelessWidget {
         Locale('de'), // German
         // Add more locales here
       ],
-      home: const ItemsScreen(),
+      home: const ItemsScreen.unauthenticated(),
     );
   }
 }
