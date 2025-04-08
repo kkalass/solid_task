@@ -115,5 +115,9 @@
   "errorDisconnecting": "Error disconnecting from Solid Pod",
   "@errorDisconnecting": {
     "description": "Error message shown when disconnecting fails"
+  },
+  "syncError": "Sync error, tap to retry",
+  "@syncError": {
+    "description": "Error message shown when synchronization fails"
   }
 }

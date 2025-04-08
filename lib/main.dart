@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:path_provider/path_provider.dart' as path_provider;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
-import 'models/item.dart';
+import 'core/service_locator.dart';
 import 'screens/items_screen.dart';
 import 'services/logger_service.dart';
 
@@ -13,24 +9,19 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize logger
-  await LoggerService().init();
+  final logger = LoggerService();
+  await logger.init();
 
-  // Initialize Hive
-  if (kIsWeb) {
-    await Hive.initFlutter();
-  } else {
-    final appDocumentDir =
-        await path_provider.getApplicationDocumentsDirectory();
-    await Hive.initFlutter(appDocumentDir.path);
+  try {
+    // Initialize service locator
+    await initServiceLocator();
+
+    // Run the app
+    runApp(const MyApp());
+  } catch (e, stackTrace) {
+    logger.error('Failed to start application', e, stackTrace);
+    runApp(ErrorApp(error: e.toString()));
   }
-
-  // Register Hive adapters
-  Hive.registerAdapter(ItemAdapter());
-
-  // Open Hive box
-  await Hive.openBox<Item>('items');
-
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -39,7 +30,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Todo List',
+      title: 'SolidTask',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
@@ -53,9 +44,64 @@ class MyApp extends StatelessWidget {
       supportedLocales: const [
         Locale('en'), // English
         Locale('de'), // German
-        // Add more locales here
       ],
-      home: const ItemsScreen.unauthenticated(),
+      home: const ItemsScreen(),
+    );
+  }
+}
+
+class ErrorApp extends StatelessWidget {
+  final String error;
+
+  const ErrorApp({super.key, required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Error',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.red,
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+      ),
+      home: Scaffold(
+        appBar: AppBar(
+          title: const Text('Application Error'),
+          backgroundColor: Colors.red,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                const SizedBox(height: 24),
+                const Text(
+                  'Failed to initialize the application',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  error,
+                  style: const TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    main();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

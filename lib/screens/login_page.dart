@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:solid_auth/solid_auth.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:http/http.dart' as http;
-import '../services/profile_parser.dart';
-import '../services/logger_service.dart';
-import '../models/login_result.dart';
+import '../core/service_locator.dart';
+import '../services/auth/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,7 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   String? _errorMessage;
   List<Map<String, dynamic>>? _providers;
-  final _logger = LoggerService();
+  final _authService = sl<AuthService>();
 
   @override
   void initState() {
@@ -32,104 +27,49 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _loadProviders() async {
     try {
-      final String jsonString = await DefaultAssetBundle.of(
-        context,
-      ).loadString('assets/solid_providers.json');
-      final data = json.decode(jsonString);
+      final providers = await _authService.loadProviders();
       setState(() {
-        _providers = List<Map<String, dynamic>>.from(data['providers']);
+        _providers = providers;
       });
-    } catch (e, stackTrace) {
-      _logger.error('Error loading providers', e, stackTrace);
+    } catch (e) {
+      // Error is already logged in the auth service
     }
   }
 
-  Future<String?> _getPodUrl(String webId) async {
-    try {
-      final response = await http.get(
-        Uri.parse(webId),
-        headers: {
-          'Accept': 'text/turtle, application/ld+json;q=0.9, */*;q=0.8',
-        },
-      );
-
-      if (response.statusCode != 200) {
-        _logger.warning('Failed to fetch profile: ${response.statusCode}');
-        return null;
-      }
-
-      final contentType = response.headers['content-type'] ?? '';
-      final data = response.body;
-
-      return await ProfileParser.parseStorageUrl(webId, data, contentType);
-    } catch (e, stackTrace) {
-      _logger.error('Error fetching pod URL', e, stackTrace);
-      return null;
-    }
-  }
-
-  Future<LoginResult> _performLogin(String input) async {
+  Future<void> _login(String input) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      String issuerUri = await getIssuer(input.trim());
-      final List<String> scopes = <String>[
-        'openid',
-        'profile',
-        'offline_access',
-      ];
-
-      if (!mounted) return LoginResult.error('Login cancelled');
-
-      var authData = await authenticate(Uri.parse(issuerUri), scopes, context);
-      String accessToken = authData['accessToken'];
-      Map<String, dynamic> decodedToken = JwtDecoder.decode(accessToken);
-      String webId =
-          decodedToken.containsKey('webid')
-              ? decodedToken['webid']
-              : decodedToken['sub'];
-      _logger.info('Auth data: $authData');
-      _logger.info('Decoded token: $decodedToken');
-      var profilePage = await fetchProfileData(webId);
-
-      _logger.info('Profile page: $profilePage');
-      var podUrl = await _getPodUrl(webId);
-      if (!mounted) return LoginResult.error('Login cancelled');
-      return LoginResult(
-        webId: webId,
-        podUrl: podUrl,
-        accessToken: accessToken,
-        decodedToken: decodedToken,
-        authData: Map<String, dynamic>.from(authData),
-      );
-    } catch (e, stackTrace) {
-      _logger.error('Login error', e, stackTrace);
+      String issuerUri = await _authService.getIssuer(input.trim());
+      
+      if (!mounted) return;
+      
+      final result = await _authService.authenticate(issuerUri, context);
+      
+      if (!mounted) return;
+      
+      if (result.isSuccess) {
+        Navigator.of(context).pop(result);
+      } else {
+        setState(() {
+          _errorMessage = AppLocalizations.of(context)!.errorConnectingSolid(result.error!);
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
       setState(() {
-        _errorMessage = AppLocalizations.of(
-          context,
-        )!.errorConnectingSolid(e.toString());
+        _errorMessage = AppLocalizations.of(context)!.errorConnectingSolid(e.toString());
       });
-      return LoginResult.error(e.toString());
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _login(String input) async {
-    final result = await _performLogin(input);
-    if (!mounted) return;
-
-    if (result.isSuccess) {
-      Navigator.of(context).pop(result);
-    } else {
-      setState(() {
-        _errorMessage = result.error;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -148,9 +88,7 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 16),
         Text(
           l10n.syncAcrossDevices,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 32),
@@ -174,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                     horizontal: 24,
                     vertical: 12,
                   ),
-                  backgroundColor: colorScheme.surfaceVariant,
+                  backgroundColor: colorScheme.surfaceContainerHighest,
                 ),
                 child: Text(provider['name']),
               ),
@@ -189,9 +127,7 @@ class _LoginPageState extends State<LoginPage> {
         // Manual WebID input
         Text(
           l10n.orEnterManually,
-          style: Theme.of(
-            context,
-          ).textTheme.labelLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -205,6 +141,7 @@ class _LoginPageState extends State<LoginPage> {
           enabled: !_isLoading,
           keyboardType: TextInputType.url,
           textInputAction: TextInputAction.go,
+          onFieldSubmitted: (value) => _login(value),
         ),
         const SizedBox(height: 16),
         FilledButton(
@@ -212,17 +149,16 @@ class _LoginPageState extends State<LoginPage> {
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
-          child:
-              _isLoading
-                  ? const SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                  : Text(l10n.connect),
+          child: _isLoading
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text(l10n.connect),
         ),
 
         // "Get a Pod" section

@@ -1,37 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:solid_auth/solid_auth.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import '../models/item.dart';
-import '../services/crdt_service.dart';
-import '../screens/login_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
-import '../services/logger_service.dart';
-import 'package:http/http.dart' as http;
-import '../models/login_result.dart';
+import '../core/service_locator.dart';
+import '../models/item.dart';
+import '../screens/login_page.dart';
+import '../services/auth/auth_service.dart';
+import '../services/repository/item_repository.dart';
+import '../services/sync/sync_service.dart';
 
 class ItemsScreen extends StatefulWidget {
-  final String? webId;
-  final String? accessToken;
-  final Map<String, dynamic>? decodedToken;
-  final Map<String, dynamic>? authData;
-  final String? podUrl;
-
-  const ItemsScreen.authenticated({
-    super.key,
-    required this.webId,
-    required this.accessToken,
-    required this.decodedToken,
-    required this.authData,
-    required this.podUrl,
-  });
-
-  const ItemsScreen.unauthenticated({super.key})
-    : webId = null,
-      accessToken = null,
-      decodedToken = null,
-      authData = null,
-      podUrl = null;
+  const ItemsScreen({super.key});
 
   @override
   State<ItemsScreen> createState() => _ItemsScreenState();
@@ -39,89 +17,73 @@ class ItemsScreen extends StatefulWidget {
 
 class _ItemsScreenState extends State<ItemsScreen> {
   final _textController = TextEditingController();
-  late CrdtService _crdtService;
+  final _authService = sl<AuthService>();
+  final _repository = sl<ItemRepository>();
+  final _syncService = sl<SyncService>();
   bool _isSyncing = false;
-  bool get _isConnectedToSolid => widget.webId != null;
-  final _logger = LoggerService();
+  String? _syncError;
+
+  bool get _isConnectedToSolid => _authService.isAuthenticated;
 
   @override
   void initState() {
     super.initState();
-    _initializeCrdtService();
     if (_isConnectedToSolid) {
-      _syncFromPod();
+      _startSync();
     }
   }
 
-  void _initializeCrdtService() {
-    final box = Hive.box<Item>('items');
-    if (widget.webId == null ||
-        widget.podUrl == null ||
-        widget.accessToken == null) {
-      _crdtService = CrdtService.unconnected(box: box);
-      return;
-    }
-    var rsaInfo = widget.authData!['rsaInfo'];
-    var rsaKeyPair = rsaInfo['rsa']!;
-    var publicKeyJwk = rsaInfo['pubKeyJwk']!;
-    _crdtService = CrdtService.connected(
-      box: box,
-      webId: widget.webId!,
-      podUrl: widget.podUrl!,
-      accessToken: widget.accessToken!,
-      client: http.Client(),
-      rsaKeyPair: rsaKeyPair,
-      publicKeyJwk: publicKeyJwk,
-    );
-  }
+  Future<void> _startSync() async {
+    if (!_isConnectedToSolid) return;
 
-  Future<void> _syncFromPod() async {
-    setState(() => _isSyncing = true);
+    setState(() {
+      _isSyncing = true;
+      _syncError = null;
+    });
+
     try {
-      await _crdtService.syncFromPod();
-      await _crdtService.syncToPod();
+      // Perform initial sync and then start periodic sync
+      final result = await _syncService.fullSync();
+      if (!result.success && mounted) {
+        setState(() {
+          _syncError = result.error;
+        });
+      } else {
+        // Start periodic sync every 30 seconds
+        _syncService.startPeriodicSync(const Duration(seconds: 30));
+      }
     } finally {
-      setState(() => _isSyncing = false);
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
     }
   }
 
   void _navigateToLogin() async {
-    final result = await Navigator.push<LoginResult>(
+    final result = await Navigator.push<AuthResult>(
       context,
       MaterialPageRoute(builder: (context) => const LoginPage()),
     );
 
     if (result != null && result.isSuccess && mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => ItemsScreen.authenticated(
-                webId: result.webId!,
-                podUrl: result.podUrl!,
-                accessToken: result.accessToken!,
-                decodedToken: result.decodedToken!,
-                authData: result.authData!,
-              ),
-        ),
-      );
+      // Auth service already has the credentials after successful login
+      // Start syncing
+      _startSync();
+      setState(() {}); // Refresh UI
     }
   }
 
   Future<void> _disconnectFromPod() async {
+    _syncService.stopPeriodicSync();
+
     try {
-      await logout(widget.authData!['logoutUrl']);
-      // Reset the screen without Solid credentials
+      await _authService.logout();
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const ItemsScreen.unauthenticated(),
-          ),
-        );
+        setState(() {}); // Refresh UI to show disconnected state
       }
-    } catch (e, stackTrace) {
-      _logger.error('Error disconnecting from pod', e, stackTrace);
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -129,6 +91,27 @@ class _ItemsScreenState extends State<ItemsScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _addItem(String text) async {
+    if (text.isEmpty) return;
+
+    await _repository.createItem(text, _authService.currentWebId ?? 'local');
+    _textController.clear();
+
+    // If connected to a pod, sync the changes
+    if (_isConnectedToSolid) {
+      _syncService.syncToRemote();
+    }
+  }
+
+  Future<void> _deleteItem(String id) async {
+    await _repository.deleteItem(id, _authService.currentWebId ?? 'local');
+
+    // If connected to a pod, sync the changes
+    if (_isConnectedToSolid) {
+      _syncService.syncToRemote();
     }
   }
 
@@ -146,6 +129,12 @@ class _ItemsScreenState extends State<ItemsScreen> {
         ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          if (_syncError != null)
+            IconButton(
+              icon: Icon(Icons.error_outline, color: colorScheme.error),
+              onPressed: _startSync,
+              tooltip: l10n.syncError,
+            ),
           IconButton(
             icon:
                 _isConnectedToSolid
@@ -155,7 +144,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                        : const Icon(Icons.cloud_off))
+                        : const Icon(Icons.cloud_done))
                     : const Icon(Icons.cloud_upload),
             onPressed:
                 _isSyncing
@@ -195,23 +184,29 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   borderSide: BorderSide(color: colorScheme.primary, width: 2),
                 ),
               ),
-              onSubmitted: (value) async {
-                if (value.isNotEmpty) {
-                  await _crdtService.addItem(value);
-                  _textController.clear();
-                }
-              },
+              onSubmitted: _addItem,
             ),
           ),
 
           // Tasks list
           Expanded(
-            child: ValueListenableBuilder(
-              valueListenable: Hive.box<Item>('items').listenable(),
-              builder: (context, box, _) {
-                final items =
-                    box.values.where((item) => !item.isDeleted).toList()
-                      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            child: StreamBuilder<List<Item>>(
+              stream: _repository.watchActiveItems(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: TextStyle(color: colorScheme.error),
+                    ),
+                  );
+                }
+
+                final items = snapshot.data ?? [];
 
                 if (items.isEmpty) {
                   return Center(
@@ -258,7 +253,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                             color: colorScheme.error,
                           ),
                         ),
-                        onDismissed: (_) => _crdtService.deleteItem(item.id),
+                        onDismissed: (_) => _deleteItem(item.id),
                         child: Card(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -323,7 +318,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
   @override
   void dispose() {
     _textController.dispose();
-    _crdtService.dispose();
+    _syncService.stopPeriodicSync();
     super.dispose();
   }
 }

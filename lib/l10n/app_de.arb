@@ -21,5 +21,6 @@
   "chooseProvider": "Wähle deinen Solid Pod-Anbieter",
   "orEnterManually": "Oder gib deine WebID manuell ein",
   "disconnectFromPod": "Solid Pod trennen",
-  "errorDisconnecting": "Fehler beim Trennen vom Solid Pod"
+  "errorDisconnecting": "Fehler beim Trennen vom Solid Pod",
+  "syncError": "Synchronisationsfehler, zum Wiederholen tippen"
 }
