@@ -28,6 +28,12 @@ class AuthResult {
       authData = null;
 }
 
+// FIXME KK - is it really good practice to make the current auth states available
+// like this in the AuthService? Something feels odd about this API - maybe
+// it is, because it is so coupled to SOLID concepts, but the implementation
+// is called SOLID while the interface is called AuthService. This is a bit confusing.
+//
+
 /// Authentication service interface for SOLID authentication
 abstract class AuthService {
   /// Check if user is authenticated
@@ -57,6 +63,7 @@ abstract class AuthService {
   /// Authenticate with a SOLID provider
   Future<AuthResult> authenticate(String issuerUri, BuildContext context);
 
+  // FIXME KK - when is this used/needed?
   /// Fetch profile data from WebID
   Future<String?> fetchProfileData(String webId);
 

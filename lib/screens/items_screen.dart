@@ -33,6 +33,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
     }
   }
 
+  // FIXME KK - is it really best practice to implement the sync logic in the UI?
   Future<void> _startSync() async {
     if (!_isConnectedToSolid) return;
 
@@ -97,6 +98,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
   Future<void> _addItem(String text) async {
     if (text.isEmpty) return;
 
+    // FIXME KK - the fallback to local seems strange
     await _repository.createItem(text, _authService.currentWebId ?? 'local');
     _textController.clear();
 
@@ -291,6 +293,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
     );
   }
 
+  // FIXME KK - Shouldn't this method be somewhere else for proper reuse?
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);

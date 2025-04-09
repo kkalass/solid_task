@@ -21,6 +21,7 @@ class LoginResult {
 
   bool get isSuccess => error == null;
 
+  // FIXME KK - what is this good for? Is this some sort of toJson()?
   Map<String, dynamic> toMap() {
     return {
       'webId': webId,

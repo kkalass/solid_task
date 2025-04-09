@@ -44,25 +44,29 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       String issuerUri = await _authService.getIssuer(input.trim());
-      
+
       if (!mounted) return;
-      
+
       final result = await _authService.authenticate(issuerUri, context);
-      
+
       if (!mounted) return;
-      
+
       if (result.isSuccess) {
         Navigator.of(context).pop(result);
       } else {
         setState(() {
-          _errorMessage = AppLocalizations.of(context)!.errorConnectingSolid(result.error!);
+          _errorMessage = AppLocalizations.of(
+            context,
+          )!.errorConnectingSolid(result.error!);
         });
       }
     } catch (e) {
       if (!mounted) return;
-      
+
       setState(() {
-        _errorMessage = AppLocalizations.of(context)!.errorConnectingSolid(e.toString());
+        _errorMessage = AppLocalizations.of(
+          context,
+        )!.errorConnectingSolid(e.toString());
       });
     } finally {
       if (mounted) {
@@ -88,7 +92,9 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 16),
         Text(
           l10n.syncAcrossDevices,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 32),
@@ -127,7 +133,9 @@ class _LoginPageState extends State<LoginPage> {
         // Manual WebID input
         Text(
           l10n.orEnterManually,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+          style: Theme.of(
+            context,
+          ).textTheme.labelLarge?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -149,16 +157,17 @@ class _LoginPageState extends State<LoginPage> {
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
-          child: _isLoading
-              ? const SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Text(l10n.connect),
+          child:
+              _isLoading
+                  ? const SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                  : Text(l10n.connect),
         ),
 
         // "Get a Pod" section
@@ -170,6 +179,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         TextButton(
           onPressed: () {
+            // FIXME KK refactor - URL should not be hardcoded here
             launchUrl(Uri.parse('https://solidproject.org/users/get-a-pod'));
           },
           child: Text(l10n.getPod),

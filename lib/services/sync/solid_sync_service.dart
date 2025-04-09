@@ -37,6 +37,7 @@ class SolidSyncService implements SyncService {
   @override
   String? get userIdentifier => _authService.currentWebId;
 
+  // FIXME KK - is it a good idea to store everything in a single file? Or should we rather store one item per file?
   String? get _dataUrl {
     final podUrl = _authService.podUrl;
     if (podUrl == null) return null;
@@ -57,6 +58,7 @@ class SolidSyncService implements SyncService {
     try {
       _logger.debug('Syncing to pod at $dataUrl');
 
+      // FIXME KK - this does a full sync of all items everytime - is this smart?
       // Get all items as JSON
       final items = _repository.exportItems();
       final jsonData = jsonEncode(items);

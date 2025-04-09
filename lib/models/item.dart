@@ -65,6 +65,8 @@ class Item extends HiveObject {
     }
   }
 
+  // FIXME KK - is this really correct CRDT implementation? I would
+  // have expected to store the list of commands, and replay them if needed
   Map<String, dynamic> toJson() {
     return {
       'id': id,
