@@ -6,10 +6,10 @@ import 'package:solid_task/services/auth/auth_service.dart';
 import 'package:solid_task/services/auth/jwt_decoder_wrapper.dart';
 import 'package:solid_task/services/auth/solid_auth_wrapper.dart';
 import 'package:solid_task/services/logger_service.dart';
-import 'package:solid_task/services/profile_parser.dart';
+import 'package:solid_task/services/solid/solid_profile_parser.dart';
 
 import 'package:solid_task/services/auth/provider_service.dart';
-import 'package:solid_task/services/turtle_parser/turtle_parser.dart';
+import 'package:solid_task/services/rdf/rdf_parser.dart';
 
 /// Implementation of the AuthService for SOLID authentication
 class SolidAuthService implements AuthService {
@@ -19,7 +19,7 @@ class SolidAuthService implements AuthService {
   final JwtDecoderWrapper _jwtDecoder;
   final SolidAuth _solidAuth;
   final ProviderService _providerService;
-  final ProfileParserService _profileParser;
+  final SolidProfileParser _profileParser;
 
   // Auth state
   String? _currentWebId;
@@ -45,7 +45,7 @@ class SolidAuthService implements AuthService {
     FlutterSecureStorage? secureStorage,
     JwtDecoderWrapper? jwtDecoder,
     SolidAuth? solidAuth,
-    ProfileParserService? profileParser,
+    SolidProfileParser? profileParser,
   }) : _logger = (loggerService ?? LoggerService()).createLogger(
          'SolidAuthService',
        ),
@@ -56,9 +56,9 @@ class SolidAuthService implements AuthService {
        _solidAuth = solidAuth ?? SolidAuth(),
        _profileParser =
            profileParser ??
-           DefaultProfileParser(
+           DefaultSolidProfileParser(
              loggerService: loggerService,
-             turtleParser: DefaultTurtleParser(loggerService: loggerService),
+             rdfParser: DefaultRdfParser(loggerService: loggerService),
            ),
        _providerService = providerService {
     // Create the initialization future but don't await it
@@ -82,7 +82,7 @@ class SolidAuthService implements AuthService {
     FlutterSecureStorage? secureStorage,
     JwtDecoderWrapper? jwtDecoder,
     SolidAuth? solidAuth,
-    ProfileParserService? profileParser,
+    SolidProfileParser? profileParser,
   }) async {
     final service = SolidAuthService._(
       loggerService: loggerService,

@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:solid_task/services/turtle_parser/parser.dart';
+import 'package:solid_task/services/rdf/turtle/turtle_parser.dart';
 
 void main() {
   group('TurtleParser', () {

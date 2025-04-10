@@ -1,6 +1,5 @@
+import 'package:solid_task/services/rdf/rdf_graph.dart';
 import 'package:test/test.dart';
-import 'package:solid_task/services/turtle_parser/graph.dart';
-import 'package:solid_task/services/turtle_parser/parser.dart';
 
 void main() {
   group('RdfGraph', () {

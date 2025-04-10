@@ -2,10 +2,10 @@
 
 import 'dart:convert';
 import 'package:solid_task/services/logger_service.dart';
-import 'turtle_parser/turtle_parser.dart';
+import '../rdf/rdf_parser.dart';
 
 /// Interface for profile parsing operations
-abstract class ProfileParserService {
+abstract class SolidProfileParser {
   /// Parse a profile document to extract the pod storage URL
   ///
   /// [webId] The WebID URL of the profile
@@ -19,9 +19,9 @@ abstract class ProfileParserService {
 }
 
 /// Implementation for parsing Solid profile documents
-class DefaultProfileParser implements ProfileParserService {
+class DefaultSolidProfileParser implements SolidProfileParser {
   final ContextLogger _logger;
-  final TurtleParserFacade _turtleParser;
+  final RdfParser _rdfParser;
 
   /// Common predicates used to identify storage locations in Solid profiles
   static const _storagePredicates = [
@@ -42,14 +42,46 @@ class DefaultProfileParser implements ProfileParserService {
   };
 
   /// Creates a new ProfileParser with the required dependencies
-  DefaultProfileParser({
+  DefaultSolidProfileParser({
     LoggerService? loggerService,
-    TurtleParserFacade? turtleParser,
+    RdfParser? rdfParser,
   }) : _logger = (loggerService ?? LoggerService()).createLogger(
          'DefaultProfileParser',
        ),
-       _turtleParser =
-           turtleParser ?? DefaultTurtleParser(loggerService: loggerService);
+       _rdfParser = rdfParser ?? DefaultRdfParser(loggerService: loggerService);
+
+  List<String> _findStorageUrls(String content, {String? documentUrl}) {
+    try {
+      final graph = _rdfParser.parse(content, documentUrl: documentUrl);
+      final storageTriples = graph.findTriples(
+        predicate: 'http://www.w3.org/ns/solid/terms#storage',
+      );
+      final spaceStorageTriples = graph.findTriples(
+        predicate: 'http://www.w3.org/ns/pim/space#storage',
+      );
+
+      final urls = <String>[];
+      for (final triple in [...storageTriples, ...spaceStorageTriples]) {
+        if (triple.object.startsWith('_:')) {
+          // If the storage points to a blank node, look for location triples
+          final locationTriples = graph.findTriples(
+            subject: triple.object,
+            predicate: 'http://www.w3.org/ns/solid/terms#location',
+          );
+          for (final locationTriple in locationTriples) {
+            urls.add(locationTriple.object);
+          }
+        } else {
+          urls.add(triple.object);
+        }
+      }
+
+      return urls;
+    } catch (e, stackTrace) {
+      _logger.error('Failed to find storage URLs', e, stackTrace);
+      rethrow;
+    }
+  }
 
   @override
   Future<String?> parseStorageUrl(
@@ -61,10 +93,7 @@ class DefaultProfileParser implements ProfileParserService {
       _logger.info('Parsing profile with content type: $contentType');
 
       if (contentType.contains('text/turtle')) {
-        final storageUrls = _turtleParser.findStorageUrls(
-          content,
-          documentUrl: webId,
-        );
+        final storageUrls = _findStorageUrls(content, documentUrl: webId);
         return storageUrls.isNotEmpty ? storageUrls.first : null;
       } else if (contentType.contains('application/ld+json')) {
         return _parseJsonLd(content);
@@ -72,10 +101,7 @@ class DefaultProfileParser implements ProfileParserService {
         _logger.info('Unknown content type: $contentType, trying both formats');
         List<String> turtleUrls = [];
         try {
-          turtleUrls = _turtleParser.findStorageUrls(
-            content,
-            documentUrl: webId,
-          );
+          turtleUrls = _findStorageUrls(content, documentUrl: webId);
         } catch (e, stackTrace) {
           _logger.debug(
             'Failed to parse as Turtle, trying JSON-LD',

@@ -1,11 +1,62 @@
 import 'package:solid_task/services/logger_service.dart';
-import 'parser.dart';
+
+/// Represents an RDF triple in Turtle syntax.
+///
+/// A triple consists of three components:
+/// - subject: The resource being described
+/// - predicate: The property or relationship
+/// - object: The value or related resource
+///
+/// Example:
+/// ```turtle
+/// <http://example.com/foo> <http://example.com/bar> "baz" .
+/// ```
+/// In this example:
+/// - subject: "http://example.com/foo"
+/// - predicate: "http://example.com/bar"
+/// - object: "baz"
+class Triple {
+  /// The subject of the triple, representing the resource being described.
+  final String subject;
+
+  /// The predicate of the triple, representing the property or relationship.
+  final String predicate;
+
+  /// The object of the triple, representing the value or related resource.
+  final String object;
+
+  Triple(this.subject, this.predicate, this.object);
+
+  @override
+  String toString() => '<$subject> <$predicate> <$object> .';
+}
 
 /// Represents an RDF graph with prefix handling
 class RdfGraph {
-  static final _logger = LoggerService().createLogger("RdfGraph");
+  final ContextLogger _logger;
   final Map<String, String> _prefixes = {};
   final List<Triple> _triples = [];
+
+  RdfGraph({LoggerService? loggerService})
+    : _logger = (loggerService ?? LoggerService()).createLogger("RdfGraph");
+
+  static RdfGraph fromTriples(
+    List<Triple> triples, {
+    LoggerService? loggerService,
+  }) {
+    final graph = RdfGraph(loggerService: loggerService);
+    for (final triple in triples) {
+      graph.addTriple(
+        Triple(
+          graph.expandIri(triple.subject),
+          graph.expandIri(triple.predicate),
+          graph.expandIri(triple.object),
+        ),
+      );
+    }
+
+    return graph;
+  }
 
   /// Add a prefix mapping
   void addPrefix(String prefix, String iri) {

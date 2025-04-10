@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:solid_task/services/turtle_parser/tokenizer.dart';
+import 'package:solid_task/services/rdf/turtle/turtle_tokenizer.dart';
 
 void main() {
   group('TurtleTokenizer', () {

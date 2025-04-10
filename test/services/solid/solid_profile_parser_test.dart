@@ -1,24 +1,26 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:solid_task/services/logger_service.dart';
-import 'package:solid_task/services/profile_parser.dart';
+import 'package:solid_task/services/solid/solid_profile_parser.dart';
 import 'package:mockito/annotations.dart';
 
 @GenerateMocks([ContextLogger, LoggerService])
-import 'profile_parser_test.mocks.dart';
+import '../profile_parser_test.mocks.dart';
 
 void main() {
   group('DefaultProfileParser', () {
     late MockLoggerService mockLoggerService;
     late MockContextLogger mockContextLogger;
-    late ProfileParserService profileParser;
+    late SolidProfileParser profileParser;
     const webId = 'https://example.com/profile/card#me';
 
     setUp(() {
       mockLoggerService = MockLoggerService();
       mockContextLogger = MockContextLogger();
       when(mockLoggerService.createLogger(any)).thenReturn(mockContextLogger);
-      profileParser = DefaultProfileParser(loggerService: mockLoggerService);
+      profileParser = DefaultSolidProfileParser(
+        loggerService: mockLoggerService,
+      );
     });
 
     test('parses Turtle profile with solid:storage', () async {

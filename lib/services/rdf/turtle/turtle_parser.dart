@@ -1,36 +1,7 @@
 import 'package:solid_task/services/logger_service.dart';
-import 'tokenizer.dart';
+import 'package:solid_task/services/rdf/rdf_graph.dart';
 
-/// Represents an RDF triple in Turtle syntax.
-///
-/// A triple consists of three components:
-/// - subject: The resource being described
-/// - predicate: The property or relationship
-/// - object: The value or related resource
-///
-/// Example:
-/// ```turtle
-/// <http://example.com/foo> <http://example.com/bar> "baz" .
-/// ```
-/// In this example:
-/// - subject: "http://example.com/foo"
-/// - predicate: "http://example.com/bar"
-/// - object: "baz"
-class Triple {
-  /// The subject of the triple, representing the resource being described.
-  final String subject;
-
-  /// The predicate of the triple, representing the property or relationship.
-  final String predicate;
-
-  /// The object of the triple, representing the value or related resource.
-  final String object;
-
-  Triple(this.subject, this.predicate, this.object);
-
-  @override
-  String toString() => '<$subject> <$predicate> <$object> .';
-}
+import 'turtle_tokenizer.dart';
 
 /// A parser for Turtle syntax, which is a text-based format for representing RDF data.
 ///
