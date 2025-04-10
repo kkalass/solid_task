@@ -16,7 +16,9 @@ import '../test/mocks/mock_temp_dir_path_provider.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockAuthService mockAuthService;
+  late MockSolidAuthState mockSolidAuthState;
+  late MockSolidAuthOperations mockSolidAuthOperations;
+  late MockAuthStateChangeProvider mockAuthStateChangeProvider;
   late MockSyncService mockSyncService;
   late LoggerService logger;
   late Widget appWidget;
@@ -32,12 +34,18 @@ void main() {
     await logger.init();
 
     // Configure our mocks
-    mockAuthService = MockAuthService();
+    mockSolidAuthState = MockSolidAuthState();
+    mockSolidAuthOperations = MockSolidAuthOperations();
+    mockAuthStateChangeProvider = MockAuthStateChangeProvider();
     mockSyncService = MockSyncService();
 
     // Set up necessary stubs
-    when(mockAuthService.isAuthenticated).thenReturn(false);
-    when(mockAuthService.currentWebId).thenReturn(null);
+    when(mockSolidAuthState.isAuthenticated).thenReturn(false);
+    when(mockSolidAuthState.currentUser?.webId).thenReturn(null);
+    // Add stub for authStateChanges
+    when(
+      mockAuthStateChangeProvider.authStateChanges,
+    ).thenAnswer((_) => Stream<bool>.value(false));
     when(
       mockSyncService.fullSync(),
     ).thenAnswer((_) async => SyncResult(success: true));
@@ -48,8 +56,10 @@ void main() {
         // Use real services for storage and logging
         // But mock auth and sync to avoid external dependencies
         loggerService: logger,
-        authServiceFactory: (_, __, ___) async => mockAuthService,
-        syncServiceFactory: (_, __, ___, ____) => mockSyncService,
+        authState: mockSolidAuthState,
+        authOperations: mockSolidAuthOperations,
+        authStateChangeProvider: mockAuthStateChangeProvider,
+        syncServiceFactory: (_, __, ___, ____, _____) => mockSyncService,
       ),
     );
   });

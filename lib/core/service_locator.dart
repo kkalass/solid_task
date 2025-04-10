@@ -1,13 +1,14 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
-import 'package:solid_task/services/auth/auth_service.dart';
-import 'package:solid_task/services/auth/auth_state_provider.dart';
-import 'package:solid_task/services/auth/default_provider_service.dart';
+import 'package:solid_task/services/auth/implementations/solid_auth_service_impl.dart';
+
+import 'package:solid_task/services/auth/interfaces/auth_state_change_provider.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
+import 'package:solid_task/services/auth/implementations/solid_provider_service_impl.dart';
+import 'package:solid_task/services/auth/interfaces/solid_provider_service.dart';
 import 'package:solid_task/services/auth/jwt_decoder_wrapper.dart';
-import 'package:solid_task/services/auth/observable_auth_service.dart';
-import 'package:solid_task/services/auth/provider_service.dart';
-import 'package:solid_task/services/auth/solid_auth_service.dart';
 import 'package:solid_task/services/auth/solid_auth_wrapper.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/repository/solid_item_repository.dart';
@@ -34,15 +35,7 @@ class ServiceLocatorConfig {
   final LocalStorageService? storageService;
 
   /// Provider service implementation
-  final ProviderService? providerService;
-
-  /// Auth service factory
-  final Future<AuthService> Function(
-    LoggerService logger,
-    http.Client client,
-    ProviderService providerService,
-  )?
-  authServiceFactory;
+  final SolidProviderService? providerService;
 
   /// Secure storage implementation for auth service
   final FlutterSecureStorage? secureStorage;
@@ -51,6 +44,10 @@ class ServiceLocatorConfig {
 
   /// SolidAuth implementation for auth service
   final SolidAuth? solidAuth;
+
+  final SolidAuthState? authState;
+  final AuthStateChangeProvider? authStateChangeProvider;
+  final SolidAuthOperations? authOperations;
 
   /// Item repository implementation
   final ItemRepository Function(
@@ -62,7 +59,8 @@ class ServiceLocatorConfig {
   /// Sync service implementation
   final SyncService Function(
     ItemRepository repository,
-    AuthService authService,
+    SolidAuthOperations authOperations,
+    SolidAuthState authState,
     LoggerService logger,
     http.Client client,
   )?
@@ -71,14 +69,11 @@ class ServiceLocatorConfig {
   /// Sync manager factory
   final SyncManager Function(
     SyncService syncService,
-    AuthService authService,
+    SolidAuthState authState,
+    AuthStateChangeProvider authStateChangeProvider,
     LoggerService logger,
   )?
   syncManagerFactory;
-
-  /// Observable auth service factory
-  final AuthService Function(AuthService baseAuthService, LoggerService logger)?
-  observableAuthServiceFactory;
 
   /// Syncable repository factory
   final ItemRepository Function(
@@ -93,14 +88,15 @@ class ServiceLocatorConfig {
     this.httpClient,
     this.storageService,
     this.providerService,
-    this.authServiceFactory,
+    this.authOperations,
+    this.authState,
+    this.authStateChangeProvider,
     this.secureStorage,
     this.solidAuth,
     this.itemRepositoryFactory,
     this.syncServiceFactory,
     this.syncManagerFactory,
     this.jwtDecoder,
-    this.observableAuthServiceFactory,
     this.syncableRepositoryFactory,
   });
 }
@@ -135,11 +131,11 @@ Future<void> initServiceLocator({
   });
 
   // Provider service with configurable implementation
-  sl.registerLazySingleton<ProviderService>(
+  sl.registerLazySingleton<SolidProviderService>(
     () =>
         config.providerService ??
-        DefaultProviderService(
-          logger: sl<LoggerService>().createLogger("ProviderService"),
+        SolidProviderServiceImpl(
+          logger: sl<LoggerService>().createLogger("SolidProviderService"),
         ),
   );
 
@@ -147,55 +143,52 @@ Future<void> initServiceLocator({
   sl.registerLazySingleton<SolidAuth>(() => config.solidAuth ?? SolidAuth());
 
   // Auth service - use async registration since creation is asynchronous
-  sl.registerSingletonAsync<AuthService>(() async {
-    AuthService authService;
-
-    if (config.authServiceFactory != null) {
-      authService = await config.authServiceFactory!(
-        sl<LoggerService>(),
-        sl<http.Client>(),
-        sl<ProviderService>(),
-      );
-    } else {
+  // There is actually a single implementation class for multiple distinct interfaces
+  if (config.authOperations == null ||
+      config.authState == null ||
+      config.authStateChangeProvider == null) {
+    sl.registerSingletonAsync<SolidAuthServiceImpl>(() async {
       // Create the standard auth service
-      authService = await SolidAuthService.create(
+      return await SolidAuthServiceImpl.create(
         loggerService: sl<LoggerService>(),
         client: sl<http.Client>(),
-        providerService: sl<ProviderService>(),
+        providerService: sl<SolidProviderService>(),
         secureStorage: sl<FlutterSecureStorage>(),
         solidAuth: sl<SolidAuth>(),
         jwtDecoder: sl<JwtDecoderWrapper>(),
       );
+    });
+    await sl.isReady<SolidAuthServiceImpl>();
+    if (config.authOperations == null) {
+      sl.registerLazySingleton<SolidAuthOperations>(
+        () => sl<SolidAuthServiceImpl>(),
+      );
     }
-
-    // Wrap with observable auth service
-    return config.observableAuthServiceFactory != null
-        ? config.observableAuthServiceFactory!(authService, sl<LoggerService>())
-        : ObservableAuthService(
-          authService,
-          sl<LoggerService>().createLogger('ObservableAuthService'),
-        );
-  });
+    if (config.authState == null) {
+      sl.registerLazySingleton<SolidAuthState>(
+        () => sl<SolidAuthServiceImpl>(),
+      );
+    }
+    if (config.authStateChangeProvider == null) {
+      sl.registerLazySingleton<AuthStateChangeProvider>(
+        () => sl<SolidAuthServiceImpl>(),
+      );
+    }
+  }
+  if (config.authOperations != null) {
+    sl.registerLazySingleton<SolidAuthOperations>(() => config.authOperations!);
+  }
+  if (config.authState != null) {
+    sl.registerLazySingleton<SolidAuthState>(() => config.authState!);
+  }
+  if (config.authStateChangeProvider != null) {
+    sl.registerLazySingleton<AuthStateChangeProvider>(
+      () => config.authStateChangeProvider!,
+    );
+  }
 
   // Wait for async dependencies to be ready before continuing
   await sl.allReady();
-
-  // Register AuthStateProvider interface with the same instance as AuthService
-  // Only if the AuthService is expected to implement AuthStateProvider
-  if (config.authServiceFactory == null ||
-      sl<AuthService>() is AuthStateProvider) {
-    sl.registerSingletonWithDependencies<AuthStateProvider>(() {
-      final authService = sl<AuthService>();
-      if (authService is AuthStateProvider) {
-        return authService as AuthStateProvider;
-      } else {
-        throw StateError(
-          'AuthService ${authService.runtimeType} does not implement AuthStateProvider. '
-          'This is likely a configuration issue in test environments.',
-        );
-      }
-    }, dependsOn: [AuthService]);
-  }
 
   // Item repository - depends on storage
   sl.registerLazySingleton<ItemRepository>(() {
@@ -223,13 +216,15 @@ Future<void> initServiceLocator({
         config.syncServiceFactory != null
             ? config.syncServiceFactory!(
               sl<ItemRepository>(instanceName: 'baseRepository'),
-              sl<AuthService>(),
+              sl<SolidAuthOperations>(),
+              sl<SolidAuthState>(),
               sl<LoggerService>(),
               sl<http.Client>(),
             )
             : SolidSyncService(
               repository: sl<ItemRepository>(instanceName: 'baseRepository'),
-              authService: sl<AuthService>(),
+              authOperations: sl<SolidAuthOperations>(),
+              authState: sl<SolidAuthState>(),
               logger: sl<LoggerService>().createLogger('SyncService'),
               client: sl<http.Client>(),
             ),
@@ -241,12 +236,14 @@ Future<void> initServiceLocator({
         config.syncManagerFactory != null
             ? config.syncManagerFactory!(
               sl<SyncService>(),
-              sl<AuthService>(),
+              sl<SolidAuthState>(),
+              sl<AuthStateChangeProvider>(),
               sl<LoggerService>(),
             )
             : SyncManager(
               sl<SyncService>(),
-              sl<AuthService>(),
+              sl<SolidAuthState>(),
+              sl<AuthStateChangeProvider>(),
               sl<LoggerService>().createLogger('SyncManager'),
             );
 

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
+import 'package:solid_task/services/auth/interfaces/solid_provider_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/service_locator.dart';
-import '../services/auth/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,7 +19,8 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   String? _errorMessage;
   List<Map<String, dynamic>>? _providers;
-  final _authService = sl<AuthService>();
+  final _providerService = sl<SolidProviderService>();
+  final _authOperations = sl<SolidAuthOperations>();
 
   @override
   void initState() {
@@ -28,7 +30,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _loadProviders() async {
     try {
-      final providers = await _authService.loadProviders();
+      final providers = await _providerService.loadProviders();
       setState(() {
         _providers = providers;
       });
@@ -44,11 +46,11 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      String issuerUri = await _authService.getIssuer(input.trim());
+      String issuerUri = await _authOperations.getIssuer(input.trim());
 
       if (!mounted) return;
 
-      final result = await _authService.authenticate(issuerUri, context);
+      final result = await _authOperations.authenticate(issuerUri, context);
 
       if (!mounted) return;
 
@@ -180,7 +182,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         TextButton(
           onPressed: () async {
-            final podUrl = await _authService.getNewPodUrl();
+            final podUrl = await _providerService.getNewPodUrl();
             if (context.mounted) {
               launchUrl(Uri.parse(podUrl));
             }

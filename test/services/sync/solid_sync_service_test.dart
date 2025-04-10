@@ -2,43 +2,66 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:http/http.dart' as http;
-import 'package:solid_task/services/auth/auth_service.dart';
+import 'package:solid_task/models/auth/auth_token.dart';
+import 'package:solid_task/models/auth/user_identity.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/sync/solid_sync_service.dart';
 import 'dart:convert';
 
-@GenerateMocks([http.Client, ItemRepository, AuthService, ContextLogger])
+@GenerateMocks([
+  http.Client,
+  ItemRepository,
+  SolidAuthState,
+  SolidAuthOperations,
+  ContextLogger,
+])
 import 'solid_sync_service_test.mocks.dart';
 
 void main() {
   group('SolidSyncService', () {
     late MockClient mockHttpClient;
     late MockItemRepository mockRepository;
-    late MockAuthService mockAuthService;
+    late MockSolidAuthState mockSolidAuthState;
+    late MockSolidAuthOperations mockSolidAuthOperations;
     late MockContextLogger mockLogger;
     late SolidSyncService syncService;
 
     setUp(() {
       mockHttpClient = MockClient();
       mockRepository = MockItemRepository();
-      mockAuthService = MockAuthService();
+      mockSolidAuthState = MockSolidAuthState();
+      mockSolidAuthOperations = MockSolidAuthOperations();
       mockLogger = MockContextLogger();
 
       // Setup standard authentication state
-      when(mockAuthService.isAuthenticated).thenReturn(true);
+      when(mockSolidAuthState.isAuthenticated).thenReturn(true);
+
+      // Mock the UserIdentity object correctly
+      final mockUserIdentity = UserIdentity(
+        webId: 'https://user.example/profile/card#me',
+        podUrl: 'https://pod.example/storage/',
+      );
+      when(mockSolidAuthState.currentUser).thenReturn(mockUserIdentity);
+
+      // Mock the AuthToken object
+      final mockAuthToken = AuthToken(
+        accessToken: 'mock-access-token',
+        decodedData: {'sub': 'user123'},
+        expiresAt: DateTime.now().add(Duration(hours: 1)),
+      );
+      when(mockSolidAuthState.authToken).thenReturn(mockAuthToken);
+
       when(
-        mockAuthService.currentWebId,
-      ).thenReturn('https://user.example/profile/card#me');
-      when(mockAuthService.podUrl).thenReturn('https://pod.example/storage/');
-      when(mockAuthService.accessToken).thenReturn('mock-access-token');
-      when(
-        mockAuthService.generateDpopToken(any, any),
+        mockSolidAuthOperations.generateDpopToken(any, any),
       ).thenReturn('mock-dpop-token');
 
       syncService = SolidSyncService(
         repository: mockRepository,
-        authService: mockAuthService,
+        authState: mockSolidAuthState,
+        authOperations: mockSolidAuthOperations,
         logger: mockLogger,
         client: mockHttpClient,
       );
@@ -49,7 +72,7 @@ void main() {
       expect(syncService.isConnected, isTrue);
 
       // Change auth status
-      when(mockAuthService.isAuthenticated).thenReturn(false);
+      when(mockSolidAuthState.isAuthenticated).thenReturn(false);
       expect(syncService.isConnected, isFalse);
     });
 
@@ -100,7 +123,7 @@ void main() {
 
       // Verify correct HTTP request was made
       verify(
-        mockAuthService.generateDpopToken(
+        mockSolidAuthOperations.generateDpopToken(
           'https://pod.example/storage/todos.json',
           'PUT',
         ),
@@ -125,7 +148,7 @@ void main() {
 
     test('syncToRemote returns error when not connected', () async {
       // Setup - not authenticated
-      when(mockAuthService.isAuthenticated).thenReturn(false);
+      when(mockSolidAuthState.isAuthenticated).thenReturn(false);
 
       // Execute
       final result = await syncService.syncToRemote();
@@ -144,7 +167,7 @@ void main() {
 
     test('syncToRemote returns error when pod URL is null', () async {
       // Setup - no pod URL
-      when(mockAuthService.podUrl).thenReturn(null);
+      when(mockSolidAuthState.currentUser?.podUrl).thenReturn(null);
 
       // Execute
       final result = await syncService.syncToRemote();
@@ -213,7 +236,7 @@ void main() {
 
       // Verify HTTP request
       verify(
-        mockAuthService.generateDpopToken(
+        mockSolidAuthOperations.generateDpopToken(
           'https://pod.example/storage/todos.json',
           'GET',
         ),

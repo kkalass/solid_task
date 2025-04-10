@@ -1,15 +1,14 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:solid_task/services/auth/implementations/solid_auth_service_impl.dart';
+import 'package:solid_task/services/auth/interfaces/solid_provider_service.dart';
 import 'package:solid_task/services/auth/jwt_decoder_wrapper.dart';
-import 'package:solid_task/services/auth/solid_auth_service.dart';
 import 'package:solid_task/services/auth/solid_auth_wrapper.dart';
 import 'package:solid_task/services/logger_service.dart';
-
-import 'package:solid_task/services/auth/provider_service.dart';
 
 @GenerateNiceMocks([
   MockSpec<http.Client>(as: #MockClient),
@@ -18,7 +17,7 @@ import 'package:solid_task/services/auth/provider_service.dart';
   MockSpec<FlutterSecureStorage>(),
   MockSpec<JwtDecoderWrapper>(),
   MockSpec<SolidAuth>(),
-  MockSpec<ProviderService>(),
+  MockSpec<SolidProviderService>(),
 ])
 import 'solid_auth_service_test.mocks.dart';
 
@@ -28,12 +27,12 @@ class MockBuildContext extends Mock implements BuildContext {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('SolidAuthService', () {
+  group('SolidAuthServiceImpl', () {
     late MockClient mockHttpClient;
     late MockLoggerService mockLogger;
     late MockContextLogger mockContextLogger;
-    late MockProviderService mockProviderService;
-    late SolidAuthService authService;
+    late MockSolidProviderService mockSolidProviderService;
+    late SolidAuthServiceImpl authService;
     late MockFlutterSecureStorage mockSecureStorage;
     late MockJwtDecoderWrapper mockJwtDecoder;
     late MockSolidAuth mockSolidAuth;
@@ -41,7 +40,7 @@ void main() {
     setUp(() async {
       mockHttpClient = MockClient();
       mockLogger = MockLoggerService();
-      mockProviderService = MockProviderService();
+      mockSolidProviderService = MockSolidProviderService();
       mockSecureStorage = MockFlutterSecureStorage();
       mockJwtDecoder = MockJwtDecoderWrapper();
       mockSolidAuth = MockSolidAuth();
@@ -50,10 +49,10 @@ void main() {
       when(mockLogger.createLogger(any)).thenReturn(mockContextLogger);
 
       // Create service with injected mocks
-      authService = await SolidAuthService.create(
+      authService = await SolidAuthServiceImpl.create(
         loggerService: mockLogger,
         client: mockHttpClient,
-        providerService: mockProviderService,
+        providerService: mockSolidProviderService,
         secureStorage: mockSecureStorage,
         jwtDecoder: mockJwtDecoder,
         solidAuth: mockSolidAuth,
@@ -80,15 +79,15 @@ void main() {
         {'name': 'Test Provider', 'url': 'https://test.example'},
       ];
       when(
-        mockProviderService.loadProviders(),
+        mockSolidProviderService.loadProviders(),
       ).thenAnswer((_) async => mockProviders);
 
       // Execute
-      final providers = await authService.loadProviders();
+      final providers = await mockSolidProviderService.loadProviders();
 
       // Verify
       expect(providers, equals(mockProviders));
-      verify(mockProviderService.loadProviders()).called(1);
+      verify(mockSolidProviderService.loadProviders()).called(1);
     });
 
     test('getIssuer returns issuer URI', () async {
@@ -131,7 +130,7 @@ void main() {
       );
 
       // Execute
-      final podUrl = await authService.getPodUrl(
+      final podUrl = await authService.resolvePodUrl(
         'https://mock-user.example/profile/card#me',
       );
 
@@ -196,9 +195,12 @@ void main() {
 
       // Verify
       expect(result.isSuccess, isTrue);
-      expect(result.webId, 'https://mock-user.example/profile/card#me');
-      expect(result.podUrl, 'https://mock-pod.example/storage/');
-      expect(result.accessToken, 'mock-access-token');
+      expect(
+        result.userIdentity?.webId,
+        'https://mock-user.example/profile/card#me',
+      );
+      expect(result.userIdentity?.podUrl, 'https://mock-pod.example/storage/');
+      expect(result.token?.accessToken, 'mock-access-token');
 
       // Verify secure storage calls
       verify(
@@ -294,7 +296,7 @@ void main() {
 
       // Verify authenticated state before logout
       expect(authService.isAuthenticated, isTrue);
-      expect(authService.currentWebId, isNotNull);
+      expect(authService.currentUser?.webId, isNotNull);
 
       // Reset the mocks to clear previous interactions
       clearInteractions(mockSecureStorage);
@@ -307,14 +309,14 @@ void main() {
       verify(mockSecureStorage.deleteAll()).called(1);
       verify(mockSolidAuth.logout(any)).called(1);
       expect(authService.isAuthenticated, isFalse);
-      expect(authService.currentWebId, isNull);
-      expect(authService.podUrl, isNull);
-      expect(authService.accessToken, isNull);
+      expect(authService.currentUser?.webId, isNull);
+      expect(authService.currentUser?.podUrl, isNull);
+      expect(authService.authToken?.accessToken, isNull);
     });
   });
 
   test(
-    'SolidAuthService with mock secure storage initializes correctly',
+    'SolidAuthServiceImpl with mock secure storage initializes correctly',
     () async {
       final mockSecureStorage = MockFlutterSecureStorage();
       final mockLogger = MockLoggerService();
@@ -322,7 +324,7 @@ void main() {
       final mockClient = MockClient();
       final mockJwtDecoder = MockJwtDecoderWrapper();
       final mockSolidAuth = MockSolidAuth();
-      final mockProviderService = MockProviderService();
+      final mockProviderService = MockSolidProviderService();
 
       when(mockLogger.createLogger(any)).thenReturn(mockContextLogger);
 
@@ -349,7 +351,7 @@ void main() {
 
       // Create service with injected mocks - this is supposed to trigger reading
       // from the secure storage
-      final authService = await SolidAuthService.create(
+      final authService = await SolidAuthServiceImpl.create(
         loggerService: mockLogger,
         client: mockClient,
         secureStorage: mockSecureStorage,
@@ -369,8 +371,11 @@ void main() {
       verify(mockJwtDecoder.decode('mock-token')).called(1);
 
       expect(authService.isAuthenticated, isTrue);
-      expect(authService.currentWebId, 'https://test.example/profile/card#me');
-      expect(authService.podUrl, 'https://test.example/storage/');
+      expect(
+        authService.currentUser?.webId,
+        'https://test.example/profile/card#me',
+      );
+      expect(authService.currentUser?.podUrl, 'https://test.example/storage/');
     },
   );
 }

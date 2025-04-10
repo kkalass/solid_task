@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:solid_task/models/auth/auth_result.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
+
 import '../core/service_locator.dart';
 import '../core/utils/date_formatter.dart';
 import '../models/item.dart';
 import '../screens/login_page.dart';
-import '../services/auth/auth_service.dart';
+
 import '../services/repository/item_repository.dart';
 import '../services/sync/sync_manager.dart';
 
@@ -17,11 +21,12 @@ class ItemsScreen extends StatefulWidget {
 
 class _ItemsScreenState extends State<ItemsScreen> {
   final _textController = TextEditingController();
-  final _authService = sl<AuthService>();
+  final _authState = sl<SolidAuthState>();
+  final _authOperations = sl<SolidAuthOperations>();
   final _repository = sl<ItemRepository>();
   final _syncManager = sl<SyncManager>();
 
-  bool get _isConnectedToSolid => _authService.isAuthenticated;
+  bool get _isConnectedToSolid => _authState.isAuthenticated;
 
   @override
   void initState() {
@@ -48,7 +53,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
   Future<void> _disconnectFromPod() async {
     try {
-      await _authService.logout();
+      await _authOperations.logout();
 
       if (mounted) {
         setState(() {}); // Refresh UI to show disconnected state
@@ -67,12 +72,15 @@ class _ItemsScreenState extends State<ItemsScreen> {
   Future<void> _addItem(String text) async {
     if (text.isEmpty) return;
     // FIXME KK - the local fallback seems wrong to me. Actually, this is probably connected to correct implementation of CRDT. I believe, that we should have a device specific identifier here - neither local nor webId seem to be correct.
-    await _repository.createItem(text, _authService.currentWebId ?? 'local');
+    await _repository.createItem(
+      text,
+      _authState.currentUser?.webId ?? 'local',
+    );
     _textController.clear();
   }
 
   Future<void> _deleteItem(String id) async {
-    await _repository.deleteItem(id, _authService.currentWebId ?? 'local');
+    await _repository.deleteItem(id, _authState.currentUser?.webId ?? 'local');
   }
 
   @override

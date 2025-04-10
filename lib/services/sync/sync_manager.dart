@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:solid_task/services/auth/auth_service.dart';
-import 'package:solid_task/services/auth/auth_state_provider.dart';
+import 'package:solid_task/services/auth/interfaces/auth_state_change_provider.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 
@@ -53,7 +53,8 @@ class SyncStatus {
 /// Manages synchronization lifecycle and provides status updates
 class SyncManager {
   final SyncService _syncService;
-  final AuthService _authService;
+  final AuthStateChangeProvider _authStateChangeProvider;
+  final SolidAuthState _authState;
   final ContextLogger _logger;
 
   final StreamController<SyncStatus> _syncStatusController =
@@ -80,7 +81,12 @@ class SyncManager {
   String? get errorMessage => _currentStatus.error;
 
   /// Creates a new SyncManager that will automatically respond to auth state changes
-  SyncManager(this._syncService, this._authService, this._logger);
+  SyncManager(
+    this._syncService,
+    this._authState,
+    this._authStateChangeProvider,
+    this._logger,
+  );
 
   /// Initialize the sync manager and set up auth state listeners
   Future<void> initialize() async {
@@ -90,7 +96,7 @@ class SyncManager {
     _setupAuthListener();
 
     // If already authenticated, start sync
-    final isAuthenticated = _authService.isAuthenticated;
+    final isAuthenticated = _authState.isAuthenticated;
     if (isAuthenticated) {
       _logger.debug('Already authenticated, starting sync');
       await _performSyncIfAuthenticated(isAuthenticated);
@@ -103,17 +109,10 @@ class SyncManager {
     _authSubscription?.cancel();
 
     // Subscribe to auth state changes if the service provides them
-    if (_authService is AuthStateProvider) {
-      final authStateProvider = _authService as AuthStateProvider;
-      _authSubscription = authStateProvider.authStateChanges.listen(
-        _onAuthStateChanged,
-      );
-      _logger.debug('Subscribed to auth state changes');
-    } else {
-      _logger.warning(
-        'AuthService does not implement AuthStateProvider, fallback to manual auth state handling',
-      );
-    }
+    _authSubscription = _authStateChangeProvider.authStateChanges.listen(
+      _onAuthStateChanged,
+    );
+    _logger.debug('Subscribed to auth state changes');
   }
 
   /// Handles auth state changes from the auth service
@@ -175,7 +174,7 @@ class SyncManager {
   /// Returns the result of the synchronization
   Future<SyncResult> startSynchronization() async {
     // Cache authentication state to avoid multiple calls
-    final isAuthenticated = _authService.isAuthenticated;
+    final isAuthenticated = _authState.isAuthenticated;
     return (await _performSyncIfAuthenticated(isAuthenticated)) ??
         SyncResult(success: false, error: 'Unknown error');
   }
@@ -183,7 +182,7 @@ class SyncManager {
   /// Manually trigger synchronization to remote
   /// For explicit sync requests (usually triggered by UI actions)
   Future<SyncResult> syncToRemote() async {
-    if (!_authService.isAuthenticated) {
+    if (!_authState.isAuthenticated) {
       return SyncResult(success: false, error: 'Not authenticated');
     }
 
@@ -210,7 +209,7 @@ class SyncManager {
   /// Schedule a sync operation to run after a short delay, coalescing multiple requests
   /// This is used when multiple repository changes happen in quick succession
   Future<void> requestSync() async {
-    if (!_authService.isAuthenticated || _isDisposed) {
+    if (!_authState.isAuthenticated || _isDisposed) {
       return;
     }
 
@@ -230,7 +229,7 @@ class SyncManager {
     _stopPeriodicSync(); // Ensure any existing timer is cancelled
 
     // Only start periodic sync if authenticated
-    final authenticated = isAuthenticated ?? _authService.isAuthenticated;
+    final authenticated = isAuthenticated ?? _authState.isAuthenticated;
     if (authenticated) {
       _logger.debug('Starting periodic sync every 30 seconds');
       _periodicSyncTimer = Timer.periodic(
@@ -242,7 +241,7 @@ class SyncManager {
 
   /// Handle periodic sync execution
   Future<void> _performPeriodicSync() async {
-    if (!_authService.isAuthenticated || isSyncing || _isDisposed) {
+    if (!_authState.isAuthenticated || isSyncing || _isDisposed) {
       return;
     }
 

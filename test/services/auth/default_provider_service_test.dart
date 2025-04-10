@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
-import 'package:solid_task/services/auth/default_provider_service.dart';
+import 'package:solid_task/services/auth/implementations/solid_provider_service_impl.dart';
 import 'package:solid_task/services/logger_service.dart';
 
 @GenerateMocks([AssetBundle, ContextLogger])
@@ -14,13 +14,13 @@ void main() {
   group('DefaultProviderService', () {
     late MockAssetBundle mockAssetBundle;
     late MockContextLogger mockLogger;
-    late DefaultProviderService providerService;
+    late SolidProviderServiceImpl providerService;
 
     setUp(() {
       mockAssetBundle = MockAssetBundle();
       mockLogger = MockContextLogger();
 
-      providerService = DefaultProviderService(
+      providerService = SolidProviderServiceImpl(
         logger: mockLogger,
         assetBundle: mockAssetBundle,
       );
@@ -82,7 +82,7 @@ void main() {
       const providersJson =
           '{"providers": [{"name": "Custom", "url": "https://custom.example"}]}';
 
-      providerService = DefaultProviderService(
+      providerService = SolidProviderServiceImpl(
         logger: mockLogger,
         assetBundle: mockAssetBundle,
         providersConfigPath: customPath,

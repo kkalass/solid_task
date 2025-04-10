@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:solid_task/services/auth/auth_service.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
@@ -10,7 +11,8 @@ import 'package:synchronized/synchronized.dart';
 /// Implementation of SyncService for SOLID pods
 class SolidSyncService implements SyncService {
   final ItemRepository _repository;
-  final AuthService _authService;
+  final SolidAuthState _solidAuthState;
+  final SolidAuthOperations _solidAuthOperations;
   final http.Client _client;
   final ContextLogger _logger;
 
@@ -23,23 +25,25 @@ class SolidSyncService implements SyncService {
 
   SolidSyncService({
     required ItemRepository repository,
-    required AuthService authService,
+    required SolidAuthState authState,
+    required SolidAuthOperations authOperations,
     required ContextLogger logger,
     required http.Client client,
   }) : _repository = repository,
-       _authService = authService,
+       _solidAuthState = authState,
+       _solidAuthOperations = authOperations,
        _logger = logger,
        _client = client;
 
   @override
-  bool get isConnected => _authService.isAuthenticated;
+  bool get isConnected => _solidAuthState.isAuthenticated;
 
   @override
-  String? get userIdentifier => _authService.currentWebId;
+  String? get userIdentifier => _solidAuthState.currentUser?.webId;
 
   // FIXME KK - is it a good idea to store everything in a single file? Or should we rather store one item per file?
   String? get _dataUrl {
-    final podUrl = _authService.podUrl;
+    final podUrl = _solidAuthState.currentUser?.podUrl;
     if (podUrl == null) return null;
     return '$podUrl$_todosFileName';
   }
@@ -64,14 +68,14 @@ class SolidSyncService implements SyncService {
       final jsonData = jsonEncode(items);
 
       // Generate DPoP token for the request
-      final dPopToken = _authService.generateDpopToken(dataUrl, 'PUT');
+      final dPopToken = _solidAuthOperations.generateDpopToken(dataUrl, 'PUT');
 
       // Send data to pod
       final response = await _client.put(
         Uri.parse(dataUrl),
         headers: {
           'Accept': '*/*',
-          'Authorization': 'DPoP ${_authService.accessToken}',
+          'Authorization': 'DPoP ${_solidAuthState.authToken?.accessToken}',
           'Connection': 'keep-alive',
           'Content-Type': 'application/json',
           'DPoP': dPopToken,
@@ -111,14 +115,14 @@ class SolidSyncService implements SyncService {
       _logger.debug('Syncing from pod at $dataUrl');
 
       // Generate DPoP token for the request
-      final dPopToken = _authService.generateDpopToken(dataUrl, 'GET');
+      final dPopToken = _solidAuthOperations.generateDpopToken(dataUrl, 'GET');
 
       // Get data from pod
       final response = await _client.get(
         Uri.parse(dataUrl),
         headers: {
           'Accept': '*/*',
-          'Authorization': 'DPoP ${_authService.accessToken}',
+          'Authorization': 'DPoP ${_solidAuthState.authToken?.accessToken}',
           'Connection': 'keep-alive',
           'DPoP': dPopToken,
         },

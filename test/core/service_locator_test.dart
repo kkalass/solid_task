@@ -5,10 +5,11 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:solid_task/core/service_locator.dart';
-import 'package:solid_task/services/auth/auth_service.dart';
+import 'package:solid_task/services/auth/interfaces/auth_state_change_provider.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
+import 'package:solid_task/services/auth/interfaces/solid_provider_service.dart';
 import 'package:solid_task/services/auth/jwt_decoder_wrapper.dart';
-import 'package:solid_task/services/auth/observable_auth_service.dart';
-import 'package:solid_task/services/auth/provider_service.dart';
 import 'package:solid_task/services/auth/solid_auth_wrapper.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
@@ -17,14 +18,16 @@ import 'package:solid_task/services/sync/sync_manager.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 
 // Generate mocks for all services
+
 import '../mocks/mock_temp_dir_path_provider.dart';
 @GenerateNiceMocks([
   MockSpec<LoggerService>(),
   MockSpec<http.Client>(),
   MockSpec<LocalStorageService>(),
-  MockSpec<ProviderService>(),
-  MockSpec<AuthService>(),
-  MockSpec<ObservableAuthService>(),
+  MockSpec<SolidProviderService>(),
+  MockSpec<SolidAuthOperations>(),
+  MockSpec<AuthStateChangeProvider>(),
+  MockSpec<SolidAuthState>(),
   MockSpec<ItemRepository>(),
   MockSpec<SyncService>(),
   MockSpec<SyncManager>(),
@@ -43,9 +46,10 @@ void main() {
     late MockLoggerService mockLogger;
     late MockClient mockClient;
     late MockLocalStorageService mockStorage;
-    late MockProviderService mockProviderService;
-    late MockAuthService mockAuthService;
-    late MockObservableAuthService mockObservableAuthService;
+    late MockSolidProviderService mockSolidProviderService;
+    late MockSolidAuthState mockSolidAuthState;
+    late MockSolidAuthOperations mockSolidAuthOperations;
+    late MockAuthStateChangeProvider mockAuthStateChangeProvider;
     late MockItemRepository mockItemRepository;
     late MockSyncService mockSyncService;
     late MockSyncManager mockSyncManager;
@@ -71,9 +75,10 @@ void main() {
       mockLogger = MockLoggerService();
       mockClient = MockClient();
       mockStorage = MockLocalStorageService();
-      mockProviderService = MockProviderService();
-      mockAuthService = MockAuthService();
-      mockObservableAuthService = MockObservableAuthService();
+      mockSolidProviderService = MockSolidProviderService();
+      mockSolidAuthState = MockSolidAuthState();
+      mockSolidAuthOperations = MockSolidAuthOperations();
+      mockAuthStateChangeProvider = MockAuthStateChangeProvider();
       mockItemRepository = MockItemRepository();
       mockSyncService = MockSyncService();
       mockSyncManager = MockSyncManager();
@@ -99,12 +104,16 @@ void main() {
       );
 
       // Verify services are registered
-      expect(sl.isRegistered<AuthService>(), isTrue);
+      expect(sl.isRegistered<SolidAuthOperations>(), isTrue);
+      expect(sl.isRegistered<SolidAuthState>(), isTrue);
+      expect(sl.isRegistered<AuthStateChangeProvider>(), isTrue);
       expect(sl.isRegistered<ItemRepository>(), isTrue);
       expect(sl.isRegistered<SyncService>(), isTrue);
 
       // Verify we can resolve services
-      expect(sl<AuthService>(), isNotNull);
+      expect(sl<AuthStateChangeProvider>(), isNotNull);
+      expect(sl<SolidAuthOperations>(), isNotNull);
+      expect(sl<SolidAuthState>(), isNotNull);
       expect(sl<ItemRepository>(), isNotNull);
       expect(sl<SyncService>(), isNotNull);
     });
@@ -117,17 +126,17 @@ void main() {
           loggerService: mockLogger,
           httpClient: mockClient,
           storageService: mockStorage,
-          providerService: mockProviderService,
+          providerService: mockSolidProviderService,
           secureStorage: mockSecureStorage,
           solidAuth: mockSolidAuth,
           jwtDecoder: mockJwtDecoderWrapper,
-          authServiceFactory: (_, __, ___) async => mockAuthService,
+          authOperations: mockSolidAuthOperations,
+          authState: mockSolidAuthState,
+          authStateChangeProvider: mockAuthStateChangeProvider,
           itemRepositoryFactory: (_, __) => mockItemRepository,
-          syncServiceFactory: (_, __, ___, ____) => mockSyncService,
+          syncServiceFactory: (_, __, ___, ____, _____) => mockSyncService,
           // Skip SyncManager for this test to avoid unnecessary dependencies
-          syncManagerFactory: (_, __, ___) => mockSyncManager,
-          observableAuthServiceFactory:
-              (baseAuthService, __) => mockObservableAuthService,
+          syncManagerFactory: (_, __, ___, ____) => mockSyncManager,
         );
 
         // Initialize with our config
@@ -137,13 +146,20 @@ void main() {
         expect(sl<LoggerService>(), same(mockLogger));
         expect(sl<http.Client>(), same(mockClient));
         expect(sl<LocalStorageService>(), same(mockStorage));
-        expect(sl<ProviderService>(), same(mockProviderService));
+        expect(sl<SolidProviderService>(), same(mockSolidProviderService));
         expect(sl<FlutterSecureStorage>(), same(mockSecureStorage));
         expect(sl<SolidAuth>(), same(mockSolidAuth));
 
         // Explicitly check that AuthService is ready
-        await sl.isReady<AuthService>();
-        expect(sl<AuthService>(), same(mockObservableAuthService));
+        await sl.isReady<SolidAuthState>();
+        expect(sl<SolidAuthState>(), same(mockSolidAuthState));
+        await sl.isReady<SolidAuthOperations>();
+        expect(sl<SolidAuthOperations>(), same(mockSolidAuthOperations));
+        await sl.isReady<AuthStateChangeProvider>();
+        expect(
+          sl<AuthStateChangeProvider>(),
+          same(mockAuthStateChangeProvider),
+        );
 
         // Check repositories
         expect(
@@ -200,7 +216,7 @@ void main() {
       // Create config with mocked services
       final config = ServiceLocatorConfig(
         httpClient: mockClient,
-        providerService: mockProviderService,
+        providerService: mockSolidProviderService,
         secureStorage: mockSecureStorage,
         solidAuth: mockSolidAuth,
         jwtDecoder: mockJwtDecoderWrapper,
@@ -211,15 +227,18 @@ void main() {
       await initServiceLocator(config: config);
 
       // Verify the async service is ready and properly restored the session
-      await sl.isReady<AuthService>();
+      await sl.isReady<SolidAuthState>();
 
       // Verify session data was correctly restored
-      expect(sl<AuthService>().isAuthenticated, isTrue);
+      expect(sl<SolidAuthState>().isAuthenticated, isTrue);
       expect(
-        sl<AuthService>().currentWebId,
+        sl<SolidAuthState>().currentUser?.webId,
         equals('https://example.org/profile/card#me'),
       );
-      expect(sl<AuthService>().podUrl, equals('https://example.org'));
+      expect(
+        sl<SolidAuthState>().currentUser?.podUrl,
+        equals('https://example.org'),
+      );
 
       // Verify secure storage was queried for authentication data
       verify(mockSecureStorage.read(key: 'solid_webid')).called(1);
@@ -243,7 +262,9 @@ void main() {
 
       // Verify - all registrations should be cleared
       expect(sl.isRegistered<FlutterSecureStorage>(), isFalse);
-      expect(sl.isRegistered<AuthService>(), isFalse);
+      expect(sl.isRegistered<AuthStateChangeProvider>(), isFalse);
+      expect(sl.isRegistered<SolidAuthOperations>(), isFalse);
+      expect(sl.isRegistered<SolidAuthState>(), isFalse);
       expect(sl.isRegistered<ItemRepository>(), isFalse);
     });
   });

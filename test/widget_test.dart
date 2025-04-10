@@ -16,24 +16,31 @@ import 'package:solid_task/core/service_locator.dart';
 import 'package:solid_task/main.dart' as app;
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/screens/items_screen.dart';
-import 'package:solid_task/services/auth/auth_service.dart';
+import 'package:solid_task/services/auth/interfaces/auth_state_change_provider.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
+import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 
 import 'mocks/mock_temp_dir_path_provider.dart';
-import 'widget_test.mocks.dart';
 
 @GenerateMocks([
-  AuthService,
+  SolidAuthState,
+  SolidAuthOperations,
+  AuthStateChangeProvider,
   ItemRepository,
   SyncService,
   LoggerService,
   ContextLogger,
   http.Client,
 ])
+import 'widget_test.mocks.dart';
+
 void main() {
-  late MockAuthService mockAuthService;
+  late MockSolidAuthState mockSolidAuthState;
+  late MockSolidAuthOperations mockSolidAuthOperations;
+  late MockAuthStateChangeProvider mockAuthStateChangeProvider;
   late MockItemRepository mockItemRepository;
   late MockSyncService mockSyncService;
   late MockLoggerService mockLoggerService;
@@ -58,7 +65,9 @@ void main() {
     capturedError = null;
 
     // Create mock services
-    mockAuthService = MockAuthService();
+    mockSolidAuthState = MockSolidAuthState();
+    mockSolidAuthOperations = MockSolidAuthOperations();
+    mockAuthStateChangeProvider = MockAuthStateChangeProvider();
     mockItemRepository = MockItemRepository();
     mockSyncService = MockSyncService();
     mockLoggerService = MockLoggerService();
@@ -68,8 +77,12 @@ void main() {
     behaviorSubject = BehaviorSubject<List<Item>>.seeded([]);
 
     // Set up default behaviors
-    when(mockAuthService.isAuthenticated).thenReturn(false);
-    when(mockAuthService.currentWebId).thenReturn(null);
+    when(mockSolidAuthState.isAuthenticated).thenReturn(false);
+    when(mockSolidAuthState.currentUser?.webId).thenReturn(null);
+    // Add stub for authStateChanges
+    when(
+      mockAuthStateChangeProvider.authStateChanges,
+    ).thenAnswer((_) => Stream<bool>.value(false));
     when(
       mockItemRepository.watchActiveItems(),
     ).thenAnswer((_) => behaviorSubject.stream);
@@ -91,9 +104,11 @@ void main() {
       config: ServiceLocatorConfig(
         httpClient: mockHttpClient,
         loggerService: mockLoggerService,
-        authServiceFactory: (_, __, ___) async => mockAuthService,
+        authState: mockSolidAuthState,
+        authOperations: mockSolidAuthOperations,
+        authStateChangeProvider: mockAuthStateChangeProvider,
         itemRepositoryFactory: (_, __) => mockItemRepository,
-        syncServiceFactory: (_, __, ___, ____) => mockSyncService,
+        syncServiceFactory: (_, __, ___, ____, _____) => mockSyncService,
       ),
     );
   });
