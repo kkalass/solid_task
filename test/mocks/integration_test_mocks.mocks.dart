@@ -27,23 +27,13 @@ import 'package:solid_task/services/sync/sync_service.dart' as _i3;
 // ignore_for_file: subtype_of_sealed_class
 
 class _FakeAuthResult_0 extends _i1.SmartFake implements _i2.AuthResult {
-  _FakeAuthResult_0(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
+  _FakeAuthResult_0(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
 }
 
 class _FakeSyncResult_1 extends _i1.SmartFake implements _i3.SyncResult {
-  _FakeSyncResult_1(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
+  _FakeSyncResult_1(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
 }
 
 /// A class which mocks [AuthService].
@@ -55,35 +45,35 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
   }
 
   @override
-  bool get isAuthenticated => (super.noSuchMethod(
-        Invocation.getter(#isAuthenticated),
-        returnValue: false,
-      ) as bool);
+  bool get isAuthenticated =>
+      (super.noSuchMethod(
+            Invocation.getter(#isAuthenticated),
+            returnValue: false,
+          )
+          as bool);
 
   @override
-  _i4.Future<List<Map<String, dynamic>>> loadProviders() => (super.noSuchMethod(
-        Invocation.method(
-          #loadProviders,
-          [],
-        ),
-        returnValue: _i4.Future<List<Map<String, dynamic>>>.value(
-            <Map<String, dynamic>>[]),
-      ) as _i4.Future<List<Map<String, dynamic>>>);
+  _i4.Future<List<Map<String, dynamic>>> loadProviders() =>
+      (super.noSuchMethod(
+            Invocation.method(#loadProviders, []),
+            returnValue: _i4.Future<List<Map<String, dynamic>>>.value(
+              <Map<String, dynamic>>[],
+            ),
+          )
+          as _i4.Future<List<Map<String, dynamic>>>);
 
   @override
-  _i4.Future<String> getIssuer(String? input) => (super.noSuchMethod(
-        Invocation.method(
-          #getIssuer,
-          [input],
-        ),
-        returnValue: _i4.Future<String>.value(_i5.dummyValue<String>(
-          this,
-          Invocation.method(
-            #getIssuer,
-            [input],
-          ),
-        )),
-      ) as _i4.Future<String>);
+  _i4.Future<String> getIssuer(String? input) =>
+      (super.noSuchMethod(
+            Invocation.method(#getIssuer, [input]),
+            returnValue: _i4.Future<String>.value(
+              _i5.dummyValue<String>(
+                this,
+                Invocation.method(#getIssuer, [input]),
+              ),
+            ),
+          )
+          as _i4.Future<String>);
 
   @override
   _i4.Future<_i2.AuthResult> authenticate(
@@ -91,77 +81,43 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
     _i6.BuildContext? context,
   ) =>
       (super.noSuchMethod(
-        Invocation.method(
-          #authenticate,
-          [
-            issuerUri,
-            context,
-          ],
-        ),
-        returnValue: _i4.Future<_i2.AuthResult>.value(_FakeAuthResult_0(
-          this,
-          Invocation.method(
-            #authenticate,
-            [
-              issuerUri,
-              context,
-            ],
-          ),
-        )),
-      ) as _i4.Future<_i2.AuthResult>);
+            Invocation.method(#authenticate, [issuerUri, context]),
+            returnValue: _i4.Future<_i2.AuthResult>.value(
+              _FakeAuthResult_0(
+                this,
+                Invocation.method(#authenticate, [issuerUri, context]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.AuthResult>);
 
   @override
-  _i4.Future<String?> fetchProfileData(String? webId) => (super.noSuchMethod(
-        Invocation.method(
-          #fetchProfileData,
-          [webId],
-        ),
-        returnValue: _i4.Future<String?>.value(),
-      ) as _i4.Future<String?>);
-
-  @override
-  _i4.Future<String?> getPodUrl(String? webId) => (super.noSuchMethod(
-        Invocation.method(
-          #getPodUrl,
-          [webId],
-        ),
-        returnValue: _i4.Future<String?>.value(),
-      ) as _i4.Future<String?>);
-
-  @override
-  _i4.Future<void> logout() => (super.noSuchMethod(
-        Invocation.method(
-          #logout,
-          [],
-        ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
-
-  @override
-  String generateDpopToken(
-    String? url,
-    String? method,
-  ) =>
+  _i4.Future<String?> getPodUrl(String? webId) =>
       (super.noSuchMethod(
-        Invocation.method(
-          #generateDpopToken,
-          [
-            url,
-            method,
-          ],
-        ),
-        returnValue: _i5.dummyValue<String>(
-          this,
-          Invocation.method(
-            #generateDpopToken,
-            [
-              url,
-              method,
-            ],
-          ),
-        ),
-      ) as String);
+            Invocation.method(#getPodUrl, [webId]),
+            returnValue: _i4.Future<String?>.value(),
+          )
+          as _i4.Future<String?>);
+
+  @override
+  _i4.Future<void> logout() =>
+      (super.noSuchMethod(
+            Invocation.method(#logout, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  String generateDpopToken(String? url, String? method) =>
+      (super.noSuchMethod(
+            Invocation.method(#generateDpopToken, [url, method]),
+            returnValue: _i5.dummyValue<String>(
+              this,
+              Invocation.method(#generateDpopToken, [url, method]),
+            ),
+          )
+          as String);
 }
 
 /// A class which mocks [SyncService].
@@ -173,82 +129,57 @@ class MockSyncService extends _i1.Mock implements _i3.SyncService {
   }
 
   @override
-  bool get isConnected => (super.noSuchMethod(
-        Invocation.getter(#isConnected),
-        returnValue: false,
-      ) as bool);
+  bool get isConnected =>
+      (super.noSuchMethod(Invocation.getter(#isConnected), returnValue: false)
+          as bool);
 
   @override
-  _i4.Future<_i3.SyncResult> syncToRemote() => (super.noSuchMethod(
-        Invocation.method(
-          #syncToRemote,
-          [],
-        ),
-        returnValue: _i4.Future<_i3.SyncResult>.value(_FakeSyncResult_1(
-          this,
-          Invocation.method(
-            #syncToRemote,
-            [],
-          ),
-        )),
-      ) as _i4.Future<_i3.SyncResult>);
+  _i4.Future<_i3.SyncResult> syncToRemote() =>
+      (super.noSuchMethod(
+            Invocation.method(#syncToRemote, []),
+            returnValue: _i4.Future<_i3.SyncResult>.value(
+              _FakeSyncResult_1(this, Invocation.method(#syncToRemote, [])),
+            ),
+          )
+          as _i4.Future<_i3.SyncResult>);
 
   @override
-  _i4.Future<_i3.SyncResult> syncFromRemote() => (super.noSuchMethod(
-        Invocation.method(
-          #syncFromRemote,
-          [],
-        ),
-        returnValue: _i4.Future<_i3.SyncResult>.value(_FakeSyncResult_1(
-          this,
-          Invocation.method(
-            #syncFromRemote,
-            [],
-          ),
-        )),
-      ) as _i4.Future<_i3.SyncResult>);
+  _i4.Future<_i3.SyncResult> syncFromRemote() =>
+      (super.noSuchMethod(
+            Invocation.method(#syncFromRemote, []),
+            returnValue: _i4.Future<_i3.SyncResult>.value(
+              _FakeSyncResult_1(this, Invocation.method(#syncFromRemote, [])),
+            ),
+          )
+          as _i4.Future<_i3.SyncResult>);
 
   @override
-  _i4.Future<_i3.SyncResult> fullSync() => (super.noSuchMethod(
-        Invocation.method(
-          #fullSync,
-          [],
-        ),
-        returnValue: _i4.Future<_i3.SyncResult>.value(_FakeSyncResult_1(
-          this,
-          Invocation.method(
-            #fullSync,
-            [],
-          ),
-        )),
-      ) as _i4.Future<_i3.SyncResult>);
+  _i4.Future<_i3.SyncResult> fullSync() =>
+      (super.noSuchMethod(
+            Invocation.method(#fullSync, []),
+            returnValue: _i4.Future<_i3.SyncResult>.value(
+              _FakeSyncResult_1(this, Invocation.method(#fullSync, [])),
+            ),
+          )
+          as _i4.Future<_i3.SyncResult>);
 
   @override
   void startPeriodicSync(Duration? interval) => super.noSuchMethod(
-        Invocation.method(
-          #startPeriodicSync,
-          [interval],
-        ),
-        returnValueForMissingStub: null,
-      );
+    Invocation.method(#startPeriodicSync, [interval]),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void stopPeriodicSync() => super.noSuchMethod(
-        Invocation.method(
-          #stopPeriodicSync,
-          [],
-        ),
-        returnValueForMissingStub: null,
-      );
+    Invocation.method(#stopPeriodicSync, []),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void dispose() => super.noSuchMethod(
-        Invocation.method(
-          #dispose,
-          [],
-        ),
-        returnValueForMissingStub: null,
-      );
+    Invocation.method(#dispose, []),
+    returnValueForMissingStub: null,
+  );
 }
 
 /// A class which mocks [ContextLogger].
@@ -260,74 +191,30 @@ class MockContextLogger extends _i1.Mock implements _i7.ContextLogger {
   }
 
   @override
-  void debug(
-    String? message, [
-    Object? error,
-    StackTrace? stackTrace,
-  ]) =>
+  void debug(String? message, [Object? error, StackTrace? stackTrace]) =>
       super.noSuchMethod(
-        Invocation.method(
-          #debug,
-          [
-            message,
-            error,
-            stackTrace,
-          ],
-        ),
+        Invocation.method(#debug, [message, error, stackTrace]),
         returnValueForMissingStub: null,
       );
 
   @override
-  void info(
-    String? message, [
-    Object? error,
-    StackTrace? stackTrace,
-  ]) =>
+  void info(String? message, [Object? error, StackTrace? stackTrace]) =>
       super.noSuchMethod(
-        Invocation.method(
-          #info,
-          [
-            message,
-            error,
-            stackTrace,
-          ],
-        ),
+        Invocation.method(#info, [message, error, stackTrace]),
         returnValueForMissingStub: null,
       );
 
   @override
-  void warning(
-    String? message, [
-    Object? error,
-    StackTrace? stackTrace,
-  ]) =>
+  void warning(String? message, [Object? error, StackTrace? stackTrace]) =>
       super.noSuchMethod(
-        Invocation.method(
-          #warning,
-          [
-            message,
-            error,
-            stackTrace,
-          ],
-        ),
+        Invocation.method(#warning, [message, error, stackTrace]),
         returnValueForMissingStub: null,
       );
 
   @override
-  void error(
-    String? message, [
-    Object? error,
-    StackTrace? stackTrace,
-  ]) =>
+  void error(String? message, [Object? error, StackTrace? stackTrace]) =>
       super.noSuchMethod(
-        Invocation.method(
-          #error,
-          [
-            message,
-            error,
-            stackTrace,
-          ],
-        ),
+        Invocation.method(#error, [message, error, stackTrace]),
         returnValueForMissingStub: null,
       );
 }

@@ -238,16 +238,6 @@ class SolidAuthService implements AuthService {
   }
 
   @override
-  Future<String?> fetchProfileData(String webId) async {
-    try {
-      return await _solidAuth.fetchProfileData(webId);
-    } catch (e, stackTrace) {
-      _logger.error('Error fetching profile data', e, stackTrace);
-      return null;
-    }
-  }
-
-  @override
   Future<String?> getPodUrl(String webId) async {
     try {
       final response = await _client.get(

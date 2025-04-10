@@ -17,11 +17,6 @@ class SolidAuth {
     return solid_auth.authenticate(issuerUri, scopes, context);
   }
 
-  /// Fetches the user's profile data from their WebID.
-  Future<String> fetchProfileData(String webId) async {
-    return solid_auth.fetchProfileData(webId);
-  }
-
   /// Logs the user out from the OIDC provider.
   Future<bool> logout(String logoutUrl) async {
     return solid_auth.logout(logoutUrl);

@@ -59,10 +59,6 @@ class ObservableAuthService implements AuthService, AuthStateProvider {
   }
 
   @override
-  Future<String?> fetchProfileData(String webId) =>
-      _authService.fetchProfileData(webId);
-
-  @override
   Future<String?> getPodUrl(String webId) => _authService.getPodUrl(webId);
 
   @override

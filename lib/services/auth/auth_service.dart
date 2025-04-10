@@ -63,10 +63,6 @@ abstract class AuthService {
   /// Authenticate with a SOLID provider
   Future<AuthResult> authenticate(String issuerUri, BuildContext context);
 
-  // FIXME KK - when is this used/needed?
-  /// Fetch profile data from WebID
-  Future<String?> fetchProfileData(String webId);
-
   /// Get Pod URL from WebID
   Future<String?> getPodUrl(String webId);
 
