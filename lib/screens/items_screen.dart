@@ -26,9 +26,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
   @override
   void initState() {
     super.initState();
-    // No need to manually start sync anymore, the SyncManager handles this
 
-    // Listen to sync status updates
+    // Listen to sync status updates for UI refresh only
     _syncManager.syncStatusStream.listen((status) {
       if (mounted) {
         setState(() {}); // Refresh UI when sync status changes
@@ -43,9 +42,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
     );
 
     if (result != null && result.isSuccess && mounted) {
-      // Auth service already has the credentials after successful login
-      // SyncManager will automatically start syncing after auth changes
-      _syncManager.handleAuthStateChange(_authService.isAuthenticated);
       setState(() {}); // Refresh UI
     }
   }
@@ -53,7 +49,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
   Future<void> _disconnectFromPod() async {
     try {
       await _authService.logout();
-      _syncManager.handleAuthStateChange(false);
 
       if (mounted) {
         setState(() {}); // Refresh UI to show disconnected state
@@ -71,23 +66,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
   Future<void> _addItem(String text) async {
     if (text.isEmpty) return;
-
+    // FIXMR KK - the local fallback seems wrong to me
     await _repository.createItem(text, _authService.currentWebId ?? 'local');
     _textController.clear();
-
-    // If connected to a pod, sync the changes
-    if (_isConnectedToSolid) {
-      _syncManager.syncToRemote();
-    }
   }
 
   Future<void> _deleteItem(String id) async {
     await _repository.deleteItem(id, _authService.currentWebId ?? 'local');
-
-    // If connected to a pod, sync the changes
-    if (_isConnectedToSolid) {
-      _syncManager.syncToRemote();
-    }
   }
 
   @override
@@ -298,7 +283,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
   @override
   void dispose() {
     _textController.dispose();
-    // SyncManager is managed by ServiceLocator, no need to dispose it here
     super.dispose();
   }
 }

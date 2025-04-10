@@ -2,13 +2,16 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:solid_task/services/auth/auth_service.dart';
+import 'package:solid_task/services/auth/auth_state_provider.dart';
 import 'package:solid_task/services/auth/default_provider_service.dart';
 import 'package:solid_task/services/auth/jwt_decoder_wrapper.dart';
+import 'package:solid_task/services/auth/observable_auth_service.dart';
 import 'package:solid_task/services/auth/provider_service.dart';
 import 'package:solid_task/services/auth/solid_auth_service.dart';
 import 'package:solid_task/services/auth/solid_auth_wrapper.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/repository/solid_item_repository.dart';
+import 'package:solid_task/services/repository/syncable_item_repository.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/sync/sync_manager.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
@@ -73,6 +76,17 @@ class ServiceLocatorConfig {
   )?
   syncManagerFactory;
 
+  /// Observable auth service factory
+  final AuthService Function(AuthService baseAuthService, LoggerService logger)?
+  observableAuthServiceFactory;
+
+  /// Syncable repository factory
+  final ItemRepository Function(
+    ItemRepository baseRepository,
+    SyncManager syncManager,
+  )?
+  syncableRepositoryFactory;
+
   /// Creates a new service locator configuration
   const ServiceLocatorConfig({
     this.loggerService,
@@ -86,6 +100,8 @@ class ServiceLocatorConfig {
     this.syncServiceFactory,
     this.syncManagerFactory,
     this.jwtDecoder,
+    this.observableAuthServiceFactory,
+    this.syncableRepositoryFactory,
   });
 }
 
@@ -132,53 +148,87 @@ Future<void> initServiceLocator({
 
   // Auth service - use async registration since creation is asynchronous
   sl.registerSingletonAsync<AuthService>(() async {
+    AuthService authService;
+
     if (config.authServiceFactory != null) {
-      return config.authServiceFactory!(
+      authService = await config.authServiceFactory!(
         sl<LoggerService>(),
         sl<http.Client>(),
         sl<ProviderService>(),
       );
+    } else {
+      // Create the standard auth service
+      authService = await SolidAuthService.create(
+        loggerService: sl<LoggerService>(),
+        client: sl<http.Client>(),
+        providerService: sl<ProviderService>(),
+        secureStorage: sl<FlutterSecureStorage>(),
+        solidAuth: sl<SolidAuth>(),
+        jwtDecoder: sl<JwtDecoderWrapper>(),
+      );
     }
 
-    return SolidAuthService.create(
-      loggerService: sl<LoggerService>(),
-      client: sl<http.Client>(),
-      providerService: sl<ProviderService>(),
-      secureStorage: sl<FlutterSecureStorage>(),
-      solidAuth: sl<SolidAuth>(),
-      jwtDecoder: sl<JwtDecoderWrapper>(),
-    );
+    // Wrap with observable auth service
+    return config.observableAuthServiceFactory != null
+        ? config.observableAuthServiceFactory!(authService, sl<LoggerService>())
+        : ObservableAuthService(
+          authService,
+          sl<LoggerService>().createLogger('ObservableAuthService'),
+        );
   });
 
   // Wait for async dependencies to be ready before continuing
   await sl.allReady();
 
+  // Register AuthStateProvider interface with the same instance as AuthService
+  // Only if the AuthService is expected to implement AuthStateProvider
+  if (config.authServiceFactory == null ||
+      sl<AuthService>() is AuthStateProvider) {
+    sl.registerSingletonWithDependencies<AuthStateProvider>(() {
+      final authService = sl<AuthService>();
+      if (authService is AuthStateProvider) {
+        return authService as AuthStateProvider;
+      } else {
+        throw StateError(
+          'AuthService ${authService.runtimeType} does not implement AuthStateProvider. '
+          'This is likely a configuration issue in test environments.',
+        );
+      }
+    }, dependsOn: [AuthService]);
+  }
+
   // Item repository - depends on storage
-  sl.registerLazySingleton<ItemRepository>(
-    () =>
-        config.itemRepositoryFactory != null
-            ? config.itemRepositoryFactory!(
-              sl<LocalStorageService>(),
-              sl<LoggerService>(),
-            )
-            : SolidItemRepository(
-              storage: sl<LocalStorageService>(),
-              logger: sl<LoggerService>().createLogger('ItemRepository'),
-            ),
-  );
+  sl.registerLazySingleton<ItemRepository>(() {
+    ItemRepository baseRepository;
+
+    if (config.itemRepositoryFactory != null) {
+      baseRepository = config.itemRepositoryFactory!(
+        sl<LocalStorageService>(),
+        sl<LoggerService>(),
+      );
+    } else {
+      baseRepository = SolidItemRepository(
+        storage: sl<LocalStorageService>(),
+        logger: sl<LoggerService>().createLogger('ItemRepository'),
+      );
+    }
+
+    // Don't wrap with SyncableItemRepository yet - we need SyncManager first
+    return baseRepository;
+  }, instanceName: 'baseRepository');
 
   // Sync service - depends on repository and auth
   sl.registerLazySingleton<SyncService>(
     () =>
         config.syncServiceFactory != null
             ? config.syncServiceFactory!(
-              sl<ItemRepository>(),
+              sl<ItemRepository>(instanceName: 'baseRepository'),
               sl<AuthService>(),
               sl<LoggerService>(),
               sl<http.Client>(),
             )
             : SolidSyncService(
-              repository: sl<ItemRepository>(),
+              repository: sl<ItemRepository>(instanceName: 'baseRepository'),
               authService: sl<AuthService>(),
               logger: sl<LoggerService>().createLogger('SyncService'),
               client: sl<http.Client>(),
@@ -205,6 +255,19 @@ Future<void> initServiceLocator({
     return syncManager;
   });
 
-  // Wait for async dependencies to be ready before returning
-  await sl.allReady();
+  // Wait for SyncManager to be ready
+  await sl.isReady<SyncManager>();
+
+  // Register the syncable repository decorator that integrates with SyncManager
+  sl.registerSingleton<ItemRepository>(
+    config.syncableRepositoryFactory != null
+        ? config.syncableRepositoryFactory!(
+          sl<ItemRepository>(instanceName: 'baseRepository'),
+          sl<SyncManager>(),
+        )
+        : SyncableItemRepository(
+          sl<ItemRepository>(instanceName: 'baseRepository'),
+          sl<SyncManager>(),
+        ),
+  );
 }

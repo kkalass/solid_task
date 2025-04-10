@@ -7,11 +7,13 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'package:solid_task/core/service_locator.dart';
 import 'package:solid_task/services/auth/auth_service.dart';
 import 'package:solid_task/services/auth/jwt_decoder_wrapper.dart';
+import 'package:solid_task/services/auth/observable_auth_service.dart';
 import 'package:solid_task/services/auth/provider_service.dart';
 import 'package:solid_task/services/auth/solid_auth_wrapper.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/storage/local_storage_service.dart';
+import 'package:solid_task/services/sync/sync_manager.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 
 // Generate mocks for all services
@@ -22,8 +24,10 @@ import '../mocks/mock_temp_dir_path_provider.dart';
   MockSpec<LocalStorageService>(),
   MockSpec<ProviderService>(),
   MockSpec<AuthService>(),
+  MockSpec<ObservableAuthService>(),
   MockSpec<ItemRepository>(),
   MockSpec<SyncService>(),
+  MockSpec<SyncManager>(),
   MockSpec<SolidAuth>(),
   MockSpec<FlutterSecureStorage>(),
   MockSpec<ContextLogger>(),
@@ -41,8 +45,10 @@ void main() {
     late MockLocalStorageService mockStorage;
     late MockProviderService mockProviderService;
     late MockAuthService mockAuthService;
+    late MockObservableAuthService mockObservableAuthService;
     late MockItemRepository mockItemRepository;
     late MockSyncService mockSyncService;
+    late MockSyncManager mockSyncManager;
     late MockFlutterSecureStorage mockSecureStorage;
     late MockSolidAuth mockSolidAuth;
     late MockContextLogger mockContextLogger;
@@ -67,8 +73,10 @@ void main() {
       mockStorage = MockLocalStorageService();
       mockProviderService = MockProviderService();
       mockAuthService = MockAuthService();
+      mockObservableAuthService = MockObservableAuthService();
       mockItemRepository = MockItemRepository();
       mockSyncService = MockSyncService();
+      mockSyncManager = MockSyncManager();
       mockSecureStorage = MockFlutterSecureStorage();
       mockSolidAuth = MockSolidAuth();
       mockContextLogger = MockContextLogger();
@@ -116,6 +124,10 @@ void main() {
           authServiceFactory: (_, __, ___) async => mockAuthService,
           itemRepositoryFactory: (_, __) => mockItemRepository,
           syncServiceFactory: (_, __, ___, ____) => mockSyncService,
+          // Skip SyncManager for this test to avoid unnecessary dependencies
+          syncManagerFactory: (_, __, ___) => mockSyncManager,
+          observableAuthServiceFactory:
+              (baseAuthService, __) => mockObservableAuthService,
         );
 
         // Initialize with our config
@@ -128,8 +140,16 @@ void main() {
         expect(sl<ProviderService>(), same(mockProviderService));
         expect(sl<FlutterSecureStorage>(), same(mockSecureStorage));
         expect(sl<SolidAuth>(), same(mockSolidAuth));
-        expect(sl<AuthService>(), same(mockAuthService));
-        expect(sl<ItemRepository>(), same(mockItemRepository));
+
+        // Explicitly check that AuthService is ready
+        await sl.isReady<AuthService>();
+        expect(sl<AuthService>(), same(mockObservableAuthService));
+
+        // Check repositories
+        expect(
+          sl<ItemRepository>(instanceName: 'baseRepository'),
+          same(mockItemRepository),
+        );
         expect(sl<SyncService>(), same(mockSyncService));
       },
     );

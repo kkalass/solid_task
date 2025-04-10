@@ -118,6 +118,7 @@ void main() {
 
     test('syncToRemote should update status correctly', () async {
       // Arrange
+      when(mockAuthService.isAuthenticated).thenReturn(true); // Add missing auth mock
       when(
         mockSyncService.syncToRemote(),
       ).thenAnswer((_) async => SyncResult(success: true, itemsUploaded: 2));

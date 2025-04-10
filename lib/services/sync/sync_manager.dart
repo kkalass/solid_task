@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:solid_task/services/auth/auth_service.dart';
+import 'package:solid_task/services/auth/auth_state_provider.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 
@@ -57,7 +58,9 @@ class SyncManager {
 
   final StreamController<SyncStatus> _syncStatusController =
       StreamController<SyncStatus>.broadcast();
+  StreamSubscription? _authSubscription;
   Timer? _periodicSyncTimer;
+  Timer? _coalescingTimer;
   bool _isDisposed = false;
 
   /// Stream of sync status updates that UI components can listen to
@@ -76,19 +79,50 @@ class SyncManager {
   /// The error message from the last failed sync
   String? get errorMessage => _currentStatus.error;
 
+  /// Creates a new SyncManager that will automatically respond to auth state changes
   SyncManager(this._syncService, this._authService, this._logger);
 
   /// Initialize the sync manager and set up auth state listeners
   Future<void> initialize() async {
     _logger.debug('Initializing SyncManager');
 
-    // Store authentication state to avoid multiple calls
-    final isAuthenticated = _authService.isAuthenticated;
-    
+    // Subscribe to auth state changes
+    _setupAuthListener();
+
     // If already authenticated, start sync
+    final isAuthenticated = _authService.isAuthenticated;
     if (isAuthenticated) {
       _logger.debug('Already authenticated, starting sync');
       await _performSyncIfAuthenticated(isAuthenticated);
+    }
+  }
+
+  /// Setup listener for authentication state changes
+  void _setupAuthListener() {
+    // Clean up any existing subscription first
+    _authSubscription?.cancel();
+
+    // Subscribe to auth state changes if the service provides them
+    if (_authService is AuthStateProvider) {
+      final authStateProvider = _authService as AuthStateProvider;
+      _authSubscription = authStateProvider.authStateChanges.listen(
+        _onAuthStateChanged,
+      );
+      _logger.debug('Subscribed to auth state changes');
+    } else {
+      _logger.warning(
+        'AuthService does not implement AuthStateProvider, fallback to manual auth state handling',
+      );
+    }
+  }
+
+  /// Handles auth state changes from the auth service
+  void _onAuthStateChanged(bool isAuthenticated) {
+    _logger.debug('Auth state changed: isAuthenticated=$isAuthenticated');
+    if (isAuthenticated) {
+      _performSyncIfAuthenticated(true);
+    } else {
+      stopSynchronization();
     }
   }
 
@@ -142,12 +176,17 @@ class SyncManager {
   Future<SyncResult> startSynchronization() async {
     // Cache authentication state to avoid multiple calls
     final isAuthenticated = _authService.isAuthenticated;
-    return (await _performSyncIfAuthenticated(isAuthenticated)) ?? 
+    return (await _performSyncIfAuthenticated(isAuthenticated)) ??
         SyncResult(success: false, error: 'Unknown error');
   }
 
   /// Manually trigger synchronization to remote
+  /// For explicit sync requests (usually triggered by UI actions)
   Future<SyncResult> syncToRemote() async {
+    if (!_authService.isAuthenticated) {
+      return SyncResult(success: false, error: 'Not authenticated');
+    }
+
     if (isSyncing) {
       return SyncResult(success: false, error: 'Sync already in progress');
     }
@@ -166,6 +205,24 @@ class SyncManager {
       _updateStatus(SyncStatus.error(errorMsg));
       return SyncResult(success: false, error: errorMsg);
     }
+  }
+
+  /// Schedule a sync operation to run after a short delay, coalescing multiple requests
+  /// This is used when multiple repository changes happen in quick succession
+  Future<void> requestSync() async {
+    if (!_authService.isAuthenticated || _isDisposed) {
+      return;
+    }
+
+    // Cancel any pending sync request
+    _coalescingTimer?.cancel();
+
+    // Schedule a new sync after a short delay
+    _coalescingTimer = Timer(const Duration(milliseconds: 500), () async {
+      if (!_isDisposed && !isSyncing) {
+        await syncToRemote();
+      }
+    });
   }
 
   /// Start periodic synchronization
@@ -220,6 +277,7 @@ class SyncManager {
   /// Stop all synchronization activities
   void stopSynchronization() {
     _stopPeriodicSync();
+    _coalescingTimer?.cancel();
     _updateStatus(SyncStatus.idle());
   }
 
@@ -231,19 +289,18 @@ class SyncManager {
     }
   }
 
-  /// Handle authentication state changes
+  /// Handle authentication state changes via manual API call
+  /// Only needed when AuthService doesn't support stream of auth state changes
   void handleAuthStateChange(bool isAuthenticated) {
-    if (isAuthenticated) {
-      _performSyncIfAuthenticated(isAuthenticated);
-    } else {
-      stopSynchronization();
-    }
+    _onAuthStateChanged(isAuthenticated);
   }
 
   /// Clean up resources
   void dispose() {
     _isDisposed = true;
     _stopPeriodicSync();
+    _authSubscription?.cancel();
+    _coalescingTimer?.cancel();
     _syncStatusController.close();
     _logger.debug('SyncManager disposed');
   }
