@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:solid_task/models/item.dart';
+import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/storage/hive_backend.dart';
 import 'package:solid_task/services/storage/local_storage_service.dart';
 
@@ -17,17 +18,24 @@ class HiveStorageService implements LocalStorageService {
   bool _isInitialized = false;
   final int _maxRetries = 5;
   final Duration _retryDelay = Duration(milliseconds: 200);
+  final ContextLogger _logger;
 
   // Injected dependency for Hive operations
   final HiveBackend<Item> _hiveBackend;
 
   /// Creates a new HiveStorageService with optional backend
-  HiveStorageService._({HiveBackend<Item>? hiveBackend})
-    : _hiveBackend = hiveBackend ?? DefaultHiveBackend<Item>();
+  HiveStorageService._({
+    HiveBackend<Item>? hiveBackend,
+    LoggerService? loggerService,
+  }) : _hiveBackend = hiveBackend ?? DefaultHiveBackend<Item>(),
+       _logger = (loggerService ?? LoggerService()).createLogger(
+         'HiveStorageService',
+       );
 
   /// Factory constructor to create a singleton instance
   static Future<HiveStorageService> create({
     HiveBackend<Item>? hiveBackend,
+    LoggerService? loggerService,
   }) async {
     var instance = HiveStorageService._(hiveBackend: hiveBackend);
     await instance._init();
@@ -163,9 +171,9 @@ class HiveStorageService implements LocalStorageService {
         await _box.close();
         await _itemsController.close();
         await _hiveBackend.closeBoxes();
-      } catch (e) {
+      } catch (e, stackTrace) {
         // Log error but don't crash if closing fails
-        print('Error closing Hive box: $e');
+        _logger.error('Error closing Hive box: ', e, stackTrace);
       } finally {
         _isInitialized = false;
       }

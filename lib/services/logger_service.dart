@@ -85,10 +85,22 @@ class LoggerService {
     if (!kIsWeb) {
       try {
         await _processingLock.synchronized(() async {
-          _logFile = File(
-            '${(await getApplicationDocumentsDirectory()).path}/app.log',
-          );
+          final appDocDir = await getApplicationDocumentsDirectory();
+
+          // Ensure directory exists
+          if (!await appDocDir.exists()) {
+            await appDocDir.create(recursive: true);
+          }
+
+          final logFilePath = '${appDocDir.path}/app.log';
+          _logFile = File(logFilePath);
+
           if (!await _logFile!.exists()) {
+            // Ensure parent directory exists before creating the file
+            final parentDir = Directory(_logFile!.parent.path);
+            if (!await parentDir.exists()) {
+              await parentDir.create(recursive: true);
+            }
             await _logFile!.create();
           }
         });
@@ -109,6 +121,8 @@ class LoggerService {
 
     // Use a lock to ensure sequential processing
     await _processingLock.synchronized(() async {
+      // now that we got the lock, maybe the logger was disposed in the meantime
+      if (_logFile == null) return;
       try {
         // Check if we need to rotate logs
         var length = await _logFile!.length();
@@ -126,6 +140,7 @@ class LoggerService {
         if (length + message.length > _maxLogSize) {
           await _rotateLogs();
         }
+
         await _logFile!.writeAsString(message, mode: FileMode.append);
 
         // Write error if present
@@ -283,7 +298,10 @@ class LoggerService {
   }
 
   Future<void> dispose() async {
-    await _logSubscription?.cancel();
-    _logSubscription = null;
+    await _processingLock.synchronized(() async {
+      await _logSubscription?.cancel();
+      _logSubscription = null;
+      _logFile = null;
+    });
   }
 }

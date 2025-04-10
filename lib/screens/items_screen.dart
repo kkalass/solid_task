@@ -261,7 +261,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                             side: BorderSide(
-                              color: colorScheme.outline.withOpacity(0.2),
+                              color: colorScheme.outline.withValues(alpha: 0.2),
                             ),
                           ),
                           child: ListTile(

@@ -105,7 +105,7 @@ Future<void> initServiceLocator({
     if (config.storageService != null) {
       return config.storageService!;
     }
-    return HiveStorageService.create();
+    return HiveStorageService.create(loggerService: sl<LoggerService>());
   });
 
   // Provider service with configurable implementation

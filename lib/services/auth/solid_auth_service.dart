@@ -9,6 +9,7 @@ import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/profile_parser.dart';
 
 import 'package:solid_task/services/auth/provider_service.dart';
+import 'package:solid_task/services/turtle_parser/turtle_parser.dart';
 
 /// Implementation of the AuthService for SOLID authentication
 class SolidAuthService implements AuthService {
@@ -44,14 +45,21 @@ class SolidAuthService implements AuthService {
     FlutterSecureStorage? secureStorage,
     JwtDecoderWrapper? jwtDecoder,
     SolidAuth? solidAuth,
+    ProfileParserService? profileParser,
   }) : _logger = (loggerService ?? LoggerService()).createLogger(
          'SolidAuthService',
        ),
        _client = client,
        _secureStorage = secureStorage ?? const FlutterSecureStorage(),
        _jwtDecoder = jwtDecoder ?? JwtDecoderWrapper(),
+       // Pass the HTTP client to dependent components to ensure consistent mocking
        _solidAuth = solidAuth ?? SolidAuth(),
-       _profileParser = DefaultProfileParser(loggerService: loggerService),
+       _profileParser =
+           profileParser ??
+           DefaultProfileParser(
+             loggerService: loggerService,
+             turtleParser: DefaultTurtleParser(loggerService: loggerService),
+           ),
        _providerService = providerService {
     // Create the initialization future but don't await it
     _initializationFuture = _initialize();
@@ -74,6 +82,7 @@ class SolidAuthService implements AuthService {
     FlutterSecureStorage? secureStorage,
     JwtDecoderWrapper? jwtDecoder,
     SolidAuth? solidAuth,
+    ProfileParserService? profileParser,
   }) async {
     final service = SolidAuthService._(
       loggerService: loggerService,
@@ -82,6 +91,7 @@ class SolidAuthService implements AuthService {
       secureStorage: secureStorage,
       jwtDecoder: jwtDecoder,
       solidAuth: solidAuth,
+      profileParser: profileParser,
     );
 
     // Wait for initialization to complete

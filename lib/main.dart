@@ -5,11 +5,15 @@ import 'core/service_locator.dart';
 import 'screens/items_screen.dart';
 import 'services/logger_service.dart';
 
-void main() async {
+Future<void> main({
+  Future<void> Function() initServiceLocator = initServiceLocator,
+  LoggerService? logger,
+  void Function(Widget) runApp = runApp,
+}) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize logger
-  final logger = LoggerService();
+  logger ??= LoggerService();
   await logger.init();
 
   try {
