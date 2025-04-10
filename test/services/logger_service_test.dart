@@ -5,64 +5,21 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'dart:io';
 import 'dart:async';
 import 'package:logging/logging.dart';
-
-class MockPathProvider extends PathProviderPlatform {
-  late Directory _tempDir;
-
-  MockPathProvider() {
-    _tempDir = Directory.systemTemp.createTempSync('logger_test');
-  }
-
-  @override
-  Future<String?> getApplicationDocumentsPath() async {
-    return _tempDir.path;
-  }
-
-  @override
-  Future<String?> getApplicationSupportPath() async {
-    return _tempDir.path;
-  }
-
-  @override
-  Future<String?> getTemporaryPath() async {
-    return _tempDir.path;
-  }
-
-  @override
-  Future<String?> getLibraryPath() async {
-    return _tempDir.path;
-  }
-
-  @override
-  Future<String?> getApplicationCachePath() async {
-    return _tempDir.path;
-  }
-
-  @override
-  Future<String?> getExternalStoragePath() async {
-    return _tempDir.path;
-  }
-
-  @override
-  Future<List<String>?> getExternalStoragePaths({
-    StorageDirectory? type,
-  }) async {
-    return [_tempDir.path];
-  }
-
-  @override
-  Future<String?> getDownloadsPath() async {
-    return _tempDir.path;
-  }
-}
+import '../mocks/mock_temp_dir_path_provider.dart';
 
 void main() {
   late LoggerService logger;
   late Directory tempDir;
   late File logFile;
+  late MockTempDirPathProvider mockPathProvider;
 
   setUpAll(() {
-    PathProviderPlatform.instance = MockPathProvider();
+    mockPathProvider = MockTempDirPathProvider(prefix: 'test_logger_service');
+    PathProviderPlatform.instance = mockPathProvider;
+  });
+
+  tearDownAll(() async {
+    await mockPathProvider.cleanup();
   });
 
   setUp(() async {

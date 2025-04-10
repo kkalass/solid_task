@@ -3,17 +3,34 @@ import 'graph.dart';
 import 'parser.dart';
 
 /// Facade for parsing Turtle documents
-class TurtleParserFacade {
-  static final _logger = LoggerService();
+abstract class TurtleParserFacade {
+  /// Find storage URLs in a Turtle document
+  List<String> findStorageUrls(String content, {String? documentUrl});
+}
+
+/// Default implementation of TurtleParserFacade
+class DefaultTurtleParser implements TurtleParserFacade {
+  final ContextLogger _logger;
+  final LoggerService? _loggerService;
+
+  DefaultTurtleParser({LoggerService? loggerService})
+    : _loggerService = loggerService,
+      _logger = (loggerService ?? LoggerService()).createLogger(
+        "DefaultTurtleParser",
+      );
 
   /// Parse a Turtle document and return an RDF graph
   ///
   /// [input] is the Turtle document to parse.
   /// [documentUrl] is the absolute URL of the document, used for resolving relative IRIs.
   /// If not provided, relative IRIs will be kept as-is.
-  static RdfGraph parse(String input, {String? documentUrl}) {
+  RdfGraph parse(String input, {String? documentUrl}) {
     try {
-      final parser = TurtleParser(input, baseUri: documentUrl);
+      final parser = TurtleParser(
+        input,
+        baseUri: documentUrl,
+        loggerService: _loggerService,
+      );
       final triples = parser.parse();
 
       final graph = RdfGraph();
@@ -34,14 +51,10 @@ class TurtleParserFacade {
     }
   }
 
-  /// Find storage URLs in a Turtle document
-  ///
-  /// [input] is the Turtle document to parse.
-  /// [documentUrl] is the absolute URL of the document, used for resolving relative IRIs.
-  /// If not provided, relative IRIs will be kept as-is.
-  static List<String> findStorageUrls(String input, {String? documentUrl}) {
+  @override
+  List<String> findStorageUrls(String content, {String? documentUrl}) {
     try {
-      final graph = parse(input, documentUrl: documentUrl);
+      final graph = parse(content, documentUrl: documentUrl);
       final storageTriples = graph.findTriples(
         predicate: 'http://www.w3.org/ns/solid/terms#storage',
       );

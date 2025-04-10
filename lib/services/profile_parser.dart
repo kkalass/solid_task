@@ -4,9 +4,24 @@ import 'dart:convert';
 import 'package:solid_task/services/logger_service.dart';
 import 'turtle_parser/turtle_parser.dart';
 
-/// Service for parsing Solid profile documents
-class ProfileParser {
-  static final _logger = LoggerService();
+/// Interface for profile parsing operations
+abstract class ProfileParserService {
+  /// Parse a profile document to extract the pod storage URL
+  ///
+  /// [webId] The WebID URL of the profile
+  /// [content] The profile document content
+  /// [contentType] The content type of the document
+  Future<String?> parseStorageUrl(
+    String webId,
+    String content,
+    String contentType,
+  );
+}
+
+/// Implementation for parsing Solid profile documents
+class DefaultProfileParser implements ProfileParserService {
+  final ContextLogger _logger;
+  final TurtleParserFacade _turtleParser;
 
   /// Common predicates used to identify storage locations in Solid profiles
   static const _storagePredicates = [
@@ -26,12 +41,18 @@ class ProfileParser {
     'pim': 'http://www.w3.org/ns/pim/space#',
   };
 
-  /// Parse a profile document to extract the pod storage URL
-  ///
-  /// [webId] The WebID URL of the profile
-  /// [content] The profile document content
-  /// [contentType] The content type of the document
-  static Future<String?> parseStorageUrl(
+  /// Creates a new ProfileParser with the required dependencies
+  DefaultProfileParser({
+    LoggerService? loggerService,
+    TurtleParserFacade? turtleParser,
+  }) : _logger = (loggerService ?? LoggerService()).createLogger(
+         'DefaultProfileParser',
+       ),
+       _turtleParser =
+           turtleParser ?? DefaultTurtleParser(loggerService: loggerService);
+
+  @override
+  Future<String?> parseStorageUrl(
     String webId,
     String content,
     String contentType,
@@ -40,7 +61,7 @@ class ProfileParser {
       _logger.info('Parsing profile with content type: $contentType');
 
       if (contentType.contains('text/turtle')) {
-        final storageUrls = TurtleParserFacade.findStorageUrls(
+        final storageUrls = _turtleParser.findStorageUrls(
           content,
           documentUrl: webId,
         );
@@ -51,7 +72,7 @@ class ProfileParser {
         _logger.info('Unknown content type: $contentType, trying both formats');
         List<String> turtleUrls = [];
         try {
-          turtleUrls = TurtleParserFacade.findStorageUrls(
+          turtleUrls = _turtleParser.findStorageUrls(
             content,
             documentUrl: webId,
           );
@@ -80,8 +101,9 @@ class ProfileParser {
     }
   }
 
+  // FIXME KK - we should refactor the turtle_parser into a more proper rdf library with both turtle and json-ld parsers and writers, working on the same graph
   /// Parse a JSON-LD format profile document
-  static String? _parseJsonLd(String jsonLd) {
+  String? _parseJsonLd(String jsonLd) {
     try {
       _logger.debug('Starting JSON-LD parsing');
       final decoded = json.decode(jsonLd);
@@ -111,7 +133,7 @@ class ProfileParser {
   }
 
   /// Parse a JSON-LD object to find storage URL
-  static String? _parseJsonLdObject(Map<String, dynamic> obj) {
+  String? _parseJsonLdObject(Map<String, dynamic> obj) {
     _logger.debug('Checking direct storage properties');
     // Try direct storage property
     final directResult = _findStorageInObjectWithPredicates(obj);
@@ -170,7 +192,7 @@ class ProfileParser {
   }
 
   /// Find storage URL in a JSON-LD object using all storage predicates
-  static String? _findStorageInObjectWithPredicates(Map<String, dynamic> obj) {
+  String? _findStorageInObjectWithPredicates(Map<String, dynamic> obj) {
     for (final predicate in _storagePredicates) {
       _logger.debug('Trying predicate: $predicate');
       final storage = _findStorageInObject(obj, predicate);
@@ -180,10 +202,7 @@ class ProfileParser {
   }
 
   /// Find storage URL in a JSON-LD object
-  static String? _findStorageInObject(
-    Map<String, dynamic> obj,
-    String predicate,
-  ) {
+  String? _findStorageInObject(Map<String, dynamic> obj, String predicate) {
     // Try direct predicate
     final value = obj[predicate];
     if (value != null) {

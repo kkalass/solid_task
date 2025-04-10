@@ -1,9 +1,25 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
+import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/profile_parser.dart';
+import 'package:mockito/annotations.dart';
+
+@GenerateMocks([ContextLogger, LoggerService])
+import 'profile_parser_test.mocks.dart';
 
 void main() {
-  group('ProfileParser', () {
+  group('DefaultProfileParser', () {
+    late MockLoggerService mockLoggerService;
+    late MockContextLogger mockContextLogger;
+    late ProfileParserService profileParser;
     const webId = 'https://example.com/profile/card#me';
+
+    setUp(() {
+      mockLoggerService = MockLoggerService();
+      mockContextLogger = MockContextLogger();
+      when(mockLoggerService.createLogger(any)).thenReturn(mockContextLogger);
+      profileParser = DefaultProfileParser(loggerService: mockLoggerService);
+    });
 
     test('parses Turtle profile with solid:storage', () async {
       const turtleProfile = '''
@@ -24,7 +40,7 @@ void main() {
     a solid:StorageContainer.
 ''';
 
-      final result = await ProfileParser.parseStorageUrl(
+      final result = await profileParser.parseStorageUrl(
         webId,
         turtleProfile,
         'text/turtle',
@@ -68,7 +84,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
     foaf:name "Klas Kala\u00df".
 ''';
 
-      final result = await ProfileParser.parseStorageUrl(
+      final result = await profileParser.parseStorageUrl(
         'https://kkalass.datapod.igrant.io/profile/card#me',
         turtleProfile,
         'text/turtle',
@@ -191,7 +207,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 ]
 ''';
 
-      final result = await ProfileParser.parseStorageUrl(
+      final result = await profileParser.parseStorageUrl(
         webId,
         jsonLdProfile,
         'application/ld+json',
@@ -217,7 +233,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 }
 ''';
 
-      final result = await ProfileParser.parseStorageUrl(
+      final result = await profileParser.parseStorageUrl(
         webId,
         jsonLdProfile,
         'application/ld+json',
@@ -244,7 +260,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 }
 ''';
 
-      final result = await ProfileParser.parseStorageUrl(
+      final result = await profileParser.parseStorageUrl(
         webId,
         jsonLdGraphProfile,
         'application/ld+json',
@@ -266,7 +282,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 }
 ''';
 
-      final result = await ProfileParser.parseStorageUrl(
+      final result = await profileParser.parseStorageUrl(
         webId,
         jsonLdCompactProfile,
         'application/ld+json',
@@ -275,7 +291,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
     });
 
     test('handles invalid JSON-LD gracefully', () async {
-      final result = await ProfileParser.parseStorageUrl(
+      final result = await profileParser.parseStorageUrl(
         webId,
         'invalid json',
         'application/ld+json',
@@ -284,7 +300,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
     });
 
     test('handles invalid Turtle gracefully', () async {
-      final result = await ProfileParser.parseStorageUrl(
+      final result = await profileParser.parseStorageUrl(
         webId,
         'invalid turtle',
         'text/turtle',
@@ -310,7 +326,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 }
 ''';
 
-      final result = await ProfileParser.parseStorageUrl(
+      final result = await profileParser.parseStorageUrl(
         webId,
         jsonLdProfile,
         'application/octet-stream',

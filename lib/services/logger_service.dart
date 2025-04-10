@@ -212,7 +212,11 @@ class LoggerService {
   }
 
   void debug(String message, [Object? error, StackTrace? stackTrace]) {
-    _logger.fine(message, error, stackTrace);
+    if (error != null || stackTrace != null) {
+      _logger.log(Level.FINE, message, error, stackTrace);
+    } else {
+      _logger.fine(message);
+    }
   }
 
   void info(String message, [Object? error, StackTrace? stackTrace]) {

@@ -3,6 +3,11 @@ import 'package:solid_task/services/turtle_parser/turtle_parser.dart';
 
 void main() {
   group('TurtleParserFacade', () {
+    late TurtleParserFacade turtleParserFacade;
+
+    setUp(() {
+      turtleParserFacade = DefaultTurtleParser();
+    });
     test('should parse a simple profile', () {
       final input = '''
         @prefix solid: <http://www.w3.org/ns/solid/terms#> .
@@ -14,10 +19,14 @@ void main() {
           space:storage <https://example.com/storage/> .
       ''';
 
-      final storageUrls = TurtleParserFacade.findStorageUrls(input);
+      final storageUrls = turtleParserFacade.findStorageUrls(
+        input,
+        documentUrl: 'https://example.com/profile#me',
+      );
       expect(storageUrls.length, equals(2));
       expect(storageUrls, everyElement(equals('https://example.com/storage/')));
     });
+
     test('should parse a real life profile', () {
       final input = '''
 @prefix : <#>.
@@ -54,7 +63,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
     foaf:name "Klas Kala\u00df".
       ''';
 
-      final storageUrls = TurtleParserFacade.findStorageUrls(
+      final storageUrls = turtleParserFacade.findStorageUrls(
         input,
         documentUrl: 'https://kkalass.datapod.igrant.io/profile/card',
       );
@@ -74,7 +83,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
           solid:storage <https://example.com/storage2/> .
       ''';
 
-      final storageUrls = TurtleParserFacade.findStorageUrls(input);
+      final storageUrls = turtleParserFacade.findStorageUrls(input);
       expect(storageUrls.length, equals(2));
       expect(storageUrls, contains('https://example.com/storage1/'));
       expect(storageUrls, contains('https://example.com/storage2/'));
@@ -90,7 +99,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
           ] .
       ''';
 
-      final storageUrls = TurtleParserFacade.findStorageUrls(input);
+      final storageUrls = turtleParserFacade.findStorageUrls(input);
       expect(storageUrls.length, equals(1));
       expect(storageUrls[0], equals('https://example.com/storage/'));
     });
@@ -104,7 +113,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
           solid:storage <https://example.com/storage/> .
       ''';
 
-      final storageUrls = TurtleParserFacade.findStorageUrls(input);
+      final storageUrls = turtleParserFacade.findStorageUrls(input);
       expect(storageUrls.length, equals(1));
       expect(storageUrls[0], equals('https://example.com/storage/'));
     });
@@ -126,7 +135,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
           ] .
       ''';
 
-      final storageUrls = TurtleParserFacade.findStorageUrls(input);
+      final storageUrls = turtleParserFacade.findStorageUrls(input);
       expect(storageUrls.length, equals(2));
       expect(storageUrls, everyElement(equals('https://example.com/storage/')));
     });

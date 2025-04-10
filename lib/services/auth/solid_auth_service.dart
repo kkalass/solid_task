@@ -2,18 +2,23 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:solid_auth/solid_auth.dart' as solid_auth;
 import 'package:solid_task/services/auth/auth_service.dart';
+import 'package:solid_task/services/auth/jwt_decoder_wrapper.dart';
+import 'package:solid_task/services/auth/solid_auth_wrapper.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/profile_parser.dart';
-import 'package:flutter/services.dart';
+
+import 'package:solid_task/services/auth/provider_service.dart';
 
 /// Implementation of the AuthService for SOLID authentication
 class SolidAuthService implements AuthService {
   final ContextLogger _logger;
   final http.Client _client;
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final FlutterSecureStorage _secureStorage;
+  final JwtDecoderWrapper _jwtDecoder;
+  final SolidAuth _solidAuth;
+  final ProviderService _providerService;
+  final ProfileParserService _profileParser;
 
   // Auth state
   String? _currentWebId;
@@ -28,11 +33,60 @@ class SolidAuthService implements AuthService {
   static const String _accessTokenKey = 'solid_access_token';
   static const String _authDataKey = 'solid_auth_data';
 
-  SolidAuthService({required ContextLogger logger, required http.Client client})
-    : _logger = logger,
-      _client = client {
-    // Try to restore session from secure storage
-    _tryRestoreSession();
+  // Add initialization state tracking
+  late final Future<void> _initializationFuture;
+
+  // Private constructor that captures dependencies
+  SolidAuthService._({
+    LoggerService? loggerService,
+    required http.Client client,
+    required ProviderService providerService,
+    FlutterSecureStorage? secureStorage,
+    JwtDecoderWrapper? jwtDecoder,
+    SolidAuth? solidAuth,
+  }) : _logger = (loggerService ?? LoggerService()).createLogger(
+         'SolidAuthService',
+       ),
+       _client = client,
+       _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+       _jwtDecoder = jwtDecoder ?? JwtDecoderWrapper(),
+       _solidAuth = solidAuth ?? SolidAuth(),
+       _profileParser = DefaultProfileParser(loggerService: loggerService),
+       _providerService = providerService {
+    // Create the initialization future but don't await it
+    _initializationFuture = _initialize();
+  }
+
+  // Async initialization method
+  Future<void> _initialize() async {
+    try {
+      await _tryRestoreSession();
+    } catch (e, stackTrace) {
+      _logger.error('Error during initialization', e, stackTrace);
+    }
+  }
+
+  // Factory constructor for normal use
+  static Future<SolidAuthService> create({
+    required LoggerService loggerService,
+    required http.Client client,
+    required ProviderService providerService,
+    FlutterSecureStorage? secureStorage,
+    JwtDecoderWrapper? jwtDecoder,
+    SolidAuth? solidAuth,
+  }) async {
+    final service = SolidAuthService._(
+      loggerService: loggerService,
+      client: client,
+      providerService: providerService,
+      secureStorage: secureStorage,
+      jwtDecoder: jwtDecoder,
+      solidAuth: solidAuth,
+    );
+
+    // Wait for initialization to complete
+    await service._initializationFuture;
+    return service;
   }
 
   Future<void> _tryRestoreSession() async {
@@ -48,7 +102,7 @@ class SolidAuthService implements AuthService {
 
       if (_accessToken != null) {
         try {
-          _decodedToken = JwtDecoder.decode(_accessToken!);
+          _decodedToken = _jwtDecoder.decode(_accessToken!);
         } catch (e) {
           // Token is invalid, clear session
           _logger.warning('Invalid access token, clearing session');
@@ -118,21 +172,12 @@ class SolidAuthService implements AuthService {
 
   @override
   Future<List<Map<String, dynamic>>> loadProviders() async {
-    try {
-      final String jsonString = await rootBundle.loadString(
-        'assets/solid_providers.json',
-      );
-      final data = json.decode(jsonString);
-      return List<Map<String, dynamic>>.from(data['providers']);
-    } catch (e, stackTrace) {
-      _logger.error('Error loading providers', e, stackTrace);
-      return [];
-    }
+    return _providerService.loadProviders();
   }
 
   @override
   Future<String> getIssuer(String input) async {
-    return solid_auth.getIssuer(input.trim());
+    return _solidAuth.getIssuer(input.trim());
   }
 
   @override
@@ -147,14 +192,14 @@ class SolidAuthService implements AuthService {
         'offline_access',
       ];
 
-      final authData = await solid_auth.authenticate(
+      final authData = await _solidAuth.authenticate(
         Uri.parse(issuerUri),
         scopes,
         context,
       );
 
       _accessToken = authData['accessToken'];
-      _decodedToken = JwtDecoder.decode(_accessToken!);
+      _decodedToken = _jwtDecoder.decode(_accessToken!);
       _currentWebId =
           _decodedToken!.containsKey('webid')
               ? _decodedToken!['webid']
@@ -185,7 +230,7 @@ class SolidAuthService implements AuthService {
   @override
   Future<String?> fetchProfileData(String webId) async {
     try {
-      return await solid_auth.fetchProfileData(webId);
+      return await _solidAuth.fetchProfileData(webId);
     } catch (e, stackTrace) {
       _logger.error('Error fetching profile data', e, stackTrace);
       return null;
@@ -210,7 +255,7 @@ class SolidAuthService implements AuthService {
       final contentType = response.headers['content-type'] ?? '';
       final data = response.body;
 
-      return await ProfileParser.parseStorageUrl(webId, data, contentType);
+      return await _profileParser.parseStorageUrl(webId, data, contentType);
     } catch (e, stackTrace) {
       _logger.error('Error fetching pod URL', e, stackTrace);
       return null;
@@ -221,7 +266,7 @@ class SolidAuthService implements AuthService {
   Future<void> logout() async {
     try {
       if (_authData != null && _authData!.containsKey('logoutUrl')) {
-        await solid_auth.logout(_authData!['logoutUrl']);
+        await _solidAuth.logout(_authData!['logoutUrl']);
       }
     } catch (e, stackTrace) {
       _logger.error('Error during logout', e, stackTrace);
@@ -241,7 +286,7 @@ class SolidAuthService implements AuthService {
       var rsaKeyPair = rsaInfo['rsa'];
       var publicKeyJwk = rsaInfo['pubKeyJwk'];
 
-      return solid_auth.genDpopToken(url, rsaKeyPair, publicKeyJwk, method);
+      return _solidAuth.genDpopToken(url, rsaKeyPair, publicKeyJwk, method);
     } catch (e, stackTrace) {
       _logger.error('Error generating DPoP token', e, stackTrace);
       throw Exception('Failed to generate DPoP token: $e');

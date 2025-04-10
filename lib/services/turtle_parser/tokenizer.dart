@@ -92,14 +92,17 @@ class Token {
 /// }
 /// ```
 class TurtleTokenizer {
-  static final _logger = LoggerService().createLogger('TurtleTokenizer');
+  final ContextLogger _logger;
   final String _input;
   int _position = 0;
   int _line = 1;
   int _column = 1;
 
   /// Creates a new tokenizer for the given input string.
-  TurtleTokenizer(this._input);
+  TurtleTokenizer(this._input, {LoggerService? loggerService})
+    : _logger = (loggerService ?? LoggerService()).createLogger(
+        'TurtleTokenizer',
+      );
 
   /// Gets the next token from the input.
   ///

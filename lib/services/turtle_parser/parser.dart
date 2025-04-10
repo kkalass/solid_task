@@ -57,7 +57,7 @@ class Triple {
 /// The parser follows a recursive descent approach, with separate methods for
 /// parsing different syntactic elements of Turtle.
 class TurtleParser {
-  static final _logger = LoggerService().createLogger('TurtleParser');
+  final ContextLogger _logger;
   final TurtleTokenizer _tokenizer;
   final Map<String, String> _prefixes = {};
   final String? _baseUri;
@@ -69,8 +69,9 @@ class TurtleParser {
   /// [input] is the Turtle document to parse.
   /// [baseUri] is the base URI against which relative IRIs should be resolved.
   /// If not provided, relative IRIs will be kept as-is.
-  TurtleParser(String input, {String? baseUri})
-    : _tokenizer = TurtleTokenizer(input),
+  TurtleParser(String input, {String? baseUri, LoggerService? loggerService})
+    : _logger = (loggerService ?? LoggerService()).createLogger('TurtleParser'),
+      _tokenizer = TurtleTokenizer(input, loggerService: loggerService),
       _baseUri = baseUri;
 
   /// Parses the input and returns a list of triples.

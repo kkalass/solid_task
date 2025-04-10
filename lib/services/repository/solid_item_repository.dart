@@ -22,6 +22,8 @@ class SolidItemRepository implements ItemRepository {
   }
 
   void _initializeStream() {
+    // FIXME KK - is it a really good idea to get all items here? Eventually we should
+    // limit this somehow
     // Initialize the subject with current items
     _itemsSubject.add(getActiveItems());
 
@@ -54,7 +56,8 @@ class SolidItemRepository implements ItemRepository {
   @override
   Future<Item> createItem(String text, String creator) async {
     final item = Item(text: text, lastModifiedBy: creator);
-    item.incrementClock(creator);
+    // createItem should not increment the clock, as it is set in the constructor
+    // item.incrementClock(creator);
     await _storage.saveItem(item);
     _logger.debug('Created item: ${item.id}');
     return item;

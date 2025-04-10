@@ -2,9 +2,6 @@ import 'package:solid_task/models/item.dart';
 
 /// Interface for local storage operations
 abstract class LocalStorageService {
-  /// Initialize the storage service
-  Future<void> init();
-
   /// Get all items in storage
   List<Item> getAllItems();
 
