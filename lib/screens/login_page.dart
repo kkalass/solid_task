@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../core/service_locator.dart';
 import '../services/auth/auth_service.dart';
 
@@ -178,9 +179,11 @@ class _LoginPageState extends State<LoginPage> {
           textAlign: TextAlign.center,
         ),
         TextButton(
-          onPressed: () {
-            // FIXME KK refactor - URL should not be hardcoded here
-            launchUrl(Uri.parse('https://solidproject.org/users/get-a-pod'));
+          onPressed: () async {
+            final podUrl = await _authService.getNewPodUrl();
+            if (context.mounted) {
+              launchUrl(Uri.parse(podUrl));
+            }
           },
           child: Text(l10n.getPod),
         ),

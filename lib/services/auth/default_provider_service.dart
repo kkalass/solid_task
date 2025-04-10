@@ -38,4 +38,27 @@ class DefaultProviderService implements ProviderService {
       return [];
     }
   }
+
+  @override
+  Future<String> getNewPodUrl() async {
+    try {
+      final String jsonString = await _assetBundle.loadString(
+        _providersConfigPath,
+      );
+      final data = json.decode(jsonString);
+      final config = data['config'] as Map<String, dynamic>?;
+
+      if (config != null && config.containsKey('getPodUrl')) {
+        return config['getPodUrl'] as String;
+      } else {
+        _logger.warning('getPodUrl not found in config, using default value');
+        // Default fallback URL
+        return 'https://solidproject.org/users/get-a-pod';
+      }
+    } catch (e, stackTrace) {
+      _logger.error('Error loading Pod URL from configuration', e, stackTrace);
+      // Default fallback URL in case of error
+      return 'https://solidproject.org/users/get-a-pod';
+    }
+  }
 }

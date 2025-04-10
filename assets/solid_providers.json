@@ -15,5 +15,8 @@
       "url": "https://solidcommunity.net",
       "icon": "solid"
     }
-  ]
+  ],
+  "config": {
+    "getPodUrl": "https://solidproject.org/users/get-a-pod"
+  }
 }

@@ -273,6 +273,9 @@ class SolidAuthService implements AuthService {
   }
 
   @override
+  Future<String> getNewPodUrl() => _providerService.getNewPodUrl();
+
+  @override
   Future<void> logout() async {
     try {
       if (_authData != null && _authData!.containsKey('logoutUrl')) {

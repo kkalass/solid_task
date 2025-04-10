@@ -70,6 +70,9 @@ abstract class AuthService {
   /// Get Pod URL from WebID
   Future<String?> getPodUrl(String webId);
 
+  /// Get URL for obtaining a new SOLID Pod
+  Future<String> getNewPodUrl();
+
   /// Logout from current session
   Future<void> logout();
 

@@ -66,6 +66,9 @@ class ObservableAuthService implements AuthService, AuthStateProvider {
   Future<String?> getPodUrl(String webId) => _authService.getPodUrl(webId);
 
   @override
+  Future<String> getNewPodUrl() => _authService.getNewPodUrl();
+
+  @override
   Future<void> logout() async {
     await _authService.logout();
     _checkAuthStateChange();

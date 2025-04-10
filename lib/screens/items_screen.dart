@@ -66,7 +66,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
   Future<void> _addItem(String text) async {
     if (text.isEmpty) return;
-    // FIXMR KK - the local fallback seems wrong to me
+    // FIXME KK - the local fallback seems wrong to me. Actually, this is probably connected to correct implementation of CRDT. I believe, that we should have a device specific identifier here - neither local nor webId seem to be correct.
     await _repository.createItem(text, _authService.currentWebId ?? 'local');
     _textController.clear();
   }
