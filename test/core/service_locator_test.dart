@@ -74,7 +74,6 @@ void main() {
       mockContextLogger = MockContextLogger();
 
       // Configure default mock behavior
-      when(mockStorage.init()).thenAnswer((_) async {});
       when(mockLogger.createLogger(any)).thenReturn(mockContextLogger);
     });
 
@@ -132,9 +131,6 @@ void main() {
         expect(sl<AuthService>(), same(mockAuthService));
         expect(sl<ItemRepository>(), same(mockItemRepository));
         expect(sl<SyncService>(), same(mockSyncService));
-
-        // Verify init was called on the storage service
-        verify(mockStorage.init()).called(1);
       },
     );
 

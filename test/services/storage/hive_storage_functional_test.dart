@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/services/storage/hive_storage_service.dart';
-import 'package:solid_task/services/storage/hive_backend.dart';
 
 import '../../mocks/mock_temp_dir_path_provider.dart';
 

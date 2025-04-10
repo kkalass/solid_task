@@ -653,16 +653,6 @@ class MockClient extends _i1.Mock implements _i3.Client {
 class MockLocalStorageService extends _i1.Mock
     implements _i12.LocalStorageService {
   @override
-  _i8.Future<void> init() => (super.noSuchMethod(
-        Invocation.method(
-          #init,
-          [],
-        ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
-
-  @override
   List<_i5.Item> getAllItems() => (super.noSuchMethod(
         Invocation.method(
           #getAllItems,

@@ -3,10 +3,10 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i4;
+import 'dart:async' as _i5;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:solid_task/models/item.dart' as _i5;
+import 'package:solid_task/models/item.dart' as _i4;
 import 'package:solid_task/services/logger_service.dart' as _i2;
 import 'package:solid_task/services/storage/local_storage_service.dart' as _i3;
 
@@ -40,73 +40,63 @@ class _FakeContextLogger_0 extends _i1.SmartFake implements _i2.ContextLogger {
 class MockLocalStorageService extends _i1.Mock
     implements _i3.LocalStorageService {
   @override
-  _i4.Future<void> init() => (super.noSuchMethod(
-        Invocation.method(
-          #init,
-          [],
-        ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
-
-  @override
-  List<_i5.Item> getAllItems() => (super.noSuchMethod(
+  List<_i4.Item> getAllItems() => (super.noSuchMethod(
         Invocation.method(
           #getAllItems,
           [],
         ),
-        returnValue: <_i5.Item>[],
-        returnValueForMissingStub: <_i5.Item>[],
-      ) as List<_i5.Item>);
+        returnValue: <_i4.Item>[],
+        returnValueForMissingStub: <_i4.Item>[],
+      ) as List<_i4.Item>);
 
   @override
-  _i5.Item? getItem(String? id) => (super.noSuchMethod(
+  _i4.Item? getItem(String? id) => (super.noSuchMethod(
         Invocation.method(
           #getItem,
           [id],
         ),
         returnValueForMissingStub: null,
-      ) as _i5.Item?);
+      ) as _i4.Item?);
 
   @override
-  _i4.Future<void> saveItem(_i5.Item? item) => (super.noSuchMethod(
+  _i5.Future<void> saveItem(_i4.Item? item) => (super.noSuchMethod(
         Invocation.method(
           #saveItem,
           [item],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  _i4.Future<void> deleteItem(String? id) => (super.noSuchMethod(
+  _i5.Future<void> deleteItem(String? id) => (super.noSuchMethod(
         Invocation.method(
           #deleteItem,
           [id],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  _i4.Stream<List<_i5.Item>> watchItems() => (super.noSuchMethod(
+  _i5.Stream<List<_i4.Item>> watchItems() => (super.noSuchMethod(
         Invocation.method(
           #watchItems,
           [],
         ),
-        returnValue: _i4.Stream<List<_i5.Item>>.empty(),
-        returnValueForMissingStub: _i4.Stream<List<_i5.Item>>.empty(),
-      ) as _i4.Stream<List<_i5.Item>>);
+        returnValue: _i5.Stream<List<_i4.Item>>.empty(),
+        returnValueForMissingStub: _i5.Stream<List<_i4.Item>>.empty(),
+      ) as _i5.Stream<List<_i4.Item>>);
 
   @override
-  _i4.Future<void> close() => (super.noSuchMethod(
+  _i5.Future<void> close() => (super.noSuchMethod(
         Invocation.method(
           #close,
           [],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 }
 
 /// A class which mocks [LoggerService].
@@ -153,14 +143,14 @@ class MockLoggerService extends _i1.Mock implements _i2.LoggerService {
       );
 
   @override
-  _i4.Future<void> init() => (super.noSuchMethod(
+  _i5.Future<void> init() => (super.noSuchMethod(
         Invocation.method(
           #init,
           [],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
   void debug(
@@ -235,34 +225,34 @@ class MockLoggerService extends _i1.Mock implements _i2.LoggerService {
       );
 
   @override
-  _i4.Future<String?> getLogContents() => (super.noSuchMethod(
+  _i5.Future<String?> getLogContents() => (super.noSuchMethod(
         Invocation.method(
           #getLogContents,
           [],
         ),
-        returnValue: _i4.Future<String?>.value(),
-        returnValueForMissingStub: _i4.Future<String?>.value(),
-      ) as _i4.Future<String?>);
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
 
   @override
-  _i4.Future<List<String>> getAllLogContents() => (super.noSuchMethod(
+  _i5.Future<List<String>> getAllLogContents() => (super.noSuchMethod(
         Invocation.method(
           #getAllLogContents,
           [],
         ),
-        returnValue: _i4.Future<List<String>>.value(<String>[]),
-        returnValueForMissingStub: _i4.Future<List<String>>.value(<String>[]),
-      ) as _i4.Future<List<String>>);
+        returnValue: _i5.Future<List<String>>.value(<String>[]),
+        returnValueForMissingStub: _i5.Future<List<String>>.value(<String>[]),
+      ) as _i5.Future<List<String>>);
 
   @override
-  _i4.Future<void> dispose() => (super.noSuchMethod(
+  _i5.Future<void> dispose() => (super.noSuchMethod(
         Invocation.method(
           #dispose,
           [],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 }
 
 /// A class which mocks [ContextLogger].
