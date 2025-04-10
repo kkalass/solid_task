@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:intl/intl.dart';
 import '../core/service_locator.dart';
+import '../core/utils/date_formatter.dart';
 import '../models/item.dart';
 import '../screens/login_page.dart';
 import '../services/auth/auth_service.dart';
@@ -235,7 +235,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                               ),
                             ),
                             subtitle: Text(
-                              'Created ${_formatDate(item.createdAt)}',
+                              'Created ${DateFormatter.formatRelativeTime(item.createdAt, context)}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: colorScheme.outline,
@@ -253,31 +253,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
         ],
       ),
     );
-  }
-
-  // FIXME KK - Shouldn't this method be somewhere else for proper reuse?
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-    final l10n = AppLocalizations.of(context)!;
-
-    if (difference.inDays == 0) {
-      if (difference.inHours == 0) {
-        final minutes = difference.inMinutes;
-        return l10n.createdAgo(l10n.minutes(minutes));
-      }
-      final hours = difference.inHours;
-      return l10n.createdAgo(l10n.hours(hours));
-    } else if (difference.inDays == 1) {
-      return l10n.yesterday;
-    } else if (difference.inDays < 7) {
-      final days = difference.inDays;
-      return l10n.createdAgo(l10n.days(days));
-    } else {
-      return DateFormat.yMd(
-        Localizations.localeOf(context).languageCode,
-      ).format(date);
-    }
   }
 
   @override
