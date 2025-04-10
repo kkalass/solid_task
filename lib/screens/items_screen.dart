@@ -6,7 +6,7 @@ import '../models/item.dart';
 import '../screens/login_page.dart';
 import '../services/auth/auth_service.dart';
 import '../services/repository/item_repository.dart';
-import '../services/sync/sync_service.dart';
+import '../services/sync/sync_manager.dart';
 
 class ItemsScreen extends StatefulWidget {
   const ItemsScreen({super.key});
@@ -19,47 +19,21 @@ class _ItemsScreenState extends State<ItemsScreen> {
   final _textController = TextEditingController();
   final _authService = sl<AuthService>();
   final _repository = sl<ItemRepository>();
-  final _syncService = sl<SyncService>();
-  bool _isSyncing = false;
-  String? _syncError;
+  final _syncManager = sl<SyncManager>();
 
   bool get _isConnectedToSolid => _authService.isAuthenticated;
 
   @override
   void initState() {
     super.initState();
-    if (_isConnectedToSolid) {
-      _startSync();
-    }
-  }
+    // No need to manually start sync anymore, the SyncManager handles this
 
-  // FIXME KK - is it really best practice to implement the sync logic in the UI?
-  Future<void> _startSync() async {
-    if (!_isConnectedToSolid) return;
-
-    setState(() {
-      _isSyncing = true;
-      _syncError = null;
-    });
-
-    try {
-      // Perform initial sync and then start periodic sync
-      final result = await _syncService.fullSync();
-      if (!result.success && mounted) {
-        setState(() {
-          _syncError = result.error;
-        });
-      } else {
-        // Start periodic sync every 30 seconds
-        _syncService.startPeriodicSync(const Duration(seconds: 30));
-      }
-    } finally {
+    // Listen to sync status updates
+    _syncManager.syncStatusStream.listen((status) {
       if (mounted) {
-        setState(() {
-          _isSyncing = false;
-        });
+        setState(() {}); // Refresh UI when sync status changes
       }
-    }
+    });
   }
 
   void _navigateToLogin() async {
@@ -70,17 +44,17 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
     if (result != null && result.isSuccess && mounted) {
       // Auth service already has the credentials after successful login
-      // Start syncing
-      _startSync();
+      // SyncManager will automatically start syncing after auth changes
+      _syncManager.handleAuthStateChange(_authService.isAuthenticated);
       setState(() {}); // Refresh UI
     }
   }
 
   Future<void> _disconnectFromPod() async {
-    _syncService.stopPeriodicSync();
-
     try {
       await _authService.logout();
+      _syncManager.handleAuthStateChange(false);
+
       if (mounted) {
         setState(() {}); // Refresh UI to show disconnected state
       }
@@ -98,13 +72,12 @@ class _ItemsScreenState extends State<ItemsScreen> {
   Future<void> _addItem(String text) async {
     if (text.isEmpty) return;
 
-    // FIXME KK - the fallback to local seems strange
     await _repository.createItem(text, _authService.currentWebId ?? 'local');
     _textController.clear();
 
     // If connected to a pod, sync the changes
     if (_isConnectedToSolid) {
-      _syncService.syncToRemote();
+      _syncManager.syncToRemote();
     }
   }
 
@@ -113,7 +86,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
     // If connected to a pod, sync the changes
     if (_isConnectedToSolid) {
-      _syncService.syncToRemote();
+      _syncManager.syncToRemote();
     }
   }
 
@@ -121,6 +94,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
+
+    // Get sync status information from SyncManager
+    final isSyncing = _syncManager.isSyncing;
+    final hasError = _syncManager.hasError;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -131,16 +108,16 @@ class _ItemsScreenState extends State<ItemsScreen> {
         ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          if (_syncError != null)
+          if (hasError)
             IconButton(
               icon: Icon(Icons.error_outline, color: colorScheme.error),
-              onPressed: _startSync,
+              onPressed: () => _syncManager.startSynchronization(),
               tooltip: l10n.syncError,
             ),
           IconButton(
             icon:
                 _isConnectedToSolid
-                    ? (_isSyncing
+                    ? (isSyncing
                         ? const SizedBox(
                           width: 20,
                           height: 20,
@@ -149,7 +126,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         : const Icon(Icons.cloud_done))
                     : const Icon(Icons.cloud_upload),
             onPressed:
-                _isSyncing
+                isSyncing
                     ? null
                     : (_isConnectedToSolid
                         ? _disconnectFromPod
@@ -321,7 +298,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
   @override
   void dispose() {
     _textController.dispose();
-    _syncService.stopPeriodicSync();
+    // SyncManager is managed by ServiceLocator, no need to dispose it here
     super.dispose();
   }
 }

@@ -10,6 +10,7 @@ import 'package:solid_task/services/auth/solid_auth_wrapper.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/repository/solid_item_repository.dart';
 import 'package:solid_task/services/logger_service.dart';
+import 'package:solid_task/services/sync/sync_manager.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 import 'package:solid_task/services/sync/solid_sync_service.dart';
 import 'package:solid_task/services/storage/local_storage_service.dart';
@@ -64,6 +65,14 @@ class ServiceLocatorConfig {
   )?
   syncServiceFactory;
 
+  /// Sync manager factory
+  final SyncManager Function(
+    SyncService syncService,
+    AuthService authService,
+    LoggerService logger,
+  )?
+  syncManagerFactory;
+
   /// Creates a new service locator configuration
   const ServiceLocatorConfig({
     this.loggerService,
@@ -75,6 +84,7 @@ class ServiceLocatorConfig {
     this.solidAuth,
     this.itemRepositoryFactory,
     this.syncServiceFactory,
+    this.syncManagerFactory,
     this.jwtDecoder,
   });
 }
@@ -174,4 +184,27 @@ Future<void> initServiceLocator({
               client: sl<http.Client>(),
             ),
   );
+
+  // Register SyncManager that orchestrates synchronization
+  sl.registerSingletonAsync<SyncManager>(() async {
+    final syncManager =
+        config.syncManagerFactory != null
+            ? config.syncManagerFactory!(
+              sl<SyncService>(),
+              sl<AuthService>(),
+              sl<LoggerService>(),
+            )
+            : SyncManager(
+              sl<SyncService>(),
+              sl<AuthService>(),
+              sl<LoggerService>().createLogger('SyncManager'),
+            );
+
+    // Initialize the sync manager
+    await syncManager.initialize();
+    return syncManager;
+  });
+
+  // Wait for async dependencies to be ready before returning
+  await sl.allReady();
 }
