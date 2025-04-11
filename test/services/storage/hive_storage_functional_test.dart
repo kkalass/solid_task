@@ -99,18 +99,15 @@ void main() {
       final item1 = Item(text: 'Item 1', lastModifiedBy: 'testUser');
       await storageService.saveItem(item1);
 
-      // Wait for events to propagate through the event loop
-      // This is necessary because Hive's box listenable may not emit
-      // synchronously but rather after microtasks are processed
-      await _pumpEventQueue();
-
       final item2 = Item(text: 'Item 2', lastModifiedBy: 'testUser');
       await storageService.saveItem(item2);
 
-      await _pumpEventQueue();
-
       // Delete an item
       await storageService.deleteItem(item1.id);
+
+      // Wait for events to propagate through the event loop
+      // This is necessary because Hive's box listenable may not emit
+      // synchronously but rather after microtasks are processed
       await _pumpEventQueue();
 
       // Clean up
