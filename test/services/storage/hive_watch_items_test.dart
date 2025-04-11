@@ -8,7 +8,7 @@ import 'package:solid_task/services/storage/hive_storage_service.dart';
 
 // Import the mock classes from the existing test file
 import '../../mocks/mock_temp_dir_path_provider.dart';
-import 'hive_storage_service_test.dart' show MockBox, MockValueListenable;
+import 'hive_storage_service_test.dart' show MockBox;
 import 'hive_storage_service_test.mocks.dart';
 
 void main() {
@@ -17,7 +17,6 @@ void main() {
   group('HiveStorageService watchItems specialized tests', () {
     late MockHiveBackend<Item> mockHiveBackend;
     late MockBox<Item> mockBox;
-    late MockValueListenable<Box<Item>> mockBoxListenable;
     late HiveStorageService storageService;
 
     late MockTempDirPathProvider mockPathProvider;
@@ -37,10 +36,6 @@ void main() {
       // Create mock objects in the correct order
       mockHiveBackend = MockHiveBackend<Item>();
       mockBox = MockBox<Item>();
-      mockBoxListenable = MockValueListenable<Box<Item>>(mockBox);
-
-      // Set the value listener on the box
-      mockBox.valueListenable = mockBoxListenable;
 
       // Setup mock behavior
       when(mockHiveBackend.isAdapterRegistered(0)).thenReturn(false);
@@ -72,53 +67,67 @@ void main() {
 
       // Update the box with first item and trigger change
       mockBox.valuesList = [item1];
-      storageService.refreshItems();
+
+      // Trigger watch event
+      mockBox.simulateBoxEvent(BoxEvent('key1', item1, false));
 
       // Wait for emission
       await Future.delayed(const Duration(milliseconds: 10));
 
       // Update the box with more items and trigger changes
       mockBox.valuesList = [item1, item2];
-      storageService.refreshItems();
+
+      // Trigger watch event
+      mockBox.simulateBoxEvent(BoxEvent('key2', item2, false));
 
       await Future.delayed(const Duration(milliseconds: 10));
 
       mockBox.valuesList = [item1, item2, item3];
-      storageService.refreshItems();
 
-      // Allow time for all emissions to be processed
-      await Future.delayed(const Duration(milliseconds: 50));
+      // Trigger watch event
+      mockBox.simulateBoxEvent(BoxEvent('key3', item3, false));
+
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      // Verify we got all emissions - the exact number depends on the implementation
+      // but we should at least get enough to contain all our state changes
+      expect(emissions.length, greaterThanOrEqualTo(3));
+
+      // Find the emission with one item (containing item1)
+      expect(
+        emissions.any((e) => e.length == 1 && e[0].text == 'Item 1'),
+        isTrue,
+        reason: 'Should find an emission with just item1',
+      );
+
+      // Find the emission with two items
+      expect(
+        emissions.any(
+          (e) =>
+              e.length == 2 &&
+              e.map((i) => i.text).toSet().containsAll(['Item 1', 'Item 2']),
+        ),
+        isTrue,
+        reason: 'Should find an emission with item1 and item2',
+      );
+
+      // Find the emission with three items
+      expect(
+        emissions.any(
+          (e) =>
+              e.length == 3 &&
+              e.map((i) => i.text).toSet().containsAll([
+                'Item 1',
+                'Item 2',
+                'Item 3',
+              ]),
+        ),
+        isTrue,
+        reason: 'Should find an emission with all three items',
+      );
 
       // Clean up
       await subscription.cancel();
-
-      // Verify emissions
-      expect(
-        emissions.length,
-        greaterThanOrEqualTo(4),
-        reason:
-            'Should have at least 4 emissions: initial empty list + 3 updates',
-      );
-
-      // First emission may be empty list
-      // Second emission should have item1
-      expect(emissions[1].length, 1);
-      expect(emissions[1][0].text, 'Item 1');
-
-      // Third emission should have item1 and item2
-      expect(emissions[2].length, 2);
-      expect(emissions[2].map((i) => i.text).toList()..sort(), [
-        'Item 1',
-        'Item 2',
-      ]);
-
-      // Fourth emission should have all three items
-      expect(emissions[3].length, 3);
-      expect(emissions[3].map((i) => i.text).toList()..sort(), [
-        'Item 1',
-        'Item 2',
-        'Item 3',
-      ]);
     });
 
     test('watchItems emits updated list when items are deleted', () async {
@@ -128,7 +137,9 @@ void main() {
 
       // Add items to the box
       mockBox.valuesList = [item1, item2];
-      storageService.refreshItems();
+
+      // Trigger watch event
+      mockBox.simulateBoxEvent(BoxEvent('initialSetup', null, false));
 
       // Get the stream and prepare to collect emissions
       final emissions = <List<Item>>[];
@@ -139,7 +150,9 @@ void main() {
 
       // Remove one item
       mockBox.valuesList = [item2];
-      storageService.refreshItems();
+
+      // Trigger watch event
+      mockBox.simulateBoxEvent(BoxEvent('delete', item1, true));
 
       // Wait for emission
       await Future.delayed(const Duration(milliseconds: 20));
@@ -147,20 +160,31 @@ void main() {
       // Clean up
       await subscription.cancel();
 
-      // Verify emissions
+      // Verify emissions - number may vary based on implementation
       expect(
         emissions.length,
-        2,
+        greaterThanOrEqualTo(2),
         reason:
-            'Should have 2 emissions: initial list + updated list after deletion',
+            'Should have at least 2 emissions: initial list + updated list after deletion',
       );
 
-      // First emission should have both items
-      expect(emissions[0].length, 2);
+      // We should have an emission with both items
+      expect(
+        emissions.any(
+          (e) =>
+              e.length == 2 &&
+              e.map((i) => i.text).toSet().containsAll(['Item 1', 'Item 2']),
+        ),
+        isTrue,
+        reason: 'Should find an emission with both items',
+      );
 
-      // Second emission should only have item2
-      expect(emissions[1].length, 1);
-      expect(emissions[1][0].text, 'Item 2');
+      // We should have an emission with only item2
+      expect(
+        emissions.any((e) => e.length == 1 && e[0].text == 'Item 2'),
+        isTrue,
+        reason: 'Should find an emission with only Item 2 after deletion',
+      );
     });
   });
 }

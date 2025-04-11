@@ -1,25 +1,23 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
-import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/services/storage/hive_backend.dart';
 import 'package:solid_task/services/storage/hive_storage_service.dart';
 
-// Generate mock for HiveBackend only (we'll handle Box and ValueListenable manually)
+// Generate mock for HiveBackend only (we'll handle Box manually)
 import '../../mocks/mock_temp_dir_path_provider.dart';
 @GenerateMocks([HiveBackend])
 import 'hive_storage_service_test.mocks.dart';
 
 // Custom mock implementation for Box to handle extension methods
 class MockBox<T> extends Mock implements Box<T> {
-  MockValueListenable<Box<T>>? _valueListenable;
   final StreamController<BoxEvent> _watchController =
       StreamController<BoxEvent>.broadcast();
   List<T> _values = [];
@@ -27,17 +25,10 @@ class MockBox<T> extends Mock implements Box<T> {
 
   MockBox();
 
-  set valueListenable(MockValueListenable<Box<T>> newListenable) {
-    _valueListenable = newListenable;
-  }
-
   // Add a setter for values to allow updating the list in tests
   set valuesList(List<T> newValues) {
     _values = newValues;
   }
-
-  // Implement the extension method directly
-  ValueListenable<Box<T>> listenable() => _valueListenable!;
 
   @override
   Stream<BoxEvent> watch({dynamic key}) {
@@ -84,41 +75,12 @@ class MockBox<T> extends Mock implements Box<T> {
   Iterable<T> get values => _values;
 }
 
-// Custom mock implementation for ValueListenable
-class MockValueListenable<T> extends Mock implements ValueListenable<T> {
-  final List<VoidCallback> _listeners = [];
-  final T _value;
-
-  MockValueListenable(this._value);
-
-  @override
-  T get value => _value;
-
-  @override
-  void addListener(VoidCallback listener) {
-    _listeners.add(listener);
-  }
-
-  @override
-  void removeListener(VoidCallback listener) {
-    _listeners.remove(listener);
-  }
-
-  // Helper to trigger notifications
-  void notifyListeners() {
-    for (final listener in List.from(_listeners)) {
-      listener();
-    }
-  }
-}
-
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   group('HiveStorageService', () {
     // Test variables
     late MockHiveBackend<Item> mockHiveBackend;
     late MockBox<Item> mockBox;
-    late MockValueListenable<Box<Item>> mockBoxListenable;
     late HiveStorageService storageService;
 
     late MockTempDirPathProvider mockPathProvider;
@@ -138,12 +100,6 @@ void main() {
 
       // First create the box
       mockBox = MockBox<Item>();
-
-      // Then create the value listener with the box
-      mockBoxListenable = MockValueListenable<Box<Item>>(mockBox);
-
-      // Finally, set the value listener on the box
-      mockBox.valueListenable = mockBoxListenable;
 
       // Setup mock behavior
       when(mockHiveBackend.isAdapterRegistered(0)).thenReturn(false);
@@ -220,8 +176,6 @@ void main() {
       // Arrange - create a new service for this test with controlled emissions
       final testHiveBackend = MockHiveBackend<Item>();
       final testBox = MockBox<Item>();
-      final testListenable = MockValueListenable<Box<Item>>(testBox);
-      testBox.valueListenable = testListenable;
 
       when(testHiveBackend.isAdapterRegistered(0)).thenReturn(false);
       when(testHiveBackend.openBox('items')).thenAnswer((_) async => testBox);
@@ -272,10 +226,8 @@ void main() {
       ];
       testBox.valuesList = items2;
 
-      // Attempt both mechanisms to trigger the change
-      testListenable.notifyListeners(); // This might not be working in the test
-      // FIXME KK - manually triggering a refresh in the test seems wrong. We need to check how to refactor this correctly.
-      testService.refreshItems(); // This should directly trigger a refresh
+      // Simulate a BoxEvent to trigger the watch() listener
+      testBox.simulateBoxEvent(BoxEvent('added_key', items2[1], false));
 
       // Wait for the second emission with a shorter timeout
       final receivedItems = await secondEmission.future.timeout(

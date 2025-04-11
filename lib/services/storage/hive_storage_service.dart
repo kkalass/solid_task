@@ -64,8 +64,8 @@ class HiveStorageService implements LocalStorageService {
     _box = await _openBoxWithRetry(_maxRetries);
     _isInitialized = true;
 
-    // Setup box change listener
-    _box.listenable().addListener(_onBoxChanged);
+    // Set up native Hive watch mechanism to detect changes
+    _box.watch().listen((_) => _onBoxChanged());
 
     // Emit initial items
     _itemsController.add(getAllItems());
@@ -75,12 +75,6 @@ class HiveStorageService implements LocalStorageService {
     if (!_itemsController.isClosed) {
       _itemsController.add(getAllItems());
     }
-  }
-
-  /// Manually triggers a refresh of the items stream
-  /// This is primarily useful for testing
-  void refreshItems() {
-    _onBoxChanged();
   }
 
   /// Open Hive box with a retry mechanism to handle lock conflicts
