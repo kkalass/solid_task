@@ -3,6 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/services/logger_service.dart';
+import 'package:solid_task/services/repository/operation_repository.dart';
 import 'package:solid_task/services/repository/solid_item_repository.dart';
 import 'package:solid_task/services/storage/local_storage_service.dart';
 
@@ -10,6 +11,7 @@ import 'package:solid_task/services/storage/local_storage_service.dart';
   MockSpec<LocalStorageService>(),
   MockSpec<LoggerService>(),
   MockSpec<ContextLogger>(),
+  MockSpec<OperationRepository>(),
 ])
 import 'solid_item_repository_test.mocks.dart';
 
@@ -17,15 +19,18 @@ void main() {
   group('SolidItemRepository', () {
     late MockLocalStorageService mockStorage;
     late MockContextLogger mockLogger;
+    late MockOperationRepository mockOperationRepository;
     late SolidItemRepository repository;
 
     setUp(() {
       mockStorage = MockLocalStorageService();
       mockLogger = MockContextLogger();
+      mockOperationRepository = MockOperationRepository();
 
       // Reset Mockito state for all mocks
       reset(mockStorage);
       reset(mockLogger);
+      reset(mockOperationRepository);
 
       // Setup the stream for watchItems
       when(mockStorage.watchItems()).thenAnswer((_) => Stream.value([]));
@@ -33,6 +38,7 @@ void main() {
       repository = SolidItemRepository(
         storage: mockStorage,
         logger: mockLogger,
+        operationRepository: mockOperationRepository,
       );
     });
 

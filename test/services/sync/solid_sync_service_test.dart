@@ -4,12 +4,20 @@ import 'package:mockito/annotations.dart';
 import 'package:http/http.dart' as http;
 import 'package:solid_task/models/auth/auth_token.dart';
 import 'package:solid_task/models/auth/user_identity.dart';
+import 'package:solid_task/models/item.dart';
+import 'package:solid_task/models/item_operation.dart';
 import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/services/logger_service.dart';
+import 'package:solid_task/services/rdf/item_rdf_service.dart';
+import 'package:solid_task/services/rdf/rdf_graph.dart';
+import 'package:solid_task/services/rdf/rdf_parser.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
+import 'package:solid_task/services/repository/operation_repository.dart';
 import 'package:solid_task/services/sync/solid_sync_service.dart';
 import 'dart:convert';
+
+import '../helpers/hive_test_helper.dart';
 
 @GenerateMocks([
   http.Client,
@@ -17,6 +25,9 @@ import 'dart:convert';
   SolidAuthState,
   SolidAuthOperations,
   ContextLogger,
+  OperationRepository,
+  ItemRdfService,
+  RdfParser,
 ])
 import 'solid_sync_service_test.mocks.dart';
 
@@ -27,7 +38,20 @@ void main() {
     late MockSolidAuthState mockSolidAuthState;
     late MockSolidAuthOperations mockSolidAuthOperations;
     late MockContextLogger mockLogger;
+    late MockOperationRepository mockOperationRepository;
+    late MockItemRdfService mockRdfService;
+    late MockRdfParser mockRdfParser;
     late SolidSyncService syncService;
+
+    setUpAll(() async {
+      // Setup Hive for all tests
+      await HiveTestHelper.setUp();
+    });
+    
+    tearDownAll(() async {
+      // Cleanup Hive after all tests
+      await HiveTestHelper.tearDown();
+    });
 
     setUp(() {
       mockHttpClient = MockClient();
@@ -35,6 +59,9 @@ void main() {
       mockSolidAuthState = MockSolidAuthState();
       mockSolidAuthOperations = MockSolidAuthOperations();
       mockLogger = MockContextLogger();
+      mockOperationRepository = MockOperationRepository();
+      mockRdfService = MockItemRdfService();
+      mockRdfParser = MockRdfParser();
 
       // Setup standard authentication state
       when(mockSolidAuthState.isAuthenticated).thenReturn(true);
@@ -57,6 +84,24 @@ void main() {
       when(
         mockSolidAuthOperations.generateDpopToken(any, any),
       ).thenReturn('mock-dpop-token');
+      
+      // Mock operation repository
+      when(mockOperationRepository.getAllOperations()).thenReturn([]);
+      when(mockOperationRepository.getOperationsForItem(any)).thenReturn([]);
+      
+      // Mock RDF service
+      final mockGraph = RdfGraph();
+      when(mockRdfService.itemToRdf(any, any)).thenReturn(mockGraph);
+      when(mockRdfService.rdfToItem(any, any)).thenReturn(
+        (
+          Item(text: 'Mock Item', lastModifiedBy: 'test'),
+          <ItemOperation>[],
+        ),
+      );
+      
+      // Mock RDF parser
+      when(mockRdfParser.parse(any, contentType: anyNamed('contentType'), documentUrl: anyNamed('documentUrl')))
+          .thenReturn(mockGraph);
 
       syncService = SolidSyncService(
         repository: mockRepository,
@@ -64,6 +109,9 @@ void main() {
         authOperations: mockSolidAuthOperations,
         logger: mockLogger,
         client: mockHttpClient,
+        operationRepository: mockOperationRepository,
+        rdfService: mockRdfService,
+        rdfParser: mockRdfParser,
       );
     });
 

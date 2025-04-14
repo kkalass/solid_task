@@ -2,21 +2,26 @@ import 'dart:async';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:solid_task/models/item.dart';
+import 'package:solid_task/models/item_operation.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
+import 'package:solid_task/services/repository/operation_repository.dart';
 import 'package:solid_task/services/storage/local_storage_service.dart';
 
 /// Implementation of ItemRepository for SOLID with CRDT
 class SolidItemRepository implements ItemRepository {
   final LocalStorageService _storage;
+  final OperationRepository _operationRepository;
   final ContextLogger _logger;
   final BehaviorSubject<List<Item>> _itemsSubject =
       BehaviorSubject<List<Item>>();
 
   SolidItemRepository({
     required LocalStorageService storage,
+    required OperationRepository operationRepository,
     required ContextLogger logger,
   }) : _storage = storage,
+       _operationRepository = operationRepository,
        _logger = logger {
     _initializeStream();
   }
@@ -57,9 +62,13 @@ class SolidItemRepository implements ItemRepository {
   Future<Item> createItem(String text, String creator) async {
     final item = Item(text: text, lastModifiedBy: creator);
     // createItem should not increment the clock, as it is set in the constructor
-    // item.incrementClock(creator);
     await _storage.saveItem(item);
-    _logger.debug('Created item: ${item.id}');
+    
+    // Record the creation operation
+    final operation = ItemOperation.create(item);
+    await _operationRepository.saveOperation(operation);
+    
+    _logger.debug('Created item: ${item.id} with operation: ${operation.id}');
     return item;
   }
 
@@ -68,7 +77,12 @@ class SolidItemRepository implements ItemRepository {
     item.lastModifiedBy = updater;
     item.incrementClock(updater);
     await _storage.saveItem(item);
-    _logger.debug('Updated item: ${item.id}');
+    
+    // Record the update operation
+    final operation = ItemOperation.update(item);
+    await _operationRepository.saveOperation(operation);
+    
+    _logger.debug('Updated item: ${item.id} with operation: ${operation.id}');
     return item;
   }
 
@@ -80,7 +94,12 @@ class SolidItemRepository implements ItemRepository {
       item.lastModifiedBy = deletedBy;
       item.incrementClock(deletedBy);
       await _storage.saveItem(item);
-      _logger.debug('Marked item as deleted: $id');
+      
+      // Record the delete operation
+      final operation = ItemOperation.delete(item);
+      await _operationRepository.saveOperation(operation);
+      
+      _logger.debug('Marked item as deleted: $id with operation: ${operation.id}');
     }
   }
 
@@ -156,7 +175,20 @@ class SolidItemRepository implements ItemRepository {
   @override
   Future<void> importItems(List<dynamic> jsonData) async {
     _logger.debug('Importing ${jsonData.length} items from JSON');
-    final items = jsonData.map((json) => Item.fromJson(json)).toList();
-    await mergeItems(items);
+    for (final json in jsonData) {
+      try {
+        final item = Item.fromJson(Map<String, dynamic>.from(json));
+        final existingItem = _storage.getItem(item.id);
+        
+        if (existingItem == null) {
+          await _storage.saveItem(item);
+        } else {
+          final mergedItem = _mergeCRDT(existingItem, item);
+          await _storage.saveItem(mergedItem);
+        }
+      } catch (e) {
+        _logger.error('Error importing item: $e');
+      }
+    }
   }
 }

@@ -18,7 +18,7 @@ import 'package:solid_task/services/sync/sync_manager.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 
 // Generate mocks for all services
-
+import '../helpers/hive_test_helper.dart';
 import '../mocks/mock_temp_dir_path_provider.dart';
 @GenerateNiceMocks([
   MockSpec<LoggerService>(),
@@ -69,7 +69,7 @@ void main() {
       await mockPathProvider.cleanup();
     });
 
-    setUp(() {
+    setUp(() async {
       // Create all mocks
       mockJwtDecoderWrapper = MockJwtDecoderWrapper();
       mockLogger = MockLoggerService();
@@ -88,10 +88,14 @@ void main() {
 
       // Configure default mock behavior
       when(mockLogger.createLogger(any)).thenReturn(mockContextLogger);
+      
+      // Initialisiere Hive für Tests
+      await HiveTestHelper.setUp();
     });
 
     tearDown(() async {
       await sl.reset();
+      await HiveTestHelper.tearDown();
     });
 
     test('should register and resolve all services properly', () async {

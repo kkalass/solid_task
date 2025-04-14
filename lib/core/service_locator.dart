@@ -1,8 +1,9 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
+import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
+import 'package:solid_task/models/item_operation.dart';
 import 'package:solid_task/services/auth/implementations/solid_auth_service_impl.dart';
-
 import 'package:solid_task/services/auth/interfaces/auth_state_change_provider.dart';
 import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
@@ -10,10 +11,14 @@ import 'package:solid_task/services/auth/implementations/solid_provider_service_
 import 'package:solid_task/services/auth/interfaces/solid_provider_service.dart';
 import 'package:solid_task/services/auth/jwt_decoder_wrapper.dart';
 import 'package:solid_task/services/auth/solid_auth_wrapper.dart';
+import 'package:solid_task/services/rdf/item_rdf_service.dart';
+import 'package:solid_task/services/rdf/rdf_parser.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
+import 'package:solid_task/services/repository/operation_repository.dart';
 import 'package:solid_task/services/repository/solid_item_repository.dart';
 import 'package:solid_task/services/repository/syncable_item_repository.dart';
 import 'package:solid_task/services/logger_service.dart';
+import 'package:solid_task/services/storage/operation_storage.dart';
 import 'package:solid_task/services/sync/sync_manager.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 import 'package:solid_task/services/sync/solid_sync_service.dart';
@@ -82,6 +87,20 @@ class ServiceLocatorConfig {
   )?
   syncableRepositoryFactory;
 
+  /// RDF parser implementation
+  final RdfParser? rdfParser;
+
+  /// Operation repository implementation
+  final OperationRepository Function(
+    Box<dynamic> box,
+    ContextLogger logger,
+  )? operationRepositoryFactory;
+
+  /// ItemRdfService implementation
+  final ItemRdfService Function(
+    ContextLogger logger,
+  )? itemRdfServiceFactory;
+
   /// Creates a new service locator configuration
   const ServiceLocatorConfig({
     this.loggerService,
@@ -98,6 +117,9 @@ class ServiceLocatorConfig {
     this.syncManagerFactory,
     this.jwtDecoder,
     this.syncableRepositoryFactory,
+    this.rdfParser,
+    this.operationRepositoryFactory,
+    this.itemRdfServiceFactory,
   });
 }
 
@@ -122,12 +144,47 @@ Future<void> initServiceLocator({
     config.jwtDecoder ?? JwtDecoderWrapper(),
   );
 
+  // Register RDF parser
+  sl.registerLazySingleton<RdfParser>(
+    () => config.rdfParser ?? DefaultRdfParser(loggerService: sl<LoggerService>()),
+  );
+
   // Register storage service
   sl.registerSingletonAsync<LocalStorageService>(() async {
     if (config.storageService != null) {
       return config.storageService!;
     }
     return HiveStorageService.create(loggerService: sl<LoggerService>());
+  });
+
+  // Verwende die verbesserte OperationStorage-Klasse
+  sl.registerSingletonAsync<Box<dynamic>>(() async {
+    return await OperationStorage.openOperationBox();
+  }, instanceName: 'operationBox');
+
+  // Register operation repository
+  sl.registerSingletonAsync<OperationRepository>(() async {
+    await sl.isReady<Box<dynamic>>(instanceName: 'operationBox');
+    
+    if (config.operationRepositoryFactory != null) {
+      final box = sl<Box<dynamic>>(instanceName: 'operationBox');
+      final logger = sl<LoggerService>().createLogger('OperationRepository');
+      return config.operationRepositoryFactory!(box, logger);
+    }
+    
+    // Use the factory method instead of direct constructor
+    return OperationRepository.create(
+      loggerService: sl<LoggerService>(),
+    );
+  });
+
+  // Register ItemRdfService
+  sl.registerLazySingleton<ItemRdfService>(() {
+    final logger = sl<LoggerService>().createLogger('ItemRdfService');
+
+    return config.itemRdfServiceFactory != null
+        ? config.itemRdfServiceFactory!(logger)
+        : ItemRdfService(logger: logger);
   });
 
   // Provider service with configurable implementation
@@ -202,6 +259,7 @@ Future<void> initServiceLocator({
     } else {
       baseRepository = SolidItemRepository(
         storage: sl<LocalStorageService>(),
+        operationRepository: sl<OperationRepository>(),
         logger: sl<LoggerService>().createLogger('ItemRepository'),
       );
     }
@@ -223,10 +281,13 @@ Future<void> initServiceLocator({
             )
             : SolidSyncService(
               repository: sl<ItemRepository>(instanceName: 'baseRepository'),
+              operationRepository: sl<OperationRepository>(),
               authOperations: sl<SolidAuthOperations>(),
               authState: sl<SolidAuthState>(),
               logger: sl<LoggerService>().createLogger('SyncService'),
               client: sl<http.Client>(),
+              rdfService: sl<ItemRdfService>(),
+              rdfParser: sl<RdfParser>(),
             ),
   );
 

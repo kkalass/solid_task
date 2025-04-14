@@ -23,6 +23,7 @@ import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 
+import 'helpers/hive_test_helper.dart';
 import 'mocks/mock_temp_dir_path_provider.dart';
 
 @GenerateMocks([
@@ -55,6 +56,16 @@ void main() {
   // to use BehaviorSubject instead of StreamController, because the real
   // storage uses BehaviorSubject as well since it replays its most current value
   late BehaviorSubject<List<Item>> behaviorSubject;
+
+  setUpAll(() async {
+    // Setup Hive for all tests
+    await HiveTestHelper.setUp();
+  });
+  
+  tearDownAll(() async {
+    // Cleanup Hive after all tests
+    await HiveTestHelper.tearDown();
+  });
 
   setUp(() async {
     // Set up mock path provider for isolated test storage

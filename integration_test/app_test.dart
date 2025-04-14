@@ -9,6 +9,7 @@ import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 
+import '../test/helpers/hive_test_helper.dart';
 import '../test/mocks/integration_test_mocks.dart';
 // Import mocks from test directory instead of generating in integration test directory
 import '../test/mocks/mock_temp_dir_path_provider.dart';
@@ -28,6 +29,9 @@ void main() {
     // Create isolated storage for testing
     mockPathProvider = MockTempDirPathProvider(prefix: 'integration_test_');
     PathProviderPlatform.instance = mockPathProvider;
+
+    // Initialize Hive for testing
+    await HiveTestHelper.setUp();
 
     // Mock auth and sync services to avoid network dependencies
     logger = LoggerService();
@@ -71,6 +75,9 @@ void main() {
     // Clean up temporary test directory
     await logger.dispose();
     await mockPathProvider.cleanup();
+    
+    // Clean up Hive
+    await HiveTestHelper.tearDown();
   });
 
   group('Solid Task App Integration Tests', () {

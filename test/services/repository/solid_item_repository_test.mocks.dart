@@ -7,7 +7,10 @@ import 'dart:async' as _i5;
 
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:solid_task/models/item.dart' as _i4;
+import 'package:solid_task/models/item_operation.dart' as _i7;
 import 'package:solid_task/services/logger_service.dart' as _i2;
+import 'package:solid_task/services/repository/operation_repository.dart'
+    as _i6;
 import 'package:solid_task/services/storage/local_storage_service.dart' as _i3;
 
 // ignore_for_file: type=lint
@@ -327,6 +330,128 @@ class MockContextLogger extends _i1.Mock implements _i2.ContextLogger {
             error,
             stackTrace,
           ],
+        ),
+        returnValueForMissingStub: null,
+      );
+}
+
+/// A class which mocks [OperationRepository].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockOperationRepository extends _i1.Mock
+    implements _i6.OperationRepository {
+  @override
+  _i5.Stream<List<_i7.ItemOperation>> watchOperations() => (super.noSuchMethod(
+        Invocation.method(
+          #watchOperations,
+          [],
+        ),
+        returnValue: _i5.Stream<List<_i7.ItemOperation>>.empty(),
+        returnValueForMissingStub: _i5.Stream<List<_i7.ItemOperation>>.empty(),
+      ) as _i5.Stream<List<_i7.ItemOperation>>);
+
+  @override
+  List<_i7.ItemOperation> getAllOperations() => (super.noSuchMethod(
+        Invocation.method(
+          #getAllOperations,
+          [],
+        ),
+        returnValue: <_i7.ItemOperation>[],
+        returnValueForMissingStub: <_i7.ItemOperation>[],
+      ) as List<_i7.ItemOperation>);
+
+  @override
+  List<_i7.ItemOperation> getOperationsForItem(String? itemId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getOperationsForItem,
+          [itemId],
+        ),
+        returnValue: <_i7.ItemOperation>[],
+        returnValueForMissingStub: <_i7.ItemOperation>[],
+      ) as List<_i7.ItemOperation>);
+
+  @override
+  List<_i7.ItemOperation> getUnsyncedOperationsForItem(String? itemId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getUnsyncedOperationsForItem,
+          [itemId],
+        ),
+        returnValue: <_i7.ItemOperation>[],
+        returnValueForMissingStub: <_i7.ItemOperation>[],
+      ) as List<_i7.ItemOperation>);
+
+  @override
+  List<_i7.ItemOperation> getAllUnsyncedOperations() => (super.noSuchMethod(
+        Invocation.method(
+          #getAllUnsyncedOperations,
+          [],
+        ),
+        returnValue: <_i7.ItemOperation>[],
+        returnValueForMissingStub: <_i7.ItemOperation>[],
+      ) as List<_i7.ItemOperation>);
+
+  @override
+  _i5.Future<void> saveOperation(_i7.ItemOperation? operation) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #saveOperation,
+          [operation],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> saveOperations(List<_i7.ItemOperation>? operations) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #saveOperations,
+          [operations],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> markAsSynced(List<_i7.ItemOperation>? operations) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #markAsSynced,
+          [operations],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> deleteOperation(String? id) => (super.noSuchMethod(
+        Invocation.method(
+          #deleteOperation,
+          [id],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> cleanupOperationsForDeletedItems(
+          List<String>? activeItemIds) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #cleanupOperationsForDeletedItems,
+          [activeItemIds],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  void dispose() => super.noSuchMethod(
+        Invocation.method(
+          #dispose,
+          [],
         ),
         returnValueForMissingStub: null,
       );
