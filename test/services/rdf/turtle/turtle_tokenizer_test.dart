@@ -1,5 +1,5 @@
-import 'package:test/test.dart';
 import 'package:solid_task/services/rdf/turtle/turtle_tokenizer.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('TurtleTokenizer', () {
@@ -36,7 +36,20 @@ void main() {
       final tokenizer = TurtleTokenizer(
         '"42"^^<http://www.w3.org/2001/XMLSchema#integer>',
       );
-      expect(tokenizer.nextToken().type, equals(TokenType.literal));
+      final literalToken = tokenizer.nextToken();
+      expect(literalToken.type, equals(TokenType.literal));
+      expect(
+        literalToken.value,
+        equals('"42"^^<http://www.w3.org/2001/XMLSchema#integer>'),
+      );
+      expect(tokenizer.nextToken().type, equals(TokenType.eof));
+    });
+
+    test('should tokenize typed literals with prefixed name as type', () {
+      final tokenizer = TurtleTokenizer('"42"^^xsd:integer');
+      final literalToken = tokenizer.nextToken();
+      expect(literalToken.type, equals(TokenType.literal));
+      expect(literalToken.value, equals('"42"^^xsd:integer'));
       expect(tokenizer.nextToken().type, equals(TokenType.eof));
     });
 

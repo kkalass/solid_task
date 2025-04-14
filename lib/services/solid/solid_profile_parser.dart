@@ -22,57 +22,72 @@ abstract class SolidProfileParser {
 /// Implementation for parsing Solid profile documents
 class DefaultSolidProfileParser implements SolidProfileParser {
   final ContextLogger _logger;
-  final RdfParser _rdfParser;
+  final RdfParserFactory _rdfParserFactory;
 
   /// Common predicates used to identify storage locations in Solid profiles
   static const _storagePredicates = [
-    'http://www.w3.org/ns/pim/space#storage',
-    'http://www.w3.org/ns/solid/terms#storage',
-    'http://www.w3.org/ns/ldp#contains',
-    'http://www.w3.org/ns/solid/terms#oidcIssuer',
-    'http://www.w3.org/ns/solid/terms#account',
-    'http://www.w3.org/ns/solid/terms#storageLocation',
+    IriTerm('http://www.w3.org/ns/pim/space#storage'),
+    IriTerm('http://www.w3.org/ns/solid/terms#storage'),
+    IriTerm('http://www.w3.org/ns/ldp#contains'),
+    IriTerm('http://www.w3.org/ns/solid/terms#oidcIssuer'),
+    IriTerm('http://www.w3.org/ns/solid/terms#account'),
+    IriTerm('http://www.w3.org/ns/solid/terms#storageLocation'),
   ];
 
   /// Creates a new ProfileParser with the required dependencies
   DefaultSolidProfileParser({
     LoggerService? loggerService,
-    RdfParser? rdfParser,
+    RdfParserFactory? rdfParserFactory,
   }) : _logger = (loggerService ?? LoggerService()).createLogger(
          'DefaultProfileParser',
        ),
-       _rdfParser = rdfParser ?? DefaultRdfParser(loggerService: loggerService);
+       _rdfParserFactory =
+           rdfParserFactory ?? RdfParserFactory(loggerService: loggerService);
 
   /// Find storage URLs in the parsed graph
   List<String> _findStorageUrls(RdfGraph graph) {
     try {
       final storageTriples = graph.findTriples(
-        predicate: 'http://www.w3.org/ns/solid/terms#storage',
+        predicate: IriTerm('http://www.w3.org/ns/solid/terms#storage'),
       );
       final spaceStorageTriples = graph.findTriples(
-        predicate: 'http://www.w3.org/ns/pim/space#storage',
+        predicate: IriTerm('http://www.w3.org/ns/pim/space#storage'),
       );
 
       final urls = <String>[];
       for (final triple in [...storageTriples, ...spaceStorageTriples]) {
-        if (triple.object.startsWith('_:')) {
-          // If the storage points to a blank node, look for location triples
-          final locationTriples = graph.findTriples(
-            subject: triple.object,
-            predicate: 'http://www.w3.org/ns/solid/terms#location',
-          );
-          for (final locationTriple in locationTriples) {
-            urls.add(locationTriple.object);
-          }
-        } else {
-          urls.add(triple.object);
-        }
+        _addIri(triple, urls, graph);
       }
 
       return urls;
     } catch (e, stackTrace) {
       _logger.error('Failed to find storage URLs', e, stackTrace);
       rethrow;
+    }
+  }
+
+  void _addIri(Triple triple, List<String> urls, RdfGraph graph) {
+    switch (triple.object) {
+      case IriTerm iriTerm:
+        // If the storage points to an IRI, add it directly
+        urls.add(iriTerm.iri);
+        break;
+      case BlankNodeTerm blankNodeTerm:
+        // If the storage points to a blank node, look for location triples
+        final locationTriples = graph.findTriples(
+          subject: blankNodeTerm,
+          predicate: IriTerm('http://www.w3.org/ns/solid/terms#location'),
+        );
+        for (final locationTriple in locationTriples) {
+          _addIri(locationTriple, urls, graph);
+        }
+        break;
+      case LiteralTerm _:
+        _logger.warning(
+          'Storage points to a literal, ignoring it: ${triple.object}',
+        );
+        // If the storage points to a literal, ignore it
+        break;
     }
   }
 
@@ -87,11 +102,9 @@ class DefaultSolidProfileParser implements SolidProfileParser {
 
       // Use the unified RdfParser to handle both Turtle and JSON-LD
       try {
-        final graph = _rdfParser.parse(
-          content,
-          contentType: contentType,
-          documentUrl: webId,
-        );
+        final graph = _rdfParserFactory
+            .createParser(contentType: contentType)
+            .parse(content, documentUrl: webId);
 
         final storageUrls = _findStorageUrls(graph);
         if (storageUrls.isNotEmpty) {
@@ -103,7 +116,11 @@ class DefaultSolidProfileParser implements SolidProfileParser {
         for (final predicate in _storagePredicates) {
           final triples = graph.findTriples(predicate: predicate);
           if (triples.isNotEmpty) {
-            final storageUrl = triples[0].object.replaceAll('"', '');
+            final storageUrls = <String>[];
+            for (final triple in triples) {
+              _addIri(triple, storageUrls, graph);
+            }
+            final storageUrl = storageUrls[0];
             _logger.info(
               'Found storage URL with alternative predicate: $storageUrl',
             );

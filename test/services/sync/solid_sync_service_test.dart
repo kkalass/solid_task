@@ -1,344 +1,496 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
 import 'package:http/http.dart' as http;
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 import 'package:solid_task/models/auth/auth_token.dart';
 import 'package:solid_task/models/auth/user_identity.dart';
+import 'package:solid_task/models/item.dart';
 import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/services/logger_service.dart';
+import 'package:solid_task/services/rdf/item_rdf_serializer.dart';
+import 'package:solid_task/services/rdf/rdf_graph.dart';
+import 'package:solid_task/services/rdf/rdf_parser.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/sync/solid_sync_service.dart';
-import 'dart:convert';
+
+import 'solid_sync_service_test.mocks.dart';
 
 @GenerateMocks([
   http.Client,
   ItemRepository,
   SolidAuthState,
   SolidAuthOperations,
-  ContextLogger,
+  ItemRdfSerializer,
+  RdfParser,
+  RdfParserFactory,
 ])
-import 'solid_sync_service_test.mocks.dart';
-
 void main() {
+  late MockClient mockClient;
+  late MockItemRepository mockRepository;
+  late MockSolidAuthState mockAuthState;
+  late MockSolidAuthOperations mockAuthOperations;
+  late MockItemRdfSerializer mockSerializer;
+  late MockRdfParserFactory mockParserFactory;
+  late MockRdfParser mockParser;
+  late LoggerService loggerService;
+  late SolidSyncService service;
+
+  setUp(() {
+    mockClient = MockClient();
+    mockRepository = MockItemRepository();
+    mockAuthState = MockSolidAuthState();
+    mockAuthOperations = MockSolidAuthOperations();
+    mockSerializer = MockItemRdfSerializer();
+    mockParserFactory = MockRdfParserFactory();
+    mockParser = MockRdfParser();
+    loggerService = LoggerService();
+
+    when(
+      mockParserFactory.createParser(contentType: anyNamed('contentType')),
+    ).thenReturn(mockParser);
+
+    service = SolidSyncService(
+      repository: mockRepository,
+      authState: mockAuthState,
+      authOperations: mockAuthOperations,
+      loggerService: loggerService,
+      client: mockClient,
+      rdfSerializer: mockSerializer,
+      rdfParserFactory: mockParserFactory,
+    );
+  });
+
   group('SolidSyncService', () {
-    late MockClient mockHttpClient;
-    late MockItemRepository mockRepository;
-    late MockSolidAuthState mockSolidAuthState;
-    late MockSolidAuthOperations mockSolidAuthOperations;
-    late MockContextLogger mockLogger;
-    late SolidSyncService syncService;
-
-    setUp(() {
-      mockHttpClient = MockClient();
-      mockRepository = MockItemRepository();
-      mockSolidAuthState = MockSolidAuthState();
-      mockSolidAuthOperations = MockSolidAuthOperations();
-      mockLogger = MockContextLogger();
-
-      // Setup standard authentication state
-      when(mockSolidAuthState.isAuthenticated).thenReturn(true);
-
-      // Mock the UserIdentity object correctly
-      final mockUserIdentity = UserIdentity(
-        webId: 'https://user.example/profile/card#me',
-        podUrl: 'https://pod.example/storage/',
+    // Helper function to set up a logged-in user
+    void setupLoggedInUser() {
+      final userInfo = UserIdentity(
+        webId: 'https://user.example.org/profile/card#me',
+        podUrl: 'https://storage.example.org/',
       );
-      when(mockSolidAuthState.currentUser).thenReturn(mockUserIdentity);
-
-      // Mock the AuthToken object
-      final mockAuthToken = AuthToken(
+      final authToken = AuthToken(
         accessToken: 'mock-access-token',
-        decodedData: {'sub': 'user123'},
-        expiresAt: DateTime.now().add(Duration(hours: 1)),
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
-      when(mockSolidAuthState.authToken).thenReturn(mockAuthToken);
 
+      when(mockAuthState.isAuthenticated).thenReturn(true);
+      when(mockAuthState.currentUser).thenReturn(userInfo);
+      when(mockAuthState.authToken).thenReturn(authToken);
       when(
-        mockSolidAuthOperations.generateDpopToken(any, any),
+        mockAuthOperations.generateDpopToken(any, any),
       ).thenReturn('mock-dpop-token');
+    }
 
-      syncService = SolidSyncService(
-        repository: mockRepository,
-        authState: mockSolidAuthState,
-        authOperations: mockSolidAuthOperations,
-        logger: mockLogger,
-        client: mockHttpClient,
+    // Helper function to create sample items
+    List<Item> createSampleItems(int count) {
+      return List.generate(count, (index) {
+        final item = Item(text: 'Item $index', lastModifiedBy: 'user1');
+        item.id = 'item-$index';
+        return item;
+      });
+    }
+
+    // Helper function to simulate successful container creation
+    void mockSuccessfulContainerCreation() {
+      when(
+        mockClient.head(
+          Uri.parse('https://storage.example.org/tasks/'),
+          headers: anyNamed('headers'),
+        ),
+      ).thenAnswer((_) async => http.Response('', 404));
+
+      when(
+        mockClient.put(
+          Uri.parse('https://storage.example.org/tasks/'),
+          headers: anyNamed('headers'),
+          body: anyNamed('body'),
+        ),
+      ).thenAnswer((_) async => http.Response('', 201));
+    }
+
+    test('isConnected should return authState.isAuthenticated', () {
+      // Arrange
+      when(mockAuthState.isAuthenticated).thenReturn(true);
+
+      // Act & Assert
+      expect(service.isConnected, true);
+
+      // Arrange again
+      when(mockAuthState.isAuthenticated).thenReturn(false);
+
+      // Act & Assert again
+      expect(service.isConnected, false);
+    });
+
+    test('userIdentifier should return user webId', () {
+      // Arrange
+      final userInfo = UserIdentity(
+        webId: 'https://user.example.org/profile/card#me',
+        podUrl: 'https://storage.example.org/',
       );
-    });
+      when(mockAuthState.currentUser).thenReturn(userInfo);
 
-    test('isConnected returns auth service authentication status', () {
-      // Default setup has isAuthenticated = true
-      expect(syncService.isConnected, isTrue);
-
-      // Change auth status
-      when(mockSolidAuthState.isAuthenticated).thenReturn(false);
-      expect(syncService.isConnected, isFalse);
-    });
-
-    test('userIdentifier returns the current WebID', () {
+      // Act & Assert
       expect(
-        syncService.userIdentifier,
-        'https://user.example/profile/card#me',
+        service.userIdentifier,
+        'https://user.example.org/profile/card#me',
       );
-    });
-
-    test('syncToRemote sends local items to the pod', () async {
-      // Setup repository response
-      final mockItems = [
-        {
-          'id': '1',
-          'text': 'Item 1',
-          'createdAt': DateTime.now().toIso8601String(),
-          'vectorClock': {'user1': 1},
-          'isDeleted': false,
-          'lastModifiedBy': 'user1',
-        },
-        {
-          'id': '2',
-          'text': 'Item 2',
-          'createdAt': DateTime.now().toIso8601String(),
-          'vectorClock': {'user1': 1},
-          'isDeleted': false,
-          'lastModifiedBy': 'user1',
-        },
-      ];
-      when(mockRepository.exportItems()).thenReturn(mockItems);
-
-      // Setup HTTP response
-      when(
-        mockHttpClient.put(
-          any,
-          headers: anyNamed('headers'),
-          body: anyNamed('body'),
-        ),
-      ).thenAnswer((_) async => http.Response('Success', 200));
-
-      // Execute
-      final result = await syncService.syncToRemote();
-
-      // Verify
-      expect(result.success, isTrue);
-      expect(result.itemsUploaded, 2);
-
-      // Verify correct HTTP request was made
-      verify(
-        mockSolidAuthOperations.generateDpopToken(
-          'https://pod.example/storage/todos.json',
-          'PUT',
-        ),
-      ).called(1);
-
-      verify(
-        mockHttpClient.put(
-          Uri.parse('https://pod.example/storage/todos.json'),
-          headers: {
-            'Accept': '*/*',
-            'Authorization': 'DPoP mock-access-token',
-            'Connection': 'keep-alive',
-            'Content-Type': 'application/json',
-            'DPoP': 'mock-dpop-token',
-          },
-          body: jsonEncode(mockItems),
-        ),
-      ).called(1);
-
-      verify(mockLogger.info(any)).called(1);
-    });
-
-    test('syncToRemote returns error when not connected', () async {
-      // Setup - not authenticated
-      when(mockSolidAuthState.isAuthenticated).thenReturn(false);
-
-      // Execute
-      final result = await syncService.syncToRemote();
-
-      // Verify
-      expect(result.success, isFalse);
-      expect(result.error, contains('Not connected'));
-      verifyNever(
-        mockHttpClient.put(
-          any,
-          headers: anyNamed('headers'),
-          body: anyNamed('body'),
-        ),
-      );
-    });
-
-    test('syncToRemote returns error when pod URL is null', () async {
-      // Setup - no pod URL
-      when(mockSolidAuthState.currentUser?.podUrl).thenReturn(null);
-
-      // Execute
-      final result = await syncService.syncToRemote();
-
-      // Verify
-      expect(result.success, isFalse);
-      expect(result.error, contains('Pod URL not available'));
-      verifyNever(
-        mockHttpClient.put(
-          any,
-          headers: anyNamed('headers'),
-          body: anyNamed('body'),
-        ),
-      );
-    });
-
-    test('syncToRemote returns error when HTTP request fails', () async {
-      // Setup repository response
-      when(mockRepository.exportItems()).thenReturn([]);
-
-      // Setup HTTP error response
-      when(
-        mockHttpClient.put(
-          any,
-          headers: anyNamed('headers'),
-          body: anyNamed('body'),
-        ),
-      ).thenAnswer((_) async => http.Response('Error', 403));
-
-      // Execute
-      final result = await syncService.syncToRemote();
-
-      // Verify
-      expect(result.success, isFalse);
-      expect(result.error, contains('403'));
-      verify(mockLogger.error(any, any, any)).called(1);
-    });
-
-    test('syncFromRemote gets items from the pod and imports them', () async {
-      // Setup mock response data
-      final mockJsonResponse = [
-        {
-          'id': '1',
-          'text': 'Remote Item 1',
-          'createdAt': DateTime.now().toIso8601String(),
-          'vectorClock': {'remote': 1},
-          'isDeleted': false,
-          'lastModifiedBy': 'remote',
-        },
-      ];
-
-      // Setup HTTP response
-      when(mockHttpClient.get(any, headers: anyNamed('headers'))).thenAnswer(
-        (_) async => http.Response(jsonEncode(mockJsonResponse), 200),
-      );
-
-      // Setup repository
-      when(mockRepository.importItems(any)).thenAnswer((_) async {});
-
-      // Execute
-      final result = await syncService.syncFromRemote();
-
-      // Verify
-      expect(result.success, isTrue);
-      expect(result.itemsDownloaded, 1);
-
-      // Verify HTTP request
-      verify(
-        mockSolidAuthOperations.generateDpopToken(
-          'https://pod.example/storage/todos.json',
-          'GET',
-        ),
-      ).called(1);
-      verify(
-        mockHttpClient.get(
-          Uri.parse('https://pod.example/storage/todos.json'),
-          headers: {
-            'Accept': '*/*',
-            'Authorization': 'DPoP mock-access-token',
-            'Connection': 'keep-alive',
-            'DPoP': 'mock-dpop-token',
-          },
-        ),
-      ).called(1);
-
-      // Verify items were imported
-      verify(mockRepository.importItems(any)).called(1);
-    });
-
-    test('syncFromRemote handles 404 gracefully when no file exists', () async {
-      // Setup HTTP 404 response
-      when(
-        mockHttpClient.get(any, headers: anyNamed('headers')),
-      ).thenAnswer((_) async => http.Response('Not Found', 404));
-
-      // Execute
-      final result = await syncService.syncFromRemote();
-
-      // Verify - this should be successful with 0 items
-      expect(result.success, isTrue);
-      expect(result.itemsDownloaded, 0);
-      verifyNever(mockRepository.importItems(any));
-    });
-
-    test('fullSync performs both download and upload operations', () async {
-      // Setup mock response data
-      final mockJsonResponse = [
-        {'id': '1', 'text': 'Remote Item'},
-      ];
-
-      // Setup HTTP responses
-      when(mockHttpClient.get(any, headers: anyNamed('headers'))).thenAnswer(
-        (_) async => http.Response(jsonEncode(mockJsonResponse), 200),
-      );
-
-      when(
-        mockHttpClient.put(
-          any,
-          headers: anyNamed('headers'),
-          body: anyNamed('body'),
-        ),
-      ).thenAnswer((_) async => http.Response('Success', 200));
-
-      // Setup repository
-      when(mockRepository.importItems(any)).thenAnswer((_) async {});
-      when(mockRepository.exportItems()).thenReturn([
-        {'id': '2', 'text': 'Local Item'},
-      ]);
-
-      // Execute
-      final result = await syncService.fullSync();
-
-      // Verify
-      expect(result.success, isTrue);
-      expect(result.itemsDownloaded, 1);
-      expect(result.itemsUploaded, 1);
-
-      // Verify both operations happened
-      verify(mockHttpClient.get(any, headers: anyNamed('headers'))).called(1);
-      verify(
-        mockHttpClient.put(
-          any,
-          headers: anyNamed('headers'),
-          body: anyNamed('body'),
-        ),
-      ).called(1);
     });
 
     test(
-      'startPeriodicSync starts a timer and stopPeriodicSync stops it',
+      'syncToRemote should upload items as individual Turtle files',
       () async {
-        // This is mostly a smoke test as we can't easily test the timer directly
+        // Arrange
+        setupLoggedInUser();
+        mockSuccessfulContainerCreation();
 
-        // Execute
-        syncService.startPeriodicSync(Duration(minutes: 5));
+        final items = createSampleItems(3);
+        when(mockRepository.getAllItems()).thenReturn(items);
 
-        // Verify logger was called
-        verify(mockLogger.info(any)).called(1);
+        // Set up the serializer to return some Turtle content
+        for (final item in items) {
+          when(mockSerializer.itemToString(item)).thenReturn(
+            '@prefix task: <http://example.org/> .\n<item> a task:Task .',
+          );
+        }
 
-        // Stop sync and verify
-        syncService.stopPeriodicSync();
-        verify(mockLogger.info(any)).called(1);
+        // Set up successful HTTP responses for each item
+        for (final item in items) {
+          when(
+            mockClient.put(
+              Uri.parse('https://storage.example.org/tasks/${item.id}.ttl'),
+              headers: anyNamed('headers'),
+              body: anyNamed('body'),
+            ),
+          ).thenAnswer((_) async => http.Response('', 201));
+        }
+
+        // Act
+        final result = await service.syncToRemote();
+
+        // Assert
+        expect(result.success, true);
+        expect(result.itemsUploaded, 3);
+
+        // Verify items were serialized
+        for (final item in items) {
+          verify(mockSerializer.itemToString(item)).called(1);
+        }
+
+        // Verify HTTP requests were made
+        for (final item in items) {
+          verify(
+            mockClient.put(
+              Uri.parse('https://storage.example.org/tasks/${item.id}.ttl'),
+              headers: anyNamed('headers'),
+              body: anyNamed('body'),
+            ),
+          ).called(1);
+        }
       },
     );
 
-    test('dispose stops periodic sync and logs', () {
-      // Execute
-      syncService.dispose();
+    test('syncFromRemote should download and parse Turtle files', () async {
+      // Arrange
+      setupLoggedInUser();
 
-      // Verify
-      verify(mockLogger.debug(any)).called(1);
+      // Mock container exists check
+      when(
+        mockClient.head(
+          Uri.parse('https://storage.example.org/tasks/'),
+          headers: anyNamed('headers'),
+        ),
+      ).thenAnswer((_) async => http.Response('', 200));
+
+      // Mock container listing
+      final containerListing = '''
+      @prefix ldp: <http://www.w3.org/ns/ldp#> .
+      <> ldp:contains <https://storage.example.org/tasks/item-0.ttl> .
+      <> ldp:contains <https://storage.example.org/tasks/item-1.ttl> .
+      ''';
+
+      when(
+        mockClient.get(
+          Uri.parse('https://storage.example.org/tasks/'),
+          headers: anyNamed('headers'),
+        ),
+      ).thenAnswer((_) async => http.Response(containerListing, 200));
+
+      // Mock RDF parser for container listing
+      final mockGraph = createMockGraph([
+        'https://storage.example.org/tasks/item-0.ttl',
+        'https://storage.example.org/tasks/item-1.ttl',
+      ]);
+
+      when(
+        mockParser.parse(
+          containerListing,
+          documentUrl: 'https://storage.example.org/tasks/',
+        ),
+      ).thenReturn(mockGraph);
+
+      // Mock item downloads
+      final items = createSampleItems(2);
+
+      for (int i = 0; i < items.length; i++) {
+        final itemUrl = 'https://storage.example.org/tasks/item-$i.ttl';
+        final itemContent =
+            '@prefix task: <http://example.org/> .\n<item> a task:Task .';
+
+        when(
+          mockClient.get(Uri.parse(itemUrl), headers: anyNamed('headers')),
+        ).thenAnswer((_) async => http.Response(itemContent, 200));
+
+        // Mock parsing the item content
+        final itemId = 'item-$i';
+        final itemUri = 'http://solidtask.org/tasks/$itemId';
+
+        when(
+          mockParser.parse(itemContent, documentUrl: itemUrl),
+        ).thenReturn(mockGraph); // Use the same mock graph for simplicity
+
+        when(mockSerializer.rdfToItem(mockGraph, itemUri)).thenReturn(items[i]);
+      }
+
+      // Act
+      final result = await service.syncFromRemote();
+
+      // Assert
+      expect(result.success, true);
+      expect(result.itemsDownloaded, 2);
+
+      // Verify items were merged into the repository
+      verify(mockRepository.mergeItems(items)).called(1);
     });
+
+    test(
+      'syncFromRemote should return empty result if container does not exist',
+      () async {
+        // Arrange
+        setupLoggedInUser();
+
+        // Mock container exists check - return 404 to indicate container doesn't exist
+        when(
+          mockClient.head(
+            Uri.parse('https://storage.example.org/tasks/'),
+            headers: anyNamed('headers'),
+          ),
+        ).thenAnswer((_) async => http.Response('', 404));
+
+        // Act
+        final result = await service.syncFromRemote();
+
+        // Assert
+        expect(result.success, true);
+        expect(result.itemsDownloaded, 0);
+
+        // Verify that no items were merged into the repository
+        verifyNever(mockRepository.mergeItems(any));
+      },
+    );
+
+    test('fullSync should handle both directions', () async {
+      // Arrange
+      setupLoggedInUser();
+      mockSuccessfulContainerCreation();
+
+      // Mock successful syncFromRemote
+      when(
+        mockClient.head(
+          Uri.parse('https://storage.example.org/tasks/'),
+          headers: anyNamed('headers'),
+        ),
+      ).thenAnswer((_) async => http.Response('', 200));
+
+      when(
+        mockClient.get(
+          Uri.parse('https://storage.example.org/tasks/'),
+          headers: anyNamed('headers'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            http.Response('@prefix ldp: <http://www.w3.org/ns/ldp#> .', 200),
+      );
+
+      final mockGraph = createMockGraph([]);
+      when(
+        mockParser.parse(any, documentUrl: anyNamed('documentUrl')),
+      ).thenReturn(mockGraph);
+
+      // Mock empty item list
+      when(mockRepository.getAllItems()).thenReturn([]);
+
+      // Act
+      final result = await service.fullSync();
+
+      // Assert
+      expect(result.success, true);
+      expect(result.itemsDownloaded, 0);
+      expect(result.itemsUploaded, 0);
+    });
+
+    test('fullSync should handle errors in syncFromRemote', () async {
+      // Arrange
+      setupLoggedInUser();
+
+      // Mock error in syncFromRemote
+      when(
+        mockClient.head(
+          Uri.parse('https://storage.example.org/tasks/'),
+          headers: anyNamed('headers'),
+        ),
+      ).thenThrow(Exception('Network error'));
+
+      // Ensure that both isConnected checks return true
+      // Mocking getAllItems prevents a secondary error during syncToRemote
+      when(mockRepository.getAllItems()).thenReturn([]);
+
+      // Act
+      final result = await service.fullSync();
+
+      // Assert
+      expect(result.success, false);
+      expect(result.error, contains('Error syncing from pod'));
+    });
+
+    test(
+      'startPeriodicSync should start timer and stopPeriodicSync should cancel it',
+      () async {
+        // Arrange
+        setupLoggedInUser();
+        mockSuccessfulContainerCreation();
+
+        // Mock successful syncFromRemote for fullSync
+        when(
+          mockClient.head(
+            Uri.parse('https://storage.example.org/tasks/'),
+            headers: anyNamed('headers'),
+          ),
+        ).thenAnswer((_) async => http.Response('', 200));
+
+        when(
+          mockClient.get(
+            Uri.parse('https://storage.example.org/tasks/'),
+            headers: anyNamed('headers'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              http.Response('@prefix ldp: <http://www.w3.org/ns/ldp#> .', 200),
+        );
+
+        final mockGraph = createMockGraph([]);
+        when(
+          mockParser.parse(any, documentUrl: anyNamed('documentUrl')),
+        ).thenReturn(mockGraph);
+
+        when(mockRepository.getAllItems()).thenReturn([]);
+
+        // Act & Assert
+        service.startPeriodicSync(const Duration(seconds: 1));
+        expect(service.syncTimer, true);
+
+        service.stopPeriodicSync();
+        expect(service.syncTimer, false);
+      },
+    );
+
+    test('dispose should stop periodic sync', () {
+      // Arrange
+      setupLoggedInUser();
+      service.startPeriodicSync(const Duration(seconds: 1));
+      expect(service.syncTimer, true);
+
+      // Act
+      service.dispose();
+
+      // Assert
+      expect(service.syncTimer, false);
+    });
+
+    test(
+      'syncToRemote should handle HTTP errors when uploading items',
+      () async {
+        // Arrange
+        setupLoggedInUser();
+        mockSuccessfulContainerCreation();
+
+        final items = createSampleItems(2);
+        when(mockRepository.getAllItems()).thenReturn(items);
+
+        // Set up the serializer to return some Turtle content
+        for (final item in items) {
+          when(mockSerializer.itemToString(item)).thenReturn(
+            '@prefix task: <http://example.org/> .\n<item> a task:Task .',
+          );
+        }
+
+        // Set up mixed success/error HTTP responses
+        when(
+          mockClient.put(
+            Uri.parse('https://storage.example.org/tasks/${items[0].id}.ttl'),
+            headers: anyNamed('headers'),
+            body: anyNamed('body'),
+          ),
+        ).thenAnswer((_) async => http.Response('', 201)); // Success
+
+        when(
+          mockClient.put(
+            Uri.parse('https://storage.example.org/tasks/${items[1].id}.ttl'),
+            headers: anyNamed('headers'),
+            body: anyNamed('body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response('Permission denied', 403),
+        ); // Error
+
+        // Act
+        final result = await service.syncToRemote();
+
+        // Assert
+        expect(result.success, true);
+        expect(result.itemsUploaded, 1); // Only one item succeeded
+      },
+    );
+
+    test(
+      '_containerExists should propagate exceptions to syncFromRemote',
+      () async {
+        // Arrange
+        setupLoggedInUser();
+
+        // Mock a network error
+        when(
+          mockClient.head(
+            Uri.parse('https://storage.example.org/tasks/'),
+            headers: anyNamed('headers'),
+          ),
+        ).thenThrow(Exception('Network error'));
+
+        // Act
+        final result = await service.syncFromRemote();
+
+        // Assert
+        expect(result.success, false);
+        expect(result.error, contains('Error syncing from pod'));
+        expect(result.error, contains('Network error'));
+      },
+    );
   });
+}
+
+// Helper to create a mock RDF graph with container listing
+RdfGraph createMockGraph(List<String> fileUrls) {
+  final graph = RdfGraph();
+
+  for (final fileUrl in fileUrls) {
+    graph.addTriple(
+      Triple(
+        IriTerm('https://example.com/container'),
+        IriTerm('http://www.w3.org/ns/ldp#contains'),
+        IriTerm(fileUrl),
+      ),
+    );
+  }
+
+  return graph;
 }

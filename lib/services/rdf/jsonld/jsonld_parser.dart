@@ -175,7 +175,8 @@ class JsonLdParser {
     final triples = <Triple>[];
 
     // Determine the subject
-    final String subject = _getSubjectId(node);
+    final String subjectStr = _getSubjectId(node);
+    final subject = _createSubjectTerm(subjectStr);
     _logger.debug('Processing node with subject: $subject');
 
     // Process all properties except @context and @id
@@ -193,7 +194,8 @@ class JsonLdParser {
       }
 
       // Expand predicate using context
-      final predicate = _expandPredicate(key, context);
+      final predicateStr = _expandPredicate(key, context);
+      final predicate = IriTerm(predicateStr);
       _logger.debug('Processing property: $key -> $predicate');
 
       if (value is List) {
@@ -210,55 +212,98 @@ class JsonLdParser {
     return triples;
   }
 
+  /// Create appropriate RDF term for a subject
+  RdfSubject _createSubjectTerm(String subject) {
+    if (subject.startsWith('_:')) {
+      return BlankNodeTerm(subject);
+    } else {
+      return IriTerm(subject);
+    }
+  }
+
   /// Get the subject identifier from a node
   String _getSubjectId(Map<String, dynamic> node) {
     if (node.containsKey('@id')) {
       final id = node['@id'] as String;
 
+      // First expand any prefixes using the context
+      final context = _extractContext(node);
+      final expandedId = _expandPrefixedIri(id, context);
+
       // Resolve relative IRIs against the base URI if one is provided
-      if (_baseUri != null && !id.contains('://') && !id.startsWith('_:')) {
-        return Uri.parse(_baseUri).resolve(id).toString();
+      if (_baseUri != null &&
+          !expandedId.contains('://') &&
+          !expandedId.startsWith('_:')) {
+        return Uri.parse(_baseUri).resolve(expandedId).toString();
       }
 
-      return id;
+      return expandedId;
     }
 
     // Generate blank node identifier if no @id is present
     return '_:b${node.hashCode.abs()}';
   }
 
+  /// Expand a prefixed IRI using the context
+  String _expandPrefixedIri(String iri, Map<String, String> context) {
+    // If it's already a full IRI or a blank node, return as is
+    if (iri.startsWith('http://') ||
+        iri.startsWith('https://') ||
+        iri.startsWith('_:')) {
+      return iri;
+    }
+
+    // Handle prefixed name (e.g., ex:subject)
+    if (iri.contains(':')) {
+      final parts = iri.split(':');
+      if (parts.length == 2 && context.containsKey(parts[0])) {
+        return '${context[parts[0]]}${parts[1]}';
+      }
+    }
+
+    // Direct match in context
+    if (context.containsKey(iri)) {
+      return context[iri]!;
+    }
+
+    // Return the IRI as-is if we can't resolve it
+    return iri;
+  }
+
   /// Process @type value and add appropriate triples
   void _processType(
-    String subject,
+    RdfSubject subject,
     dynamic typeValue,
     List<Triple> triples,
     Map<String, String> context,
   ) {
-    final typeProperty = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+    final typePredicate = IriTerm(
+      'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
+    );
 
     if (typeValue is List) {
       for (final type in typeValue) {
         if (type is String) {
           final expandedType = _expandPredicate(type, context);
-          triples.add(Triple(subject, typeProperty, expandedType));
+          triples.add(Triple(subject, typePredicate, IriTerm(expandedType)));
           _logger.debug(
-            'Added type triple: $subject -> $typeProperty -> $expandedType',
+            'Added type triple: $subject -> $typePredicate -> $expandedType',
           );
         }
       }
     } else if (typeValue is String) {
       final expandedType = _expandPredicate(typeValue, context);
-      triples.add(Triple(subject, typeProperty, expandedType));
+      triples.add(Triple(subject, typePredicate, IriTerm(expandedType)));
       _logger.debug(
-        'Added type triple: $subject -> $typeProperty -> $expandedType',
+        'Added type triple: $subject -> $typePredicate -> $expandedType',
       );
     }
   }
 
   /// Add a triple for a given value
   void _addTripleForValue(
-    String subject,
-    String predicate,
+    RdfSubject subject,
+    RdfPredicate predicate,
     dynamic value,
     List<Triple> triples,
     Map<String, String> context,
@@ -267,27 +312,54 @@ class JsonLdParser {
       // Simple literal or IRI value
       if (value.startsWith('http://') || value.startsWith('https://')) {
         // Treat as IRI
-        triples.add(Triple(subject, predicate, value));
+        triples.add(Triple(subject, predicate, IriTerm(value)));
         _logger.debug('Added IRI triple: $subject -> $predicate -> $value');
       } else {
         // Treat as literal
-        triples.add(Triple(subject, predicate, '"$value"'));
+        triples.add(Triple(subject, predicate, LiteralTerm.string(value)));
         _logger.debug(
           'Added literal triple: $subject -> $predicate -> "$value"',
         );
       }
-    } else if (value is num || value is bool) {
-      // Numeric or boolean literal
-      triples.add(Triple(subject, predicate, '"$value"'));
-      _logger.debug('Added literal triple: $subject -> $predicate -> "$value"');
+    } else if (value is num) {
+      // Numeric literal
+      final datatype = value is int ? 'integer' : 'decimal';
+      triples.add(
+        Triple(
+          subject,
+          predicate,
+          LiteralTerm.typed(value.toString(), datatype),
+        ),
+      );
+      _logger.debug(
+        'Added numeric literal triple: $subject -> $predicate -> $value',
+      );
+    } else if (value is bool) {
+      // Boolean literal
+      triples.add(
+        Triple(
+          subject,
+          predicate,
+          LiteralTerm.typed(value.toString(), 'boolean'),
+        ),
+      );
+      _logger.debug(
+        'Added boolean literal triple: $subject -> $predicate -> $value',
+      );
     } else if (value is Map<String, dynamic>) {
       // Object value (nested node or value with metadata)
       if (value.containsKey('@id')) {
         // Reference to another resource
         final objectId = value['@id'] as String;
-        triples.add(Triple(subject, predicate, _expandIri(objectId)));
+        final expandedIri = _expandIri(objectId);
+        final RdfObject objectTerm =
+            expandedIri.startsWith('_:')
+                ? BlankNodeTerm(expandedIri)
+                : IriTerm(expandedIri);
+
+        triples.add(Triple(subject, predicate, objectTerm));
         _logger.debug(
-          'Added object reference triple: $subject -> $predicate -> ${_expandIri(objectId)}',
+          'Added object reference triple: $subject -> $predicate -> $expandedIri',
         );
 
         // If the object has more properties, process it recursively
@@ -296,25 +368,32 @@ class JsonLdParser {
         }
       } else if (value.containsKey('@value')) {
         // Typed or language-tagged literal
-        final literalValue = value['@value'];
-        String objectValue = '"$literalValue"';
+        final literalValue = value['@value'].toString();
+        LiteralTerm objectTerm;
 
         if (value.containsKey('@type')) {
-          // Typed literal
-          objectValue = '$objectValue^^${value['@type']}';
+          // Typed literal with datatype IRI
+          final typeIri = value['@type'] as String;
+          objectTerm = LiteralTerm(literalValue, datatype: IriTerm(typeIri));
         } else if (value.containsKey('@language')) {
           // Language-tagged literal
-          objectValue = '$objectValue@${value['@language']}';
+          final language = value['@language'] as String;
+          objectTerm = LiteralTerm.withLanguage(literalValue, language);
+        } else {
+          // Simple literal
+          objectTerm = LiteralTerm.string(literalValue);
         }
 
-        triples.add(Triple(subject, predicate, objectValue));
+        triples.add(Triple(subject, predicate, objectTerm));
         _logger.debug(
-          'Added complex literal triple: $subject -> $predicate -> $objectValue',
+          'Added complex literal triple: $subject -> $predicate -> $objectTerm',
         );
       } else {
         // Blank node
         final blankNodeId = '_:b${value.hashCode.abs()}';
-        triples.add(Triple(subject, predicate, blankNodeId));
+        final blankNode = BlankNodeTerm(blankNodeId);
+
+        triples.add(Triple(subject, predicate, blankNode));
         _logger.debug(
           'Added blank node triple: $subject -> $predicate -> $blankNodeId',
         );
@@ -328,27 +407,8 @@ class JsonLdParser {
 
   /// Expand a predicate using the context
   String _expandPredicate(String key, Map<String, String> context) {
-    if (key.contains(':')) {
-      // Handle prefixed name
-      final parts = key.split(':');
-      if (parts.length == 2 && context.containsKey(parts[0])) {
-        return '${context[parts[0]]}${parts[1]}';
-      }
-    }
-
-    // Direct match in context
-    if (context.containsKey(key)) {
-      return context[key]!;
-    }
-
-    // Full IRI or unknown property
-    if (key.startsWith('http://') || key.startsWith('https://')) {
-      return key;
-    }
-
-    // Return the key as-is if we can't resolve it
-    _logger.warning('Unable to resolve predicate: $key');
-    return key;
+    // Predicate actually is an IRI, so expand it
+    return _expandPrefixedIri(key, context);
   }
 
   /// Expand an IRI using the base URI if needed

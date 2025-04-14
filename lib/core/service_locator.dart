@@ -225,7 +225,7 @@ Future<void> initServiceLocator({
               repository: sl<ItemRepository>(instanceName: 'baseRepository'),
               authOperations: sl<SolidAuthOperations>(),
               authState: sl<SolidAuthState>(),
-              logger: sl<LoggerService>().createLogger('SyncService'),
+              loggerService: sl<LoggerService>(),
               client: sl<http.Client>(),
             ),
   );

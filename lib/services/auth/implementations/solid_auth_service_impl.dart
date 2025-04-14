@@ -14,7 +14,6 @@ import 'package:solid_task/services/auth/interfaces/solid_provider_service.dart'
 import 'package:solid_task/services/auth/jwt_decoder_wrapper.dart';
 import 'package:solid_task/services/auth/solid_auth_wrapper.dart';
 import 'package:solid_task/services/logger_service.dart';
-import 'package:solid_task/services/rdf/rdf_parser.dart';
 import 'package:solid_task/services/solid/solid_profile_parser.dart';
 
 /// Implementation of the SolidAuthService interface using the SOLID authentication protocol
@@ -96,10 +95,7 @@ class SolidAuthServiceImpl
        _solidAuth = solidAuth ?? SolidAuth(),
        _profileParser =
            profileParser ??
-           DefaultSolidProfileParser(
-             loggerService: loggerService,
-             rdfParser: DefaultRdfParser(loggerService: loggerService),
-           ) {
+           DefaultSolidProfileParser(loggerService: loggerService) {
     _initializationFuture = _initialize();
   }
 

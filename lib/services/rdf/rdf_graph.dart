@@ -1,66 +1,156 @@
-import 'package:solid_task/services/logger_service.dart';
+import 'package:equatable/equatable.dart';
+import 'package:solid_task/services/rdf/rdf_constants.dart';
 
-/// Represents an RDF triple in Turtle syntax.
+/// Hierarchy of RDF terms representing the core data model
+/// This is independent of any specific serialization format
+
+/// Base type for all RDF terms
+sealed class RdfTerm extends Equatable {
+  const RdfTerm();
+
+  /// Accept a visitor for type-safe operations on RDF terms
+  T accept<T>(RdfTermVisitor<T> visitor);
+}
+
+sealed class RdfObject extends RdfTerm {
+  const RdfObject();
+}
+
+sealed class RdfSubject extends RdfTerm {
+  const RdfSubject();
+}
+
+sealed class RdfPredicate extends RdfTerm {
+  const RdfPredicate();
+}
+
+/// IRI (Internationalized Resource Identifier) in RDF
+class IriTerm extends RdfTerm implements RdfPredicate, RdfSubject, RdfObject {
+  final String iri;
+
+  const IriTerm(this.iri);
+
+  @override
+  List<Object?> get props => [iri];
+
+  @override
+  T accept<T>(RdfTermVisitor<T> visitor) => visitor.visitIri(this);
+
+  @override
+  bool operator ==(Object other) {
+    return other is IriTerm && iri.toLowerCase() == other.iri.toLowerCase();
+  }
+
+  @override
+  int get hashCode => iri.hashCode;
+}
+
+/// BlankNode (anonymous resource) in RDF
+class BlankNodeTerm extends RdfTerm implements RdfSubject, RdfObject {
+  final String label;
+
+  const BlankNodeTerm(this.label);
+
+  @override
+  List<Object?> get props => [label];
+
+  @override
+  T accept<T>(RdfTermVisitor<T> visitor) => visitor.visitBlankNode(this);
+}
+
+/// Literal value in RDF
+class LiteralTerm extends RdfTerm implements RdfObject {
+  final String value;
+  final IriTerm datatype;
+  final String? language;
+
+  /// Create a literal with optional datatype or language tag
+  /// Note: RDF spec requires that a literal with language tag must use rdf:langString datatype
+  const LiteralTerm(this.value, {required this.datatype, this.language})
+    : assert(
+        (language == null) != (datatype == RdfConstants.langStringIri),
+        'Language-tagged literals must use rdf:langString datatype, and rdf:langString must have a language tag',
+      );
+
+  /// Create a typed literal with XSD datatype
+  factory LiteralTerm.typed(String value, String xsdType) {
+    return LiteralTerm(value, datatype: RdfConstants.makeXsdIri(xsdType));
+  }
+
+  /// Create a string literal
+  factory LiteralTerm.string(String value) {
+    return LiteralTerm(value, datatype: RdfConstants.stringIri);
+  }
+
+  /// Create a language-tagged literal
+  factory LiteralTerm.withLanguage(String value, String langTag) {
+    return LiteralTerm(
+      value,
+      datatype: RdfConstants.langStringIri,
+      language: langTag,
+    );
+  }
+
+  @override
+  List<Object?> get props => [value, datatype, language];
+
+  @override
+  T accept<T>(RdfTermVisitor<T> visitor) => visitor.visitLiteral(this);
+}
+
+/// Represents an RDF triple.
 ///
 /// A triple consists of three components:
-/// - subject: The resource being described
-/// - predicate: The property or relationship
-/// - object: The value or related resource
+/// - subject: The resource being described (IRI or BlankNode)
+/// - predicate: The property or relationship (always an IRI)
+/// - object: The value or related resource (IRI, BlankNode, or Literal)
 ///
 /// Example:
 /// ```turtle
 /// <http://example.com/foo> <http://example.com/bar> "baz" .
 /// ```
-/// In this example:
-/// - subject: "http://example.com/foo"
-/// - predicate: "http://example.com/bar"
-/// - object: "baz"
-class Triple {
+class Triple extends Equatable {
   /// The subject of the triple, representing the resource being described.
-  final String subject;
+  /// Must be either an IRI or a blank node.
+  final RdfSubject subject;
 
   /// The predicate of the triple, representing the property or relationship.
-  final String predicate;
+  /// Must be an IRI.
+  final RdfPredicate predicate;
 
   /// The object of the triple, representing the value or related resource.
-  final String object;
+  /// Can be an IRI, a blank node, or a literal.
+  final RdfObject object;
 
-  Triple(this.subject, this.predicate, this.object);
+  /// Creates a new triple with the specified subject, predicate, and object.
+  ///
+  /// Throws [ArgumentError] if:
+  /// - subject is not an IRI or blank node
+  /// - predicate is not an IRI
+  Triple(this.subject, this.predicate, this.object) {
+    // Validate subject
+    if (subject is! IriTerm && subject is! BlankNodeTerm) {
+      throw ArgumentError('Subject must be an IRI or blank node');
+    }
+
+    // Predicate is already constrained by the type system to be an IriTerm
+  }
 
   @override
-  String toString() => '<$subject> <$predicate> <$object> .';
+  List<Object?> get props => [subject, predicate, object];
 }
 
 /// Represents an RDF graph with prefix handling
 class RdfGraph {
-  final ContextLogger _logger;
-  final Map<String, String> _prefixes = {};
   final List<Triple> _triples = [];
 
-  RdfGraph({LoggerService? loggerService})
-    : _logger = (loggerService ?? LoggerService()).createLogger("RdfGraph");
-
-  static RdfGraph fromTriples(
-    List<Triple> triples, {
-    LoggerService? loggerService,
-  }) {
-    final graph = RdfGraph(loggerService: loggerService);
+  /// Creates an RDF graph from a list of triples
+  static RdfGraph fromTriples(List<Triple> triples) {
+    final graph = RdfGraph();
     for (final triple in triples) {
-      graph.addTriple(
-        Triple(
-          graph.expandIri(triple.subject),
-          graph.expandIri(triple.predicate),
-          graph.expandIri(triple.object),
-        ),
-      );
+      graph.addTriple(triple);
     }
-
     return graph;
-  }
-
-  /// Add a prefix mapping
-  void addPrefix(String prefix, String iri) {
-    _prefixes[prefix] = iri;
   }
 
   /// Add a triple to the graph
@@ -68,33 +158,11 @@ class RdfGraph {
     _triples.add(triple);
   }
 
-  /// Expand a prefixed IRI to a full IRI
-  String expandIri(String iri) {
-    if (iri.startsWith('http://') || iri.startsWith('https://')) {
-      return iri;
-    }
-
-    final parts = iri.split(':');
-    if (parts.length != 2) {
-      return iri;
-    }
-
-    final prefix = parts[0];
-    final localName = parts[1];
-
-    if (!_prefixes.containsKey(prefix)) {
-      _logger.warning('Unknown prefix: $prefix');
-      return iri;
-    }
-
-    return '${_prefixes[prefix]}$localName';
-  }
-
   /// Find all triples matching the given pattern
   List<Triple> findTriples({
-    String? subject,
-    String? predicate,
-    String? object,
+    RdfSubject? subject,
+    RdfPredicate? predicate,
+    RdfObject? object,
   }) {
     return _triples.where((triple) {
       if (subject != null && triple.subject != subject) return false;
@@ -106,7 +174,20 @@ class RdfGraph {
 
   /// Get all triples in the graph
   List<Triple> get triples => List.unmodifiable(_triples);
+}
 
-  /// Get all prefixes in the graph
-  Map<String, String> get prefixes => Map.unmodifiable(_prefixes);
+/// Visitor interface for type-safe operations on RDF terms
+///
+/// This pattern enables adding new operations on RDF terms without
+/// modifying the term classes themselves, following the Open/Closed principle.
+/// Each visitor implementation provides a specific operation across all term types.
+abstract interface class RdfTermVisitor<T> {
+  /// Visit an IRI term
+  T visitIri(IriTerm iri);
+
+  /// Visit a blank node term
+  T visitBlankNode(BlankNodeTerm blankNode);
+
+  /// Visit a literal term
+  T visitLiteral(LiteralTerm literal);
 }

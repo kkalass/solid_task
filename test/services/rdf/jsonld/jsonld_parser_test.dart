@@ -1,4 +1,5 @@
 import 'package:solid_task/services/rdf/jsonld/jsonld_parser.dart';
+import 'package:solid_task/services/rdf/rdf_graph.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -25,9 +26,9 @@ void main() {
       expect(
         triples.any(
           (t) =>
-              t.subject == 'http://example.org/person/john' &&
-              t.predicate == 'http://xmlns.com/foaf/0.1/name' &&
-              t.object == '"John Smith"',
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == IriTerm('http://xmlns.com/foaf/0.1/name') &&
+              t.object == LiteralTerm.string("John Smith"),
         ),
         isTrue,
       );
@@ -36,9 +37,9 @@ void main() {
       expect(
         triples.any(
           (t) =>
-              t.subject == 'http://example.org/person/john' &&
-              t.predicate == 'http://xmlns.com/foaf/0.1/homepage' &&
-              t.object == 'http://example.org/john/',
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == IriTerm('http://xmlns.com/foaf/0.1/homepage') &&
+              t.object == IriTerm('http://example.org/john/'),
         ),
         isTrue,
       );
@@ -73,9 +74,9 @@ void main() {
       expect(
         triples.any(
           (t) =>
-              t.subject == 'http://example.org/person/john' &&
-              t.predicate == 'http://xmlns.com/foaf/0.1/name' &&
-              t.object == '"John Smith"',
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == IriTerm('http://xmlns.com/foaf/0.1/name') &&
+              t.object == LiteralTerm.string("John Smith"),
         ),
         isTrue,
       );
@@ -83,9 +84,9 @@ void main() {
       expect(
         triples.any(
           (t) =>
-              t.subject == 'http://example.org/person/jane' &&
-              t.predicate == 'http://xmlns.com/foaf/0.1/name' &&
-              t.object == '"Jane Doe"',
+              t.subject == IriTerm('http://example.org/person/jane') &&
+              t.predicate == IriTerm('http://xmlns.com/foaf/0.1/name') &&
+              t.object == LiteralTerm.string('Jane Doe'),
         ),
         isTrue,
       );
@@ -113,10 +114,10 @@ void main() {
       expect(
         triples.any(
           (t) =>
-              t.subject == 'http://example.org/person/john' &&
+              t.subject == IriTerm('http://example.org/person/john') &&
               t.predicate ==
-                  'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' &&
-              t.object == 'http://xmlns.com/foaf/0.1/Person',
+                  IriTerm('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') &&
+              t.object == IriTerm('http://xmlns.com/foaf/0.1/Person'),
         ),
         isTrue,
         reason: 'Type value should be fully expanded using context mapping',
@@ -146,11 +147,14 @@ void main() {
 
       // Find the knows triple to get the blank node ID
       final knowsTriple = triples.firstWhere(
-        (t) => t.predicate == 'http://xmlns.com/foaf/0.1/knows',
+        (t) => t.predicate == IriTerm('http://xmlns.com/foaf/0.1/knows'),
       );
 
-      expect(knowsTriple.subject, equals('http://example.org/person/john'));
-      expect(knowsTriple.object.startsWith('_:'), isTrue);
+      expect(
+        knowsTriple.subject,
+        equals(IriTerm('http://example.org/person/john')),
+      );
+      expect(knowsTriple.object is BlankNodeTerm, isTrue);
 
       final blankNodeId = knowsTriple.object;
 
@@ -159,8 +163,8 @@ void main() {
         triples.any(
           (t) =>
               t.subject == blankNodeId &&
-              t.predicate == 'http://xmlns.com/foaf/0.1/name' &&
-              t.object == '"Jane Doe"',
+              t.predicate == IriTerm('http://xmlns.com/foaf/0.1/name') &&
+              t.object == LiteralTerm.string('Jane Doe'),
         ),
         isTrue,
       );
@@ -189,9 +193,9 @@ void main() {
       expect(
         triples.any(
           (t) =>
-              t.subject == 'http://example.org/person/john' &&
-              t.predicate == 'http://xmlns.com/foaf/0.1/name' &&
-              t.object == '"John Smith"',
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == IriTerm('http://xmlns.com/foaf/0.1/name') &&
+              t.object == LiteralTerm.string('John Smith'),
         ),
         isTrue,
       );
@@ -200,9 +204,9 @@ void main() {
       expect(
         triples.any(
           (t) =>
-              t.subject == 'http://example.org/person/john' &&
-              t.predicate == 'http://xmlns.com/foaf/0.1/interest' &&
-              t.object == '"Programming"',
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == IriTerm('http://xmlns.com/foaf/0.1/interest') &&
+              t.object == LiteralTerm.string('Programming'),
         ),
         isTrue,
       );
@@ -210,9 +214,9 @@ void main() {
       expect(
         triples.any(
           (t) =>
-              t.subject == 'http://example.org/person/john' &&
-              t.predicate == 'http://xmlns.com/foaf/0.1/interest' &&
-              t.object == '"Reading"',
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == IriTerm('http://xmlns.com/foaf/0.1/interest') &&
+              t.object == LiteralTerm.string('Reading'),
         ),
         isTrue,
       );
@@ -220,9 +224,9 @@ void main() {
       expect(
         triples.any(
           (t) =>
-              t.subject == 'http://example.org/person/john' &&
-              t.predicate == 'http://xmlns.com/foaf/0.1/interest' &&
-              t.object == '"Cycling"',
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == IriTerm('http://xmlns.com/foaf/0.1/interest') &&
+              t.object == LiteralTerm.string('Cycling'),
         ),
         isTrue,
       );
@@ -256,9 +260,9 @@ void main() {
       expect(
         triples.any(
           (t) =>
-              t.subject == 'http://example.org/person/john' &&
-              t.predicate == 'http://xmlns.com/foaf/0.1/name' &&
-              t.object == '"John Smith"',
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == IriTerm('http://xmlns.com/foaf/0.1/name') &&
+              t.object == LiteralTerm.string('John Smith'),
         ),
         isTrue,
       );
@@ -266,9 +270,9 @@ void main() {
       expect(
         triples.any(
           (t) =>
-              t.subject == 'http://example.org/person/jane' &&
-              t.predicate == 'http://xmlns.com/foaf/0.1/name' &&
-              t.object == '"Jane Doe"',
+              t.subject == IriTerm('http://example.org/person/jane') &&
+              t.predicate == IriTerm('http://xmlns.com/foaf/0.1/name') &&
+              t.object == LiteralTerm.string('Jane Doe'),
         ),
         isTrue,
       );
@@ -294,11 +298,17 @@ void main() {
       expect(triples.length, 1);
 
       final triple = triples.first;
-      expect(triple.subject, equals('http://example.org/person/john'));
-      expect(triple.predicate, equals('http://xmlns.com/foaf/0.1/birthDate'));
+      expect(triple.subject, equals(IriTerm('http://example.org/person/john')));
+      expect(
+        triple.predicate,
+        equals(IriTerm('http://xmlns.com/foaf/0.1/birthDate')),
+      );
       expect(
         triple.object,
-        equals('"1990-07-04"^^http://www.w3.org/2001/XMLSchema#date'),
+        LiteralTerm(
+          '1990-07-04',
+          datatype: IriTerm('http://www.w3.org/2001/XMLSchema#date'),
+        ),
       );
     });
 
@@ -322,9 +332,15 @@ void main() {
       expect(triples.length, 1);
 
       final triple = triples.first;
-      expect(triple.subject, equals('http://example.org/person/john'));
-      expect(triple.predicate, equals('http://xmlns.com/foaf/0.1/description'));
-      expect(triple.object, equals('"Programmierer und Radfahrer"@de'));
+      expect(triple.subject, equals(IriTerm('http://example.org/person/john')));
+      expect(
+        triple.predicate,
+        equals(IriTerm('http://xmlns.com/foaf/0.1/description')),
+      );
+      expect(
+        triple.object,
+        equals(LiteralTerm.withLanguage('Programmierer und Radfahrer', 'de')),
+      );
     });
 
     test('resolves IRIs against base URI', () {
@@ -345,9 +361,12 @@ void main() {
       expect(triples.length, 1);
 
       final triple = triples.first;
-      expect(triple.subject, equals('http://example.org/person/john'));
-      expect(triple.predicate, equals('http://xmlns.com/foaf/0.1/name'));
-      expect(triple.object, equals('"John Smith"'));
+      expect(triple.subject, equals(IriTerm('http://example.org/person/john')));
+      expect(
+        triple.predicate,
+        equals(IriTerm('http://xmlns.com/foaf/0.1/name')),
+      );
+      expect(triple.object, equals(LiteralTerm.string('John Smith')));
     });
 
     test('throws exception for invalid JSON', () {

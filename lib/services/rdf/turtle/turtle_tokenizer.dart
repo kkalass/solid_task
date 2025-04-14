@@ -245,21 +245,22 @@ class TurtleTokenizer {
   Token _parseIri() {
     final startLine = _line;
     final startColumn = _column;
+
+    // Save start position to capture entire IRI including brackets
+    final startPos = _position;
+
     _position++; // Skip opening <
     _column++;
 
-    final buffer = StringBuffer();
     while (_position < _input.length && _input[_position] != '>') {
       if (_input[_position] == '\\') {
         _position++;
         _column++;
         if (_position < _input.length) {
-          buffer.write(_input[_position]);
           _position++;
           _column++;
         }
       } else {
-        buffer.write(_input[_position]);
         _position++;
         _column++;
       }
@@ -272,7 +273,10 @@ class TurtleTokenizer {
     _position++; // Skip closing >
     _column++;
 
-    return Token(TokenType.iri, buffer.toString(), startLine, startColumn);
+    // Extract the entire IRI with angle brackets
+    final iri = _input.substring(startPos, _position);
+
+    return Token(TokenType.iri, iri, startLine, startColumn);
   }
 
   /// Parses a blank node token.
@@ -314,6 +318,7 @@ class TurtleTokenizer {
   /// They can have:
   /// - Language tags (@en)
   /// - Type specifiers (^^<...>)
+  /// - Type specifiers with prefixed names (^^xsd:integer)
   /// - Escaped characters (using backslash)
   ///
   /// Examples:
@@ -321,27 +326,30 @@ class TurtleTokenizer {
   /// "Hello, World!"
   /// "Bonjour"@fr
   /// "42"^^<http://www.w3.org/2001/XMLSchema#integer>
+  /// "42"^^xsd:integer
   /// ```
   ///
   /// Throws [FormatException] if the literal is not properly closed.
   Token _parseLiteral() {
     final startLine = _line;
     final startColumn = _column;
+
+    // Save the starting position to capture the entire literal
+    final startPos = _position;
+
+    // Skip opening quote and scan to find the closing quote
     _position++; // Skip opening "
     _column++;
 
-    final buffer = StringBuffer();
     while (_position < _input.length && _input[_position] != '"') {
       if (_input[_position] == '\\') {
         _position++;
         _column++;
         if (_position < _input.length) {
-          buffer.write(_input[_position]);
           _position++;
           _column++;
         }
       } else {
-        buffer.write(_input[_position]);
         _position++;
         _column++;
       }
@@ -354,46 +362,56 @@ class TurtleTokenizer {
     _position++; // Skip closing "
     _column++;
 
-    // Check for language tag
-    if (_position < _input.length && _input[_position] == '@') {
-      _position++; // Skip @
-      _column++;
-
-      final langBuffer = StringBuffer();
-      while (_position < _input.length && _isNameChar(_input[_position])) {
-        langBuffer.write(_input[_position]);
+    // Check for language tag or datatype annotation
+    if (_position < _input.length) {
+      // Language tag
+      if (_input[_position] == '@') {
         _position++;
         _column++;
+        while (_position < _input.length && _isNameChar(_input[_position])) {
+          _position++;
+          _column++;
+        }
       }
+      // Datatype annotation
+      else if (_position + 1 < _input.length &&
+          _input[_position] == '^' &&
+          _input[_position + 1] == '^') {
+        _position += 2;
+        _column += 2;
+        if (_position < _input.length && _input[_position] == '<') {
+          // Parse until closing '>'
+          while (_position < _input.length && _input[_position] != '>') {
+            _position++;
+            _column++;
+          }
+          if (_position < _input.length) {
+            _position++; // Skip closing '>'
+            _column++;
+          }
+        }
+        // Handle prefixed name datatype (e.g., xsd:integer)
+        else if (_position < _input.length &&
+            _isNameStartChar(_input[_position])) {
+          _logger.debug('Parsing prefixed name datatype');
 
-      return Token(
-        TokenType.literal,
-        '${buffer.toString()}@${langBuffer.toString()}',
-        startLine,
-        startColumn,
-      );
+          // Parse prefix and local name
+          while (_position < _input.length) {
+            if (_isNameChar(_input[_position]) || _input[_position] == ':') {
+              _position++;
+              _column++;
+            } else {
+              break;
+            }
+          }
+        }
+      }
     }
 
-    // Check for type specifier
-    if (_position + 1 < _input.length &&
-        _input[_position] == '^' &&
-        _input[_position + 1] == '^') {
-      _position += 2; // Skip ^^
-      _column += 2;
+    // Extract the entire literal with its annotations
+    final literal = _input.substring(startPos, _position);
 
-      // Parse the type IRI
-      if (_position < _input.length && _input[_position] == '<') {
-        final typeToken = _parseIri();
-        return Token(
-          TokenType.literal,
-          '${buffer.toString()}^^${typeToken.value}',
-          startLine,
-          startColumn,
-        );
-      }
-    }
-
-    return Token(TokenType.literal, buffer.toString(), startLine, startColumn);
+    return Token(TokenType.literal, literal, startLine, startColumn);
   }
 
   /// Parses a prefixed name token.

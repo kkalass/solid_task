@@ -1,12 +1,18 @@
+import 'package:solid_task/services/logger_service.dart';
+import 'package:solid_task/services/rdf/rdf_graph.dart';
 import 'package:solid_task/services/rdf/rdf_parser.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('RdfParser', () {
+    late RdfParserFactory rdfParserFactory;
     late RdfParser rdfParser;
+    final mockLoggerService = LoggerService();
 
     setUp(() {
-      rdfParser = DefaultRdfParser();
+      // Use the factory to create a parser instance
+      rdfParserFactory = RdfParserFactory(loggerService: mockLoggerService);
+      rdfParser = rdfParserFactory.createParser();
     });
 
     test('should parse a simple profile', () {
@@ -30,24 +36,24 @@ void main() {
 
       // Check for solid:storage triple
       final solidStorageTriples = graph.findTriples(
-        subject: 'https://example.com/profile#me',
-        predicate: 'http://www.w3.org/ns/solid/terms#storage',
+        subject: IriTerm('https://example.com/profile#me'),
+        predicate: IriTerm('http://www.w3.org/ns/solid/terms#storage'),
       );
       expect(solidStorageTriples.length, equals(1));
       expect(
         solidStorageTriples.first.object,
-        equals('https://example.com/storage/'),
+        equals(IriTerm('https://example.com/storage/')),
       );
 
       // Check for space:storage triple
       final spaceStorageTriples = graph.findTriples(
-        subject: 'https://example.com/profile#me',
-        predicate: 'http://www.w3.org/ns/pim/space#storage',
+        subject: IriTerm('https://example.com/profile#me'),
+        predicate: IriTerm('http://www.w3.org/ns/solid/terms#storage'),
       );
       expect(spaceStorageTriples.length, equals(1));
       expect(
         spaceStorageTriples.first.object,
-        equals('https://example.com/storage/'),
+        equals(IriTerm('https://example.com/storage/')),
       );
     });
 
@@ -94,33 +100,36 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 
       // Verify solid:account triple
       final solidAccountTriples = graph.findTriples(
-        subject: 'https://kkalass.datapod.igrant.io/profile/card#me',
-        predicate: 'http://www.w3.org/ns/solid/terms#account',
+        subject: IriTerm('https://kkalass.datapod.igrant.io/profile/card#me'),
+        predicate: IriTerm('http://www.w3.org/ns/solid/terms#account'),
       );
       expect(solidAccountTriples.length, equals(1));
       expect(
         solidAccountTriples.first.object,
-        equals('https://kkalass.datapod.igrant.io/'),
+        equals(IriTerm('https://kkalass.datapod.igrant.io/')),
       );
 
       // Verify space:storage triple
       final spaceStorageTriples = graph.findTriples(
-        subject: 'https://kkalass.datapod.igrant.io/profile/card#me',
-        predicate: 'http://www.w3.org/ns/pim/space#storage',
+        subject: IriTerm('https://kkalass.datapod.igrant.io/profile/card#me'),
+        predicate: IriTerm('http://www.w3.org/ns/pim/space#storage'),
       );
       expect(spaceStorageTriples.length, equals(1));
       expect(
         spaceStorageTriples.first.object,
-        equals('https://kkalass.datapod.igrant.io/'),
+        equals(IriTerm('https://kkalass.datapod.igrant.io/')),
       );
 
       // Verify foaf:name triple
       final nameTriples = graph.findTriples(
-        subject: 'https://kkalass.datapod.igrant.io/profile/card#me',
-        predicate: 'http://xmlns.com/foaf/0.1/name',
+        subject: IriTerm('https://kkalass.datapod.igrant.io/profile/card#me'),
+        predicate: IriTerm('http://xmlns.com/foaf/0.1/name'),
       );
       expect(nameTriples.length, equals(1));
-      expect(nameTriples.first.object, equals('Klas Kalaß'));
+      expect(
+        nameTriples.first.object,
+        equals(LiteralTerm.string('Klas Kalaß')),
+      );
     });
 
     test('should handle multiple triples with the same predicate', () {
@@ -136,8 +145,8 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 
       // Find all storage triples
       final storageTriples = graph.findTriples(
-        subject: 'https://example.com/profile#me',
-        predicate: 'http://www.w3.org/ns/solid/terms#storage',
+        subject: IriTerm('https://example.com/profile#me'),
+        predicate: IriTerm('http://www.w3.org/ns/solid/terms#storage'),
       );
 
       expect(storageTriples.length, equals(2));
@@ -145,8 +154,8 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
       // Extract all storage URLs
       final storageUrls =
           storageTriples.map((triple) => triple.object).toList();
-      expect(storageUrls, contains('https://example.com/storage1/'));
-      expect(storageUrls, contains('https://example.com/storage2/'));
+      expect(storageUrls, contains(IriTerm('https://example.com/storage1/')));
+      expect(storageUrls, contains(IriTerm('https://example.com/storage2/')));
     });
 
     test('should handle type declarations', () {
@@ -163,24 +172,24 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 
       // Verify type declaration
       final typeTriples = graph.findTriples(
-        subject: 'https://example.com/profile#me',
-        predicate: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
+        subject: IriTerm('https://example.com/profile#me'),
+        predicate: IriTerm('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
       );
       expect(typeTriples.length, equals(1));
       expect(
         typeTriples.first.object,
-        equals('http://www.w3.org/ns/solid/terms#Profile'),
+        equals(IriTerm('http://www.w3.org/ns/solid/terms#Profile')),
       );
 
       // Verify storage triple
       final storageTriples = graph.findTriples(
-        subject: 'https://example.com/profile#me',
-        predicate: 'http://www.w3.org/ns/solid/terms#storage',
+        subject: IriTerm('https://example.com/profile#me'),
+        predicate: IriTerm('http://www.w3.org/ns/solid/terms#storage'),
       );
       expect(storageTriples.length, equals(1));
       expect(
         storageTriples.first.object,
-        equals('https://example.com/storage/'),
+        equals(IriTerm('https://example.com/storage/')),
       );
     });
 
@@ -206,34 +215,103 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
 
       // Verify profile type
       final profileTypeTriples = graph.findTriples(
-        subject: 'https://example.com/profile#me',
-        predicate: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
+        subject: IriTerm('https://example.com/profile#me'),
+        predicate: IriTerm('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
       );
       expect(profileTypeTriples.length, equals(1));
 
       // Verify storage triples
       final solidStorageTriples = graph.findTriples(
-        subject: 'https://example.com/profile#me',
-        predicate: 'http://www.w3.org/ns/solid/terms#storage',
+        subject: IriTerm('https://example.com/profile#me'),
+        predicate: IriTerm('http://www.w3.org/ns/solid/terms#storage'),
       );
       expect(solidStorageTriples.length, equals(1));
 
       final spaceStorageTriples = graph.findTriples(
-        subject: 'https://example.com/profile#me',
-        predicate: 'http://www.w3.org/ns/pim/space#storage',
+        subject: IriTerm('https://example.com/profile#me'),
+        predicate: IriTerm('http://www.w3.org/ns/solid/terms#storage'),
       );
       expect(spaceStorageTriples.length, equals(1));
 
       // Verify name triple
       final nameTriples = graph.findTriples(
-        subject: 'https://example.com/profile#me',
-        predicate: 'http://xmlns.com/foaf/0.1/name',
+        subject: IriTerm('https://example.com/profile#me'),
+        predicate: IriTerm('http://xmlns.com/foaf/0.1/name'),
       );
       expect(nameTriples.length, equals(1));
-      expect(nameTriples.first.object, equals('John Doe'));
+      expect(nameTriples.first.object, equals(LiteralTerm.string('John Doe')));
 
       // Check total triples count (should include blank node triples)
       expect(graph.triples.length > 5, isTrue);
+    });
+
+    test('should handle format detection', () {
+      // Turtle content
+      final turtleInput = '''
+        @prefix ex: <http://example.org/> .
+        ex:subject ex:predicate "object" .
+      ''';
+
+      // JSON-LD content
+      final jsonLdInput = '''
+        {
+          "@context": {
+            "ex": "http://example.org/"
+          },
+          "@id": "ex:subject",
+          "ex:predicate": "object"
+        }
+      ''';
+
+      // Both should parse without errors and with correct content type detection
+      // Turtle
+      final turtleGraph = rdfParser.parse(turtleInput);
+      expect(turtleGraph.triples.length, equals(1));
+
+      final jsonLdGraph = rdfParser.parse(jsonLdInput);
+      expect(jsonLdGraph.triples.length, equals(1));
+      expect(jsonLdGraph.triples, equals(turtleGraph.triples));
+    });
+
+    test('should respect explicit content type', () {
+      final input = '''
+        @prefix ex: <http://example.org/> .
+        ex:subject ex:predicate "object" .
+      ''';
+
+      // Parse with explicit content type
+      final graph = rdfParserFactory
+          .createParser(contentType: 'text/turtle')
+          .parse(input);
+
+      expect(graph.triples.length, equals(1));
+    });
+  });
+
+  group('RdfParserFactory', () {
+    late RdfParserFactory factory;
+
+    setUp(() {
+      factory = RdfParserFactory();
+    });
+
+    test('should create the correct parser for content type', () {
+      final turtleParser = factory.createParser(contentType: 'text/turtle');
+      final jsonldParser = factory.createParser(
+        contentType: 'application/ld+json',
+      );
+      final autoParser = factory.createParser();
+
+      expect(turtleParser, isA<RdfParser>());
+      expect(jsonldParser, isA<RdfParser>());
+      expect(autoParser, isA<RdfParser>());
+    });
+
+    test('convenience parse method should work correctly', () {
+      final input = '@prefix ex: <http://example.org/> . ex:s ex:p "o" .';
+
+      final graph = factory.createParser().parse(input);
+      expect(graph.triples.length, equals(1));
     });
   });
 }
