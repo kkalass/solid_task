@@ -16,16 +16,19 @@ import 'package:solid_task/services/sync/solid_sync_service.dart';
 
 import 'solid_sync_service_test.mocks.dart';
 
-@GenerateMocks([
-  http.Client,
-  ItemRepository,
-  SolidAuthState,
-  SolidAuthOperations,
-  ItemRdfSerializer,
-  RdfParser,
-  RdfParserFactory,
+@GenerateNiceMocks([
+  MockSpec<http.Client>(),
+  MockSpec<ItemRepository>(),
+  MockSpec<SolidAuthState>(),
+  MockSpec<SolidAuthOperations>(),
+  MockSpec<ItemRdfSerializer>(),
+  MockSpec<RdfParser>(),
+  MockSpec<RdfParserFactory>(),
 ])
 void main() {
+  // Provide a dummy value for RdfGraph to solve the MissingDummyValueError
+  provideDummy<RdfGraph>(RdfGraph());
+  
   late MockClient mockClient;
   late MockItemRepository mockRepository;
   late MockSolidAuthState mockAuthState;
