@@ -5,6 +5,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:solid_task/core/service_locator.dart';
+import 'package:solid_task/core/service_locator_builder.dart';
 import 'package:solid_task/services/auth/interfaces/auth_state_change_provider.dart';
 import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
