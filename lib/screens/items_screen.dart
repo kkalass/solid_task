@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:solid_task/core/providers/auth_providers.dart';
+import 'package:solid_task/core/providers/sync_manager_provider.dart';
+import 'package:solid_task/core/providers/syncable_repository_provider.dart';
 import 'package:solid_task/models/auth/auth_result.dart';
-import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
-import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
 
-import '../core/service_locator.dart';
 import '../core/utils/date_formatter.dart';
 import '../models/item.dart';
 import '../screens/login_page.dart';
@@ -12,31 +13,49 @@ import '../screens/login_page.dart';
 import '../services/repository/item_repository.dart';
 import '../services/sync/sync_manager.dart';
 
-class ItemsScreen extends StatefulWidget {
+class ItemsScreen extends ConsumerStatefulWidget {
   const ItemsScreen({super.key});
 
   @override
-  State<ItemsScreen> createState() => _ItemsScreenState();
+  ConsumerState<ItemsScreen> createState() => _ItemsScreenState();
 }
 
-class _ItemsScreenState extends State<ItemsScreen> {
+class _ItemsScreenState extends ConsumerState<ItemsScreen> {
   final _textController = TextEditingController();
-  final _authState = sl<SolidAuthState>();
-  final _authOperations = sl<SolidAuthOperations>();
-  final _repository = sl<ItemRepository>();
-  final _syncManager = sl<SyncManager>();
+  bool _isSyncing = false;
+  bool _hasError = false;
 
-  bool get _isConnectedToSolid => _authState.isAuthenticated;
+  bool get _isConnectedToSolid => 
+      ref.read(solidAuthStateProvider).isAuthenticated;
 
   @override
   void initState() {
     super.initState();
 
-    // Listen to sync status updates for UI refresh only
-    _syncManager.syncStatusStream.listen((status) {
-      if (mounted) {
-        setState(() {}); // Refresh UI when sync status changes
-      }
+    // Listen to sync status updates for UI refresh
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setupSyncStatusListener();
+    });
+  }
+  
+  void _setupSyncStatusListener() {
+    final syncManagerAsync = ref.read(syncManagerProvider);
+    
+    syncManagerAsync.whenData((syncManager) {
+      syncManager.syncStatusStream.listen((status) {
+        if (mounted) {
+          setState(() {
+            _isSyncing = syncManager.isSyncing;
+            _hasError = syncManager.hasError;
+          });
+        }
+      });
+      
+      // Initialize state values
+      setState(() {
+        _isSyncing = syncManager.isSyncing;
+        _hasError = syncManager.hasError;
+      });
     });
   }
 
@@ -53,7 +72,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
   Future<void> _disconnectFromPod() async {
     try {
-      await _authOperations.logout();
+      await ref.read(solidAuthOperationsProvider).logout();
 
       if (mounted) {
         setState(() {}); // Refresh UI to show disconnected state
@@ -71,26 +90,30 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
   Future<void> _addItem(String text) async {
     if (text.isEmpty) return;
+    
+    final authState = ref.read(solidAuthStateProvider);
+    final repository = ref.read(syncableItemRepositoryProvider);
     // FIXME KK - the local fallback seems wrong to me. Actually, this is probably connected to correct implementation of CRDT. I believe, that we should have a device specific identifier here - neither local nor webId seem to be correct.
-    await _repository.createItem(
+    await repository.createItem(
       text,
-      _authState.currentUser?.webId ?? 'local',
+      authState.currentUser?.webId ?? 'local',
     );
     _textController.clear();
   }
 
   Future<void> _deleteItem(String id) async {
-    await _repository.deleteItem(id, _authState.currentUser?.webId ?? 'local');
+    final authState = ref.read(solidAuthStateProvider);
+    final repository = ref.read(syncableItemRepositoryProvider);
+    await repository.deleteItem(id, authState.currentUser?.webId ?? 'local');
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
-
-    // Get sync status information from SyncManager
-    final isSyncing = _syncManager.isSyncing;
-    final hasError = _syncManager.hasError;
+    
+    // Access repository for StreamBuilder
+    final repositoryAsync = ref.watch(syncableItemRepositoryProvider);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -101,16 +124,19 @@ class _ItemsScreenState extends State<ItemsScreen> {
         ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          if (hasError)
+          if (_hasError)
             IconButton(
               icon: Icon(Icons.error_outline, color: colorScheme.error),
-              onPressed: () => _syncManager.startSynchronization(),
+              onPressed: () {
+                final syncManagerAsync = ref.read(syncManagerProvider);
+                syncManagerAsync.whenData((syncManager) => syncManager.startSynchronization());
+              },
               tooltip: l10n.syncError,
             ),
           IconButton(
             icon:
                 _isConnectedToSolid
-                    ? (isSyncing
+                    ? (_isSyncing
                         ? const SizedBox(
                           width: 20,
                           height: 20,
@@ -119,7 +145,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         : const Icon(Icons.cloud_done))
                     : const Icon(Icons.cloud_upload),
             onPressed:
-                isSyncing
+                _isSyncing
                     ? null
                     : (_isConnectedToSolid
                         ? _disconnectFromPod
@@ -163,7 +189,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
           // Tasks list
           Expanded(
             child: StreamBuilder<List<Item>>(
-              stream: _repository.watchActiveItems(),
+              stream: repositoryAsync.watchActiveItems(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());

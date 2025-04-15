@@ -6,23 +6,26 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:solid_task/core/service_locator.dart';
 import 'package:solid_task/main.dart' as app;
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/screens/items_screen.dart';
 import 'package:solid_task/services/auth/interfaces/auth_state_change_provider.dart';
 import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
+import 'package:solid_task/services/auth/interfaces/solid_provider_service.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
+import 'package:solid_task/services/sync/sync_manager.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 
+import 'helpers/riverpod_test_helper.dart';
 import 'mocks/mock_temp_dir_path_provider.dart';
 
 @GenerateMocks([
@@ -31,9 +34,11 @@ import 'mocks/mock_temp_dir_path_provider.dart';
   AuthStateChangeProvider,
   ItemRepository,
   SyncService,
+  SyncManager,
   LoggerService,
   ContextLogger,
   http.Client,
+  SolidProviderService,
 ])
 import 'widget_test.mocks.dart';
 
@@ -43,11 +48,14 @@ void main() {
   late MockAuthStateChangeProvider mockAuthStateChangeProvider;
   late MockItemRepository mockItemRepository;
   late MockSyncService mockSyncService;
+  late MockSyncManager mockSyncManager;
   late MockLoggerService mockLoggerService;
   late MockContextLogger mockContextLogger;
   late MockTempDirPathProvider mockPathProvider;
   late MockClient mockHttpClient;
+  late MockSolidProviderService mockProviderService;
   late Widget capturedWidget;
+  late TestProviderContainer testContainer;
 
   String? capturedError;
 
@@ -70,9 +78,11 @@ void main() {
     mockAuthStateChangeProvider = MockAuthStateChangeProvider();
     mockItemRepository = MockItemRepository();
     mockSyncService = MockSyncService();
+    mockSyncManager = MockSyncManager();
     mockLoggerService = MockLoggerService();
     mockContextLogger = MockContextLogger();
     mockHttpClient = MockClient();
+    mockProviderService = MockSolidProviderService();
 
     behaviorSubject = BehaviorSubject<List<Item>>.seeded([]);
 
@@ -89,6 +99,13 @@ void main() {
     when(
       mockSyncService.fullSync(),
     ).thenAnswer((_) async => SyncResult(success: true));
+    
+    // Mock sync manager behavior
+    when(mockSyncManager.isSyncing).thenReturn(false);
+    when(mockSyncManager.hasError).thenReturn(false);
+    when(mockSyncManager.syncStatusStream).thenAnswer(
+      (_) => Stream.value(SyncStatus.idle()),
+    );
 
     // Capture error logs for debugging
     when(mockLoggerService.error(any, any, any)).thenAnswer((invocation) {
@@ -99,25 +116,24 @@ void main() {
     // Critical stub: setup the createLogger method that's called during service locator initialization
     when(mockLoggerService.createLogger(any)).thenReturn(mockContextLogger);
 
-    // Mock service locator initialization to use mocks
-    await initServiceLocator(
-      config: ServiceLocatorConfig(
-        httpClient: mockHttpClient,
-        loggerService: mockLoggerService,
-        authState: mockSolidAuthState,
-        authOperations: mockSolidAuthOperations,
-        authStateChangeProvider: mockAuthStateChangeProvider,
-        itemRepositoryFactory: (_, __) => mockItemRepository,
-        syncServiceFactory: (_, __, ___, ____, _____) => mockSyncService,
-      ),
+    // Setup provider container with mocks
+    testContainer = TestProviderContainer(
+      loggerService: mockLoggerService,
+      authOperations: mockSolidAuthOperations,
+      authState: mockSolidAuthState,
+      authStateChangeProvider: mockAuthStateChangeProvider,
+      itemRepository: mockItemRepository,
+      syncService: mockSyncService,
+      syncManager: mockSyncManager,
+      providerService: mockProviderService,
     );
   });
 
   tearDown(() async {
     behaviorSubject.close();
 
-    // Reset service locator after each test
-    sl.reset();
+    // Dispose provider container
+    testContainer.dispose();
 
     // Clean up temporary directory
     await mockPathProvider.cleanup();
@@ -134,8 +150,6 @@ void main() {
 
     // Call main with a mock runApp that captures the widget
     await app.main(
-      initServiceLocator:
-          () async {}, // Skip initialization as it's done in setUp
       logger: mockLoggerService,
       runApp: (widget) => capturedWidget = widget,
     );
@@ -148,8 +162,14 @@ void main() {
       );
     }
 
-    // Use the widget returned by main directly - it already has localization
-    await tester.pumpWidget(capturedWidget);
+    // Create a wrapped version of the captured widget that uses our test container
+    final wrappedWidget = ProviderScope(
+      overrides: testContainer.container.getAllProviderOverrides(),
+      child: capturedWidget,
+    );
+
+    // Use the wrapped widget for the test
+    await tester.pumpWidget(wrappedWidget);
     await tester.pumpAndSettle();
 
     // Verify basic structure
@@ -196,13 +216,18 @@ void main() {
 
     // Launch the app
     await app.main(
-      initServiceLocator: () async {},
       logger: mockLoggerService,
       runApp: (widget) => capturedWidget = widget,
     );
 
+    // Create a wrapped version of the captured widget that uses our test container
+    final wrappedWidget = ProviderScope(
+      overrides: testContainer.container.getAllProviderOverrides(),
+      child: capturedWidget,
+    );
+
     // Build our app and trigger a frame
-    await tester.pumpWidget(capturedWidget);
+    await tester.pumpWidget(wrappedWidget);
     await tester.pump();
 
     // Verify we start with no tasks (behavior subject was seeded with empty list in setUp)
@@ -237,14 +262,18 @@ void main() {
 
     // Call main with a mock runApp that captures the widget
     await app.main(
-      initServiceLocator:
-          () async {}, // Skip initialization as it's done in setUp
       logger: mockLoggerService,
       runApp: (widget) => capturedWidget = widget,
     );
 
+    // Create a wrapped version of the captured widget that uses our test container
+    final wrappedWidget = ProviderScope(
+      overrides: testContainer.container.getAllProviderOverrides(),
+      child: capturedWidget,
+    );
+
     // Build our app and trigger a frame
-    await tester.pumpWidget(capturedWidget);
+    await tester.pumpWidget(wrappedWidget);
     await tester.pumpAndSettle();
 
     // Find and tap the cloud upload icon
@@ -270,14 +299,18 @@ void main() {
 
     // Call main with a mock runApp that captures the widget
     await app.main(
-      initServiceLocator:
-          () async {}, // Skip initialization as it's done in setUp
       logger: mockLoggerService,
       runApp: (widget) => capturedWidget = widget,
     );
 
+    // Create a wrapped version of the captured widget that uses our test container
+    final wrappedWidget = ProviderScope(
+      overrides: testContainer.container.getAllProviderOverrides(),
+      child: capturedWidget,
+    );
+
     // Build our app and trigger a frame
-    await tester.pumpWidget(capturedWidget);
+    await tester.pumpWidget(wrappedWidget);
     await tester.pumpAndSettle();
 
     // Verify that the German title "Meine Aufgaben" is displayed in the AppBar

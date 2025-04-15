@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'core/service_locator.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/items_screen.dart';
 import 'services/logger_service.dart';
 
 Future<void> main({
-  Future<void> Function() initServiceLocator = initServiceLocator,
   LoggerService? logger,
   void Function(Widget) runApp = runApp,
 }) async {
@@ -17,11 +16,8 @@ Future<void> main({
   await logger.init();
 
   try {
-    // Initialize service locator
-    await initServiceLocator();
-
-    // Run the app
-    runApp(const MyApp());
+    // Run the app with ProviderScope
+    runApp(const ProviderScope(child: MyApp()));
   } catch (e, stackTrace) {
     logger.error('Failed to start application', e, stackTrace);
     runApp(ErrorApp(error: e.toString()));

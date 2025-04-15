@@ -1,26 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
-import 'package:solid_task/services/auth/interfaces/solid_provider_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:solid_task/core/providers/auth_providers.dart';
+import 'package:solid_task/core/providers/core_providers.dart';
+import 'package:solid_task/models/auth/auth_result.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../core/service_locator.dart';
-
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormFieldState>();
   final _urlController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
   List<Map<String, dynamic>>? _providers;
-  final _providerService = sl<SolidProviderService>();
-  final _authOperations = sl<SolidAuthOperations>();
 
   @override
   void initState() {
@@ -30,7 +28,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _loadProviders() async {
     try {
-      final providers = await _providerService.loadProviders();
+      final providers = await ref.read(solidProviderServiceProvider).loadProviders();
       setState(() {
         _providers = providers;
       });
@@ -46,11 +44,12 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      String issuerUri = await _authOperations.getIssuer(input.trim());
+      final authOperations = ref.read(solidAuthOperationsProvider);
+      String issuerUri = await authOperations.getIssuer(input.trim());
 
       if (!mounted) return;
 
-      final result = await _authOperations.authenticate(issuerUri, context);
+      final result = await authOperations.authenticate(issuerUri, context);
 
       if (!mounted) return;
 
@@ -182,7 +181,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         TextButton(
           onPressed: () async {
-            final podUrl = await _providerService.getNewPodUrl();
+            final podUrl = await ref.read(solidProviderServiceProvider).getNewPodUrl();
             if (context.mounted) {
               launchUrl(Uri.parse(podUrl));
             }
