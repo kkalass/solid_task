@@ -139,7 +139,7 @@ void main() {
 
       // Write messages until rotation occurs
       var rotationOccurred = false;
-      for (var i = 0; i < 3; i++) {
+      for (var i = 0; i < 4; i++) {
         logger.info(largeMessage);
         await Future.delayed(const Duration(milliseconds: 50));
 

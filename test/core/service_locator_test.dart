@@ -271,31 +271,37 @@ void main() {
       expect(sl.isRegistered<ItemRepository>(), isFalse);
     });
 
-    test('ServiceLocatorBuilder provides a fluent API', () {
+    test('ServiceLocatorBuilder provides a fluent API', () async {
       // This test validates the fluent API design pattern
-      final builder = ServiceLocatorBuilder();
-
-      // Should be able to chain method calls
-      final result = builder
-          .withLogger(mockLogger)
-          .withHttpClient(mockClient)
-          .withSecureStorage(mockSecureStorage)
-          .withJwtDecoder(mockJwtDecoderWrapper)
-          .withStorageService(mockStorage)
-          .withProviderService(mockSolidProviderService)
-          .withSolidAuth(mockSolidAuth)
-          .withAuthServices(
-            authState: mockSolidAuthState,
-            authOperations: mockSolidAuthOperations,
-            authStateChangeProvider: mockAuthStateChangeProvider,
-          )
-          .withItemRepositoryFactory((_, __) => mockItemRepository)
-          .withSyncServiceFactory((_, __, ___, ____, _____) => mockSyncService)
-          .withSyncManagerFactory((_, __, ___, ____) => mockSyncManager)
-          .withSyncableRepositoryFactory((_, __) => mockItemRepository);
+      ServiceLocatorBuilder? firstBuilder;
+      ServiceLocatorBuilder? result;
+      await initServiceLocator(
+        configure: (builder) {
+          firstBuilder = builder;
+          result = builder
+              .withLogger(mockLogger)
+              .withHttpClient(mockClient)
+              .withSecureStorage(mockSecureStorage)
+              .withJwtDecoder(mockJwtDecoderWrapper)
+              .withStorageService(mockStorage)
+              .withProviderService(mockSolidProviderService)
+              .withSolidAuth(mockSolidAuth)
+              .withAuthServices(
+                authState: mockSolidAuthState,
+                authOperations: mockSolidAuthOperations,
+                authStateChangeProvider: mockAuthStateChangeProvider,
+              )
+              .withItemRepositoryFactory((_, __) => mockItemRepository)
+              .withSyncServiceFactory(
+                (_, __, ___, ____, _____) => mockSyncService,
+              )
+              .withSyncManagerFactory((_, __, ___, ____) => mockSyncManager)
+              .withSyncableRepositoryFactory((_, __) => mockItemRepository);
+        },
+      );
 
       // Should return the builder for chaining
-      expect(result, same(builder));
+      expect(result, same(firstBuilder));
     });
   });
 }
