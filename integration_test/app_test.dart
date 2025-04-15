@@ -52,15 +52,17 @@ void main() {
 
     // Initialize service locator with real repository but mock auth/sync
     await initServiceLocator(
-      config: ServiceLocatorConfig(
-        // Use real services for storage and logging
-        // But mock auth and sync to avoid external dependencies
-        loggerService: logger,
-        authState: mockSolidAuthState,
-        authOperations: mockSolidAuthOperations,
-        authStateChangeProvider: mockAuthStateChangeProvider,
-        syncServiceFactory: (_, __, ___, ____, _____) => mockSyncService,
-      ),
+      configure:
+          (builder) => builder
+              .withLogger(logger)
+              .withAuthServices(
+                authState: mockSolidAuthState,
+                authOperations: mockSolidAuthOperations,
+                authStateChangeProvider: mockAuthStateChangeProvider,
+              )
+              .withSyncServiceFactory(
+                (_, __, ___, ____, _____) => mockSyncService,
+              ),
     );
   });
 
@@ -85,7 +87,7 @@ void main() {
 
         // Launch the app but capture the widget instead of rendering it
         await app.main(
-          initServiceLocator:
+          initServiceLocatorOverride:
               () async {}, // Skip initialization as it's done in setUp
           logger: logger,
           runApp: (widget) => appWidget = widget,
@@ -128,7 +130,7 @@ void main() {
 
       // Launch the app but capture the widget instead of rendering it
       await app.main(
-        initServiceLocator:
+        initServiceLocatorOverride:
             () async {}, // Skip initialization as it's done in setUp
         logger: logger,
         runApp: (widget) => appWidget = widget,
@@ -168,7 +170,7 @@ void main() {
 
       // Launch the app but capture the widget instead of rendering it
       await app.main(
-        initServiceLocator:
+        initServiceLocatorOverride:
             () async {}, // Skip initialization as it's done in setUp
         logger: logger,
         runApp: (widget) => appWidget = widget,
@@ -218,7 +220,7 @@ void main() {
 
       // Launch the app but capture the widget instead of rendering it
       await app.main(
-        initServiceLocator:
+        initServiceLocatorOverride:
             () async {}, // Skip initialization as it's done in setUp
         logger: logger,
         runApp: (widget) => appWidget = widget,
@@ -286,7 +288,7 @@ void main() {
 
       // Launch the app but capture the widget instead of rendering it
       await app.main(
-        initServiceLocator:
+        initServiceLocatorOverride:
             () async {}, // Skip initialization as it's done in setUp
         logger: logger,
         runApp: (widget) => appWidget = widget,

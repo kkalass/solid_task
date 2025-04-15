@@ -6,7 +6,7 @@ import 'screens/items_screen.dart';
 import 'services/logger_service.dart';
 
 Future<void> main({
-  Future<void> Function() initServiceLocator = initServiceLocator,
+  Future<void> Function()? initServiceLocatorOverride,
   LoggerService? logger,
   void Function(Widget) runApp = runApp,
 }) async {
@@ -17,8 +17,14 @@ Future<void> main({
   await logger.init();
 
   try {
-    // Initialize service locator
-    await initServiceLocator();
+    // Initialize service locator with the logger
+    final initFn =
+        initServiceLocatorOverride ??
+        (() => initServiceLocator(
+          configure: (builder) => builder.withLogger(logger!),
+        ));
+
+    await initFn();
 
     // Run the app
     runApp(const MyApp());

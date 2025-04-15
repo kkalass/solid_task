@@ -17,8 +17,6 @@ import 'package:solid_task/services/storage/local_storage_service.dart';
 import 'package:solid_task/services/sync/sync_manager.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 
-// Generate mocks for all services
-
 import '../mocks/mock_temp_dir_path_provider.dart';
 @GenerateNiceMocks([
   MockSpec<LoggerService>(),
@@ -41,7 +39,7 @@ import 'service_locator_test.mocks.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('ServiceLocator', () {
+  group('ServiceLocator Builder', () {
     late MockJwtDecoderWrapper mockJwtDecoderWrapper;
     late MockLoggerService mockLogger;
     late MockClient mockClient;
@@ -95,12 +93,11 @@ void main() {
     });
 
     test('should register and resolve all services properly', () async {
-      // Initialize the service locator
+      // Initialize the service locator with minimal configuration
       await initServiceLocator(
-        config: ServiceLocatorConfig(
-          secureStorage: mockSecureStorage,
-          loggerService: mockLogger,
-        ),
+        configure: (builder) {
+          builder.withSecureStorage(mockSecureStorage).withLogger(mockLogger);
+        },
       );
 
       // Verify services are registered
@@ -119,28 +116,31 @@ void main() {
     });
 
     test(
-      'should register and resolve services with custom implementations via config',
+      'should register and resolve services with custom implementations via builder',
       () async {
-        // Create the config with our mocks
-        final config = ServiceLocatorConfig(
-          loggerService: mockLogger,
-          httpClient: mockClient,
-          storageService: mockStorage,
-          providerService: mockSolidProviderService,
-          secureStorage: mockSecureStorage,
-          solidAuth: mockSolidAuth,
-          jwtDecoder: mockJwtDecoderWrapper,
-          authOperations: mockSolidAuthOperations,
-          authState: mockSolidAuthState,
-          authStateChangeProvider: mockAuthStateChangeProvider,
-          itemRepositoryFactory: (_, __) => mockItemRepository,
-          syncServiceFactory: (_, __, ___, ____, _____) => mockSyncService,
-          // Skip SyncManager for this test to avoid unnecessary dependencies
-          syncManagerFactory: (_, __, ___, ____) => mockSyncManager,
+        // Initialize with full custom configuration
+        await initServiceLocator(
+          configure: (builder) {
+            builder
+                .withLogger(mockLogger)
+                .withHttpClient(mockClient)
+                .withStorageService(mockStorage)
+                .withProviderService(mockSolidProviderService)
+                .withSecureStorage(mockSecureStorage)
+                .withSolidAuth(mockSolidAuth)
+                .withJwtDecoder(mockJwtDecoderWrapper)
+                .withAuthServices(
+                  authState: mockSolidAuthState,
+                  authOperations: mockSolidAuthOperations,
+                  authStateChangeProvider: mockAuthStateChangeProvider,
+                )
+                .withItemRepositoryFactory((_, __) => mockItemRepository)
+                .withSyncServiceFactory(
+                  (_, __, ___, ____, _____) => mockSyncService,
+                )
+                .withSyncManagerFactory((_, __, ___, ____) => mockSyncManager);
+          },
         );
-
-        // Initialize with our config
-        await initServiceLocator(config: config);
 
         // Verify our mocks were registered correctly
         expect(sl<LoggerService>(), same(mockLogger));
@@ -170,15 +170,15 @@ void main() {
       },
     );
 
-    test('allows partial configuration replacement', () async {
+    test('allows partial configuration with builder', () async {
       // Only replace specific dependencies
-      final config = ServiceLocatorConfig(
-        secureStorage: mockSecureStorage,
-        solidAuth: mockSolidAuth,
+      await initServiceLocator(
+        configure: (builder) {
+          builder
+              .withSecureStorage(mockSecureStorage)
+              .withSolidAuth(mockSolidAuth);
+        },
       );
-
-      // Initialize with partial config
-      await initServiceLocator(config: config);
 
       // Verify only specified services are replaced
       expect(sl<FlutterSecureStorage>(), same(mockSecureStorage));
@@ -205,26 +205,28 @@ void main() {
       when(
         mockSecureStorage.read(key: 'solid_access_token'),
       ).thenAnswer((_) async => 'mock-access-token');
+
       mockJwtDecoderWrapper = MockJwtDecoderWrapper();
       when(mockJwtDecoderWrapper.decode(any)).thenReturn({
         'sub': 'https://example.org/profile/card#me',
         'exp': DateTime.now().add(Duration(days: 1)).millisecondsSinceEpoch,
       });
+
       // Configure SolidAuth mock to simulate successful token restoration
       mockSolidAuth = MockSolidAuth();
 
-      // Create config with mocked services
-      final config = ServiceLocatorConfig(
-        httpClient: mockClient,
-        providerService: mockSolidProviderService,
-        secureStorage: mockSecureStorage,
-        solidAuth: mockSolidAuth,
-        jwtDecoder: mockJwtDecoderWrapper,
-        loggerService: mockLogger,
+      // Initialize with our mocked services
+      await initServiceLocator(
+        configure: (builder) {
+          builder
+              .withHttpClient(mockClient)
+              .withProviderService(mockSolidProviderService)
+              .withSecureStorage(mockSecureStorage)
+              .withSolidAuth(mockSolidAuth)
+              .withJwtDecoder(mockJwtDecoderWrapper)
+              .withLogger(mockLogger);
+        },
       );
-
-      // Initialize with our config
-      await initServiceLocator(config: config);
 
       // Verify the async service is ready and properly restored the session
       await sl.isReady<SolidAuthState>();
@@ -249,12 +251,12 @@ void main() {
 
     test('service locator can properly reset', () async {
       // Setup with a simple configuration
-      final config = ServiceLocatorConfig(
-        secureStorage: mockSecureStorage,
-        loggerService: mockLogger,
+      await initServiceLocator(
+        configure: (builder) {
+          builder.withSecureStorage(mockSecureStorage).withLogger(mockLogger);
+        },
       );
 
-      await initServiceLocator(config: config);
       expect(sl.isRegistered<FlutterSecureStorage>(), isTrue);
 
       // Act - reset the service locator
@@ -266,6 +268,33 @@ void main() {
       expect(sl.isRegistered<SolidAuthOperations>(), isFalse);
       expect(sl.isRegistered<SolidAuthState>(), isFalse);
       expect(sl.isRegistered<ItemRepository>(), isFalse);
+    });
+
+    test('ServiceLocatorBuilder provides a fluent API', () {
+      // This test validates the fluent API design pattern
+      final builder = ServiceLocatorBuilder();
+
+      // Should be able to chain method calls
+      final result = builder
+          .withLogger(mockLogger)
+          .withHttpClient(mockClient)
+          .withSecureStorage(mockSecureStorage)
+          .withJwtDecoder(mockJwtDecoderWrapper)
+          .withStorageService(mockStorage)
+          .withProviderService(mockSolidProviderService)
+          .withSolidAuth(mockSolidAuth)
+          .withAuthServices(
+            authState: mockSolidAuthState,
+            authOperations: mockSolidAuthOperations,
+            authStateChangeProvider: mockAuthStateChangeProvider,
+          )
+          .withItemRepositoryFactory((_, __) => mockItemRepository)
+          .withSyncServiceFactory((_, __, ___, ____, _____) => mockSyncService)
+          .withSyncManagerFactory((_, __, ___, ____) => mockSyncManager)
+          .withSyncableRepositoryFactory((_, __) => mockItemRepository);
+
+      // Should return the builder for chaining
+      expect(result, same(builder));
     });
   });
 }

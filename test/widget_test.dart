@@ -99,17 +99,22 @@ void main() {
     // Critical stub: setup the createLogger method that's called during service locator initialization
     when(mockLoggerService.createLogger(any)).thenReturn(mockContextLogger);
 
-    // Mock service locator initialization to use mocks
+    // Initialize service locator with mocks using the Builder pattern
     await initServiceLocator(
-      config: ServiceLocatorConfig(
-        httpClient: mockHttpClient,
-        loggerService: mockLoggerService,
-        authState: mockSolidAuthState,
-        authOperations: mockSolidAuthOperations,
-        authStateChangeProvider: mockAuthStateChangeProvider,
-        itemRepositoryFactory: (_, __) => mockItemRepository,
-        syncServiceFactory: (_, __, ___, ____, _____) => mockSyncService,
-      ),
+      configure: (builder) {
+        builder
+            .withLogger(mockLoggerService)
+            .withHttpClient(mockHttpClient)
+            .withAuthServices(
+              authState: mockSolidAuthState,
+              authOperations: mockSolidAuthOperations,
+              authStateChangeProvider: mockAuthStateChangeProvider,
+            )
+            .withItemRepositoryFactory((storage, logger) => mockItemRepository)
+            .withSyncServiceFactory(
+              (repo, auth, state, logger, client) => mockSyncService,
+            );
+      },
     );
   });
 
@@ -134,7 +139,7 @@ void main() {
 
     // Call main with a mock runApp that captures the widget
     await app.main(
-      initServiceLocator:
+      initServiceLocatorOverride:
           () async {}, // Skip initialization as it's done in setUp
       logger: mockLoggerService,
       runApp: (widget) => capturedWidget = widget,
@@ -196,7 +201,7 @@ void main() {
 
     // Launch the app
     await app.main(
-      initServiceLocator: () async {},
+      initServiceLocatorOverride: () async {},
       logger: mockLoggerService,
       runApp: (widget) => capturedWidget = widget,
     );
@@ -237,7 +242,7 @@ void main() {
 
     // Call main with a mock runApp that captures the widget
     await app.main(
-      initServiceLocator:
+      initServiceLocatorOverride:
           () async {}, // Skip initialization as it's done in setUp
       logger: mockLoggerService,
       runApp: (widget) => capturedWidget = widget,
@@ -270,7 +275,7 @@ void main() {
 
     // Call main with a mock runApp that captures the widget
     await app.main(
-      initServiceLocator:
+      initServiceLocatorOverride:
           () async {}, // Skip initialization as it's done in setUp
       logger: mockLoggerService,
       runApp: (widget) => capturedWidget = widget,
