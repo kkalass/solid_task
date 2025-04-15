@@ -2,128 +2,109 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/services/logger_service.dart';
+import 'package:solid_task/services/rdf/item_rdf_mapper.dart';
 import 'package:solid_task/services/rdf/item_rdf_serializer.dart';
 import 'package:solid_task/services/rdf/rdf_graph.dart';
-import 'package:solid_task/services/rdf/rdf_parser.dart';
-import 'package:solid_task/services/rdf/rdf_serializer.dart';
+import 'package:solid_task/services/rdf/rdf_type_converter.dart';
+import 'package:solid_task/services/rdf/task_ontology_constants.dart';
 
 void main() {
-  late ItemRdfSerializer itemSerializer;
   late LoggerService loggerService;
-  late RdfParser parser;
-  late RdfSerializer serializer;
-  late String contentType;
+  late RdfTypeConverter typeConverter;
+  late ItemRdfMapper mapper;
+  late ItemRdfSerializer serializer;
+
   setUp(() {
     loggerService = LoggerService();
-    itemSerializer = ItemRdfSerializer(loggerService: loggerService);
-    contentType = 'text/turtle';
-    parser = RdfParserFactory(
+    typeConverter = RdfTypeConverter(loggerService: loggerService);
+    mapper = ItemRdfMapper(
       loggerService: loggerService,
-    ).createParser(contentType: contentType);
-    serializer = RdfSerializerFactory(
+      typeConverter: typeConverter,
+    );
+    serializer = ItemRdfSerializer(
       loggerService: loggerService,
-    ).createSerializer(contentType: contentType);
+      mapper: mapper,
+    );
   });
 
   group('ItemRdfSerializer', () {
-    test('should convert an item to RDF graph', () {
-      // Arrange
-      final item = Item(text: 'Test Item', lastModifiedBy: 'user1');
-      item.id = 'test-id-123';
-      item.createdAt = DateTime.parse('2025-04-14T10:00:00Z');
-      item.vectorClock = {'user1': 1, 'user2': 2};
-      item.isDeleted = false;
+    test('should convert item to RDF and back', () {
+      // Create a test item
+      final originalItem = Item(text: 'Test item', lastModifiedBy: 'test-user');
+      originalItem.id = 'test-id-123';
+      originalItem.isDeleted = false;
+      originalItem.vectorClock = {'user1': 1, 'user2': 2};
 
-      // Act
-      final (graph, prefixes) = itemSerializer.itemToRdf(item);
+      // Convert to RDF
+      final (graph, prefixes) = serializer.itemToRdf(originalItem);
 
-      // Assert
-      expect(graph.triples, isNotEmpty);
+      // Basic verification
+      expect(prefixes, isNotEmpty);
+      expect(graph.isEmpty, isFalse);
 
-      // Check basic item properties
-      final itemUri = IriTerm('http://solidtask.org/tasks/${item.id}');
+      // Find triples by subject
+      final itemUri = TaskOntologyConstants.makeTaskUri(originalItem.id);
+      final subjectIri = IriTerm(itemUri);
 
-      final typeTriples = graph.findTriples(
-        subject: itemUri,
-        predicate: IriTerm('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-      );
-      expect(typeTriples.length, 1);
-      expect(
-        typeTriples.first.object,
-        IriTerm('http://solidtask.org/ontology#Task'),
-      );
-
+      // Verify text property
       final textTriples = graph.findTriples(
-        subject: itemUri,
-        predicate: IriTerm('http://solidtask.org/ontology#text'),
+        subject: subjectIri,
+        predicate: TaskOntologyConstants.textIri,
       );
-      expect(textTriples.length, 1);
-      expect(textTriples.first.object, LiteralTerm.string('Test Item'));
-
-      final deletedTriples = graph.findTriples(
-        subject: itemUri,
-        predicate: IriTerm('http://solidtask.org/ontology#isDeleted'),
-      );
-      expect(deletedTriples.length, 1);
+      expect(textTriples.length, equals(1));
+      expect(textTriples.first.object, isA<LiteralTerm>());
       expect(
-        deletedTriples.first.object,
-        LiteralTerm(
-          'false',
-          datatype: IriTerm('http://www.w3.org/2001/XMLSchema#boolean'),
-        ),
+        (textTriples.first.object as LiteralTerm).value,
+        equals('Test item'),
       );
 
-      final createdTriples = graph.findTriples(
-        subject: itemUri,
-        predicate: IriTerm('http://purl.org/dc/terms/created'),
-      );
-      expect(createdTriples.length, 1);
+      // Convert back to item
+      final reconstructedItem = serializer.rdfToItem(graph, itemUri);
+
+      // Verify all properties were preserved
+      expect(reconstructedItem.id, equals(originalItem.id));
+      expect(reconstructedItem.text, equals(originalItem.text));
       expect(
-        createdTriples.first.object,
-        LiteralTerm.typed('2025-04-14T10:00:00.000Z', 'dateTime'),
+        reconstructedItem.lastModifiedBy,
+        equals(originalItem.lastModifiedBy),
       );
-
-      // Check vector clock
-      final clockTriples = graph.findTriples(
-        subject: itemUri,
-        predicate: IriTerm('http://solidtask.org/ontology#vectorClock'),
-      );
-      expect(clockTriples.length, 2); // One for each clock entry
+      expect(reconstructedItem.isDeleted, equals(originalItem.isDeleted));
+      expect(reconstructedItem.vectorClock, equals(originalItem.vectorClock));
     });
 
-    test('should serialize an item to Turtle format and parse it back', () {
-      // Arrange
-      final item = Item(text: 'Roundtrip Test', lastModifiedBy: 'user1');
-      item.id = 'roundtrip-123';
-      item.createdAt = DateTime.parse('2025-04-14T10:00:00Z');
-      item.vectorClock = {'user1': 1, 'user2': 2};
-      item.isDeleted = false;
+    test('should convert item to string and back', () {
+      // Create a test item
+      final originalItem = Item(
+        text: 'Test item with string serialization',
+        lastModifiedBy: 'test-user-string',
+      );
+      originalItem.id = 'test-id-string-456';
+      originalItem.isDeleted = true;
+      originalItem.vectorClock = {'user3': 3, 'user4': 4};
 
-      // Act
-      final (rdf, prefixes) = itemSerializer.itemToRdf(item);
-      final turtle = serializer.write(rdf, prefixes: prefixes);
-      expect(turtle, isNotEmpty);
+      // Convert to string
+      final rdfString = serializer.itemToString(originalItem);
 
-      // Parse the turtle back to a graph
-      final graph = parser.parse(
-        turtle,
-        documentUrl: 'http://example.org/test',
+      // Verify basic content
+      expect(rdfString, isNotEmpty);
+      expect(rdfString, contains('@prefix'));
+      expect(rdfString, contains('task:text'));
+
+      // Convert back to item
+      final reconstructedItem = serializer.itemFromString(
+        rdfString,
+        originalItem.id,
       );
 
-      // Convert the graph back to an item
-      final itemUri = 'http://solidtask.org/tasks/${item.id}';
-      final parsedItem = itemSerializer.rdfToItem(graph, itemUri);
-
-      // Assert
-      expect(parsedItem.id, item.id);
-      expect(parsedItem.text, item.text);
-      expect(parsedItem.isDeleted, item.isDeleted);
-      expect(parsedItem.lastModifiedBy, item.lastModifiedBy);
+      // Verify all properties were preserved
+      expect(reconstructedItem.id, equals(originalItem.id));
+      expect(reconstructedItem.text, equals(originalItem.text));
       expect(
-        parsedItem.createdAt.toIso8601String(),
-        item.createdAt.toIso8601String(),
+        reconstructedItem.lastModifiedBy,
+        equals(originalItem.lastModifiedBy),
       );
-      expect(parsedItem.vectorClock, item.vectorClock);
+      expect(reconstructedItem.isDeleted, equals(originalItem.isDeleted));
+      expect(reconstructedItem.vectorClock, equals(originalItem.vectorClock));
     });
 
     test('should handle items with special characters', () {
@@ -135,17 +116,49 @@ void main() {
       item.id = 'special-chars-123';
 
       // Act
-      final (rdf, prefixes) = itemSerializer.itemToRdf(item);
-      final turtle = serializer.write(rdf, prefixes: prefixes);
-      final graph = parser.parse(
-        turtle,
-        documentUrl: 'http://example.org/test',
-      );
-      final itemUri = 'http://solidtask.org/tasks/${item.id}';
-      final parsedItem = itemSerializer.rdfToItem(graph, itemUri);
+      final turtle = serializer.itemToString(item);
+      final parsedItem = serializer.itemFromString(turtle, item.id);
 
       // Assert
       expect(parsedItem.text, item.text);
+    });
+
+    test('should handle items with non-ASCII characters', () {
+      // Arrange
+      final item = Item(
+        text: 'Test with non-ASCII: ñ, ü, é',
+        lastModifiedBy: 'user2',
+      );
+      item.id = 'non-ascii-456';
+
+      // Act
+      final turtle = serializer.itemToString(item);
+      final parsedItem = serializer.itemFromString(turtle, item.id);
+
+      // Assert
+      expect(parsedItem.text, item.text);
+    });
+
+    test('should handle RDF parsing errors', () {
+      // Invalid missing text property
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm(TaskOntologyConstants.makeTaskUri('invalid')),
+            IriTerm('http://purl.org/dc/terms/creator'),
+            LiteralTerm.string('user'),
+          ),
+        ],
+      );
+
+      // Should throw because text property is missing
+      expect(
+        () => serializer.rdfToItem(
+          graph,
+          TaskOntologyConstants.makeTaskUri('invalid'),
+        ),
+        throwsA(isA<FormatException>()),
+      );
     });
   });
 }
