@@ -7,9 +7,6 @@ import 'package:solid_task/services/rdf/rdf_constants.dart';
 /// Base type for all RDF terms
 sealed class RdfTerm extends Equatable {
   const RdfTerm();
-
-  /// Accept a visitor for type-safe operations on RDF terms
-  T accept<T>(RdfTermVisitor<T> visitor);
 }
 
 sealed class RdfObject extends RdfTerm {
@@ -34,9 +31,6 @@ class IriTerm extends RdfTerm implements RdfPredicate, RdfSubject, RdfObject {
   List<Object?> get props => [iri];
 
   @override
-  T accept<T>(RdfTermVisitor<T> visitor) => visitor.visitIri(this);
-
-  @override
   bool operator ==(Object other) {
     return other is IriTerm && iri.toLowerCase() == other.iri.toLowerCase();
   }
@@ -53,9 +47,6 @@ class BlankNodeTerm extends RdfTerm implements RdfSubject, RdfObject {
 
   @override
   List<Object?> get props => [label];
-
-  @override
-  T accept<T>(RdfTermVisitor<T> visitor) => visitor.visitBlankNode(this);
 }
 
 /// Literal value in RDF
@@ -93,9 +84,6 @@ class LiteralTerm extends RdfTerm implements RdfObject {
 
   @override
   List<Object?> get props => [value, datatype, language];
-
-  @override
-  T accept<T>(RdfTermVisitor<T> visitor) => visitor.visitLiteral(this);
 }
 
 /// Represents an RDF triple.
@@ -269,6 +257,8 @@ final class RdfGraph {
   /// Whether this graph contains at least one triple
   bool get isNotEmpty => _triples.isNotEmpty;
 
+  /// We are implementing equals ourselves instead of using equatable,
+  /// because we want to compare the sets of triples, not the order
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -282,21 +272,5 @@ final class RdfGraph {
   }
 
   @override
-  int get hashCode => Object.hashAll(_triples);
-}
-
-/// Visitor interface for type-safe operations on RDF terms
-///
-/// This pattern enables adding new operations on RDF terms without
-/// modifying the term classes themselves, following the Open/Closed principle.
-/// Each visitor implementation provides a specific operation across all term types.
-abstract interface class RdfTermVisitor<T> {
-  /// Visit an IRI term
-  T visitIri(IriTerm iri);
-
-  /// Visit a blank node term
-  T visitBlankNode(BlankNodeTerm blankNode);
-
-  /// Visit a literal term
-  T visitLiteral(LiteralTerm literal);
+  int get hashCode => Object.hashAllUnordered(_triples);
 }

@@ -6,10 +6,7 @@ void main() {
   group('RdfGraph', () {
     test('langTerm', () {
       final langTerm = LiteralTerm.withLanguage('Hello', 'en');
-      expect(
-        langTerm.accept(RdfTermTurtleStringVisitor(prefixesByIri: {})),
-        equals('"Hello"@en'),
-      );
+      expect(TurtleSerializer().writeTerm(langTerm), equals('"Hello"@en'));
     });
 
     test('illegal langTerm', () {
@@ -37,10 +34,7 @@ void main() {
         datatype: IriTerm("$baseIri$type"),
         language: 'en',
       );
-      expect(
-        langTerm.accept(RdfTermTurtleStringVisitor(prefixesByIri: {})),
-        equals('"Hello"@en'),
-      );
+      expect(TurtleSerializer().writeTerm(langTerm), equals('"Hello"@en'));
     });
 
     // Tests for the new immutable RdfGraph implementation
