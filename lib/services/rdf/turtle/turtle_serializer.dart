@@ -55,7 +55,7 @@ class RdfTermTurtleStringVisitor implements RdfTermVisitor<String> {
 
     if (literal.language != null) {
       return '"$escapedLiteralValue"@${literal.language}';
-    } else if (literal.datatype != RdfConstants.stringIri) {
+    } else if (literal.datatype != XsdConstants.stringIri) {
       return '"$escapedLiteralValue"^^${visitIri(literal.datatype)}';
     } else {
       return '"$escapedLiteralValue"';

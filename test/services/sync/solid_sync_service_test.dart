@@ -480,17 +480,16 @@ void main() {
 
 // Helper to create a mock RDF graph with container listing
 RdfGraph createMockGraph(List<String> fileUrls) {
-  final graph = RdfGraph();
-
-  for (final fileUrl in fileUrls) {
-    graph.addTriple(
-      Triple(
-        IriTerm('https://example.com/container'),
-        IriTerm('http://www.w3.org/ns/ldp#contains'),
-        IriTerm(fileUrl),
-      ),
-    );
-  }
-
-  return graph;
+  return RdfGraph(
+    triples:
+        fileUrls
+            .map(
+              (fileUrl) => Triple(
+                IriTerm('https://example.com/container'),
+                IriTerm('http://www.w3.org/ns/ldp#contains'),
+                IriTerm(fileUrl),
+              ),
+            )
+            .toList(),
+  );
 }

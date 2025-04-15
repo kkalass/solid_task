@@ -49,14 +49,15 @@ void main() {
 
     test('should delegate to appropriate serializer based on content type', () {
       // Arrange
-      final graph = RdfGraph();
       final prefixes = {'ex': 'http://example.org/'};
-      graph.addTriple(
-        Triple(
-          IriTerm('http://example.org/subject'),
-          IriTerm('http://example.org/predicate'),
-          LiteralTerm.string("object"),
-        ),
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/subject'),
+            IriTerm('http://example.org/predicate'),
+            LiteralTerm.string("object"),
+          ),
+        ],
       );
 
       final defaultSerializer = RdfSerializerFactory().createSerializer();

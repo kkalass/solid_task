@@ -47,13 +47,14 @@ void main() {
 
     test('should serialize a simple triple', () {
       // Arrange
-      final graph = RdfGraph();
-      graph.addTriple(
-        Triple(
-          IriTerm('http://example.org/alice'),
-          IriTerm('http://example.org/knows'),
-          IriTerm('http://example.org/bob'),
-        ),
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/alice'),
+            IriTerm('http://example.org/knows'),
+            IriTerm('http://example.org/bob'),
+          ),
+        ],
       );
 
       // Act
@@ -70,13 +71,14 @@ void main() {
 
     test('should use rdf:type abbreviation', () {
       // Arrange
-      final graph = RdfGraph();
-      graph.addTriple(
-        Triple(
-          IriTerm('http://example.org/alice'),
-          IriTerm('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-          IriTerm('http://example.org/Person'),
-        ),
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/alice'),
+            IriTerm('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+            IriTerm('http://example.org/Person'),
+          ),
+        ],
       );
 
       // Act
@@ -95,30 +97,27 @@ void main() {
 
     test('should group triples by subject', () {
       // Arrange
-      final graph = RdfGraph();
-      graph.addTriple(
-        Triple(
-          IriTerm('http://example.org/alice'),
-          IriTerm('http://example.org/name'),
-          LiteralTerm.string('Alice'),
-        ),
-      );
-      graph.addTriple(
-        Triple(
-          IriTerm('http://example.org/alice'),
-          IriTerm('http://example.org/age'),
-          LiteralTerm(
-            "30",
-            datatype: IriTerm('http://www.w3.org/2001/XMLSchema#integer'),
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/alice'),
+            IriTerm('http://example.org/name'),
+            LiteralTerm.string('Alice'),
           ),
-        ),
-      );
-      graph.addTriple(
-        Triple(
-          IriTerm('http://example.org/bob'),
-          IriTerm('http://example.org/name'),
-          LiteralTerm.string('Bob'),
-        ),
+          Triple(
+            IriTerm('http://example.org/alice'),
+            IriTerm('http://example.org/age'),
+            LiteralTerm(
+              "30",
+              datatype: IriTerm('http://www.w3.org/2001/XMLSchema#integer'),
+            ),
+          ),
+          Triple(
+            IriTerm('http://example.org/bob'),
+            IriTerm('http://example.org/name'),
+            LiteralTerm.string('Bob'),
+          ),
+        ],
       );
 
       // Act
@@ -151,20 +150,19 @@ void main() {
 
     test('should group multiple objects for the same predicate', () {
       // Arrange
-      final graph = RdfGraph();
-      graph.addTriple(
-        Triple(
-          IriTerm('http://example.org/alice'),
-          IriTerm('http://example.org/likes'),
-          IriTerm('http://example.org/chocolate'),
-        ),
-      );
-      graph.addTriple(
-        Triple(
-          IriTerm('http://example.org/alice'),
-          IriTerm('http://example.org/likes'),
-          IriTerm('http://example.org/pizza'),
-        ),
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/alice'),
+            IriTerm('http://example.org/likes'),
+            IriTerm('http://example.org/chocolate'),
+          ),
+          Triple(
+            IriTerm('http://example.org/alice'),
+            IriTerm('http://example.org/likes'),
+            IriTerm('http://example.org/pizza'),
+          ),
+        ],
       );
 
       // Act
@@ -181,13 +179,14 @@ void main() {
 
     test('should handle blank nodes', () {
       // Arrange
-      final graph = RdfGraph();
-      graph.addTriple(
-        Triple(
-          IriTerm('http://example.org/statement'),
-          IriTerm('http://example.org/source'),
-          BlankNodeTerm('b1'),
-        ),
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/statement'),
+            IriTerm('http://example.org/source'),
+            BlankNodeTerm('b1'),
+          ),
+        ],
       );
 
       // Act
@@ -204,13 +203,14 @@ void main() {
 
     test('should handle literals with language tags', () {
       // Arrange
-      final graph = RdfGraph();
-      graph.addTriple(
-        Triple(
-          IriTerm('http://example.org/book'),
-          IriTerm('http://example.org/title'),
-          LiteralTerm.withLanguage('Le Petit Prince', 'fr'),
-        ),
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/book'),
+            IriTerm('http://example.org/title'),
+            LiteralTerm.withLanguage('Le Petit Prince', 'fr'),
+          ),
+        ],
       );
 
       // Act
@@ -227,15 +227,16 @@ void main() {
 
     test('should handle literals with quotes and backslashes', () {
       // Arrange
-      final graph = RdfGraph();
-      graph.addTriple(
-        Triple(
-          IriTerm('http://example.org/book'),
-          IriTerm('http://example.org/title'),
-          LiteralTerm.string(
-            'Le "Petit" \\ Prince\n hopes for a better world\r',
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/book'),
+            IriTerm('http://example.org/title'),
+            LiteralTerm.string(
+              'Le "Petit" \\ Prince\n hopes for a better world\r',
+            ),
           ),
-        ),
+        ],
       );
 
       // Act
@@ -254,50 +255,42 @@ void main() {
       'should handle complex graphs with multiple subjects and predicates and make use of prefixes',
       () {
         // Arrange
-        final graph = RdfGraph();
+        final graph = RdfGraph(
+          triples: [
+            // Person 1
+            Triple(
+              IriTerm('http://example.org/alice'),
+              IriTerm('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              IriTerm('http://xmlns.com/foaf/0.1/Person'),
+            ),
+            Triple(
+              IriTerm('http://example.org/alice'),
+              IriTerm('http://xmlns.com/foaf/0.1/name'),
+              LiteralTerm.string('Alice'),
+            ),
+            Triple(
+              IriTerm('http://example.org/alice'),
+              IriTerm('http://xmlns.com/foaf/0.1/knows'),
+              IriTerm('http://example.org/bob'),
+            ),
+            // Person 2
+            Triple(
+              IriTerm('http://example.org/bob'),
+              IriTerm('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              IriTerm('http://xmlns.com/foaf/0.1/Person'),
+            ),
+            Triple(
+              IriTerm('http://example.org/bob'),
+              IriTerm('http://xmlns.com/foaf/0.1/name'),
+              LiteralTerm.string('Bob'),
+            ),
+          ],
+        );
+
         final prefixes = {
           'ex': 'http://example.org/',
           'foaf': 'http://xmlns.com/foaf/0.1/',
         };
-
-        // Person 1
-        graph.addTriple(
-          Triple(
-            IriTerm('http://example.org/alice'),
-            IriTerm('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-            IriTerm('http://xmlns.com/foaf/0.1/Person'),
-          ),
-        );
-        graph.addTriple(
-          Triple(
-            IriTerm('http://example.org/alice'),
-            IriTerm('http://xmlns.com/foaf/0.1/name'),
-            LiteralTerm.string('Alice'),
-          ),
-        );
-        graph.addTriple(
-          Triple(
-            IriTerm('http://example.org/alice'),
-            IriTerm('http://xmlns.com/foaf/0.1/knows'),
-            IriTerm('http://example.org/bob'),
-          ),
-        );
-
-        // Person 2
-        graph.addTriple(
-          Triple(
-            IriTerm('http://example.org/bob'),
-            IriTerm('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-            IriTerm('http://xmlns.com/foaf/0.1/Person'),
-          ),
-        );
-        graph.addTriple(
-          Triple(
-            IriTerm('http://example.org/bob'),
-            IriTerm('http://xmlns.com/foaf/0.1/name'),
-            LiteralTerm.string('Bob'),
-          ),
-        );
 
         // Act
         final result = serializer.write(graph, prefixes: prefixes);

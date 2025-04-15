@@ -59,7 +59,7 @@ class ItemRdfSerializer {
   (RdfGraph, Map<String, String>) itemToRdf(Item item) {
     _logger.debug('Converting item ${item.id} to RDF');
 
-    final graph = RdfGraph();
+    final triples = <Triple>[];
 
     // Add common prefixes
     final prefixes = {
@@ -74,14 +74,14 @@ class ItemRdfSerializer {
     final itemIri = IriTerm(itemUri);
 
     // Add triple: <itemUri> rdf:type task:Task
-    graph.addTriple(Triple(itemIri, IriTerm(_rdfType), IriTerm(_taskClass)));
+    triples.add(Triple(itemIri, IriTerm(_rdfType), IriTerm(_taskClass)));
 
     // Add item properties
-    graph.addTriple(
+    triples.add(
       Triple(itemIri, IriTerm(_taskText), _createStringLiteral(item.text)),
     );
 
-    graph.addTriple(
+    triples.add(
       Triple(
         itemIri,
         IriTerm(_taskIsDeleted),
@@ -89,7 +89,7 @@ class ItemRdfSerializer {
       ),
     );
 
-    graph.addTriple(
+    triples.add(
       Triple(
         itemIri,
         IriTerm(_taskCreated),
@@ -97,7 +97,7 @@ class ItemRdfSerializer {
       ),
     );
 
-    graph.addTriple(
+    triples.add(
       Triple(
         itemIri,
         IriTerm(_taskModifiedBy),
@@ -111,11 +111,9 @@ class ItemRdfSerializer {
       final clockEntryIri = IriTerm(clockEntryUri);
 
       // Add the vector clock entry node
-      graph.addTriple(
-        Triple(itemIri, IriTerm(_taskVectorClock), clockEntryIri),
-      );
+      triples.add(Triple(itemIri, IriTerm(_taskVectorClock), clockEntryIri));
 
-      graph.addTriple(
+      triples.add(
         Triple(
           clockEntryIri,
           IriTerm(_rdfType),
@@ -123,7 +121,7 @@ class ItemRdfSerializer {
         ),
       );
 
-      graph.addTriple(
+      triples.add(
         Triple(
           clockEntryIri,
           IriTerm(_taskClientId),
@@ -131,7 +129,7 @@ class ItemRdfSerializer {
         ),
       );
 
-      graph.addTriple(
+      triples.add(
         Triple(
           clockEntryIri,
           IriTerm(_taskClockValue),
@@ -139,7 +137,7 @@ class ItemRdfSerializer {
         ),
       );
     }
-
+    final graph = RdfGraph(triples: triples);
     return (graph, prefixes);
   }
 
