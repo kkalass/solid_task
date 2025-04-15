@@ -1,5 +1,4 @@
 import 'package:solid_task/services/logger_service.dart';
-import 'package:solid_task/services/rdf/rdf_constants.dart';
 import 'package:solid_task/services/rdf/rdf_graph.dart';
 
 /// Converts between Dart types and RDF literals

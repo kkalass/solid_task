@@ -91,10 +91,6 @@ class _FakeRdfParser_4 extends _i1.SmartFake implements _i5.RdfParser {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockClient extends _i1.Mock implements _i2.Client {
-  MockClient() {
-    _i1.throwOnMissingStub(this);
-  }
-
   @override
   _i6.Future<_i2.Response> head(
     Uri? url, {
@@ -107,6 +103,15 @@ class MockClient extends _i1.Mock implements _i2.Client {
           {#headers: headers},
         ),
         returnValue: _i6.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #head,
+            [url],
+            {#headers: headers},
+          ),
+        )),
+        returnValueForMissingStub:
+            _i6.Future<_i2.Response>.value(_FakeResponse_0(
           this,
           Invocation.method(
             #head,
@@ -135,6 +140,15 @@ class MockClient extends _i1.Mock implements _i2.Client {
             {#headers: headers},
           ),
         )),
+        returnValueForMissingStub:
+            _i6.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #get,
+            [url],
+            {#headers: headers},
+          ),
+        )),
       ) as _i6.Future<_i2.Response>);
 
   @override
@@ -155,6 +169,19 @@ class MockClient extends _i1.Mock implements _i2.Client {
           },
         ),
         returnValue: _i6.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #post,
+            [url],
+            {
+              #headers: headers,
+              #body: body,
+              #encoding: encoding,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i6.Future<_i2.Response>.value(_FakeResponse_0(
           this,
           Invocation.method(
             #post,
@@ -197,6 +224,19 @@ class MockClient extends _i1.Mock implements _i2.Client {
             },
           ),
         )),
+        returnValueForMissingStub:
+            _i6.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #put,
+            [url],
+            {
+              #headers: headers,
+              #body: body,
+              #encoding: encoding,
+            },
+          ),
+        )),
       ) as _i6.Future<_i2.Response>);
 
   @override
@@ -217,6 +257,19 @@ class MockClient extends _i1.Mock implements _i2.Client {
           },
         ),
         returnValue: _i6.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #patch,
+            [url],
+            {
+              #headers: headers,
+              #body: body,
+              #encoding: encoding,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i6.Future<_i2.Response>.value(_FakeResponse_0(
           this,
           Invocation.method(
             #patch,
@@ -259,6 +312,19 @@ class MockClient extends _i1.Mock implements _i2.Client {
             },
           ),
         )),
+        returnValueForMissingStub:
+            _i6.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #delete,
+            [url],
+            {
+              #headers: headers,
+              #body: body,
+              #encoding: encoding,
+            },
+          ),
+        )),
       ) as _i6.Future<_i2.Response>);
 
   @override
@@ -280,6 +346,15 @@ class MockClient extends _i1.Mock implements _i2.Client {
             {#headers: headers},
           ),
         )),
+        returnValueForMissingStub:
+            _i6.Future<String>.value(_i8.dummyValue<String>(
+          this,
+          Invocation.method(
+            #read,
+            [url],
+            {#headers: headers},
+          ),
+        )),
       ) as _i6.Future<String>);
 
   @override
@@ -294,6 +369,8 @@ class MockClient extends _i1.Mock implements _i2.Client {
           {#headers: headers},
         ),
         returnValue: _i6.Future<_i9.Uint8List>.value(_i9.Uint8List(0)),
+        returnValueForMissingStub:
+            _i6.Future<_i9.Uint8List>.value(_i9.Uint8List(0)),
       ) as _i6.Future<_i9.Uint8List>);
 
   @override
@@ -304,6 +381,14 @@ class MockClient extends _i1.Mock implements _i2.Client {
           [request],
         ),
         returnValue:
+            _i6.Future<_i2.StreamedResponse>.value(_FakeStreamedResponse_1(
+          this,
+          Invocation.method(
+            #send,
+            [request],
+          ),
+        )),
+        returnValueForMissingStub:
             _i6.Future<_i2.StreamedResponse>.value(_FakeStreamedResponse_1(
           this,
           Invocation.method(
@@ -327,10 +412,6 @@ class MockClient extends _i1.Mock implements _i2.Client {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockItemRepository extends _i1.Mock implements _i10.ItemRepository {
-  MockItemRepository() {
-    _i1.throwOnMissingStub(this);
-  }
-
   @override
   List<_i3.Item> getAllItems() => (super.noSuchMethod(
         Invocation.method(
@@ -338,6 +419,7 @@ class MockItemRepository extends _i1.Mock implements _i10.ItemRepository {
           [],
         ),
         returnValue: <_i3.Item>[],
+        returnValueForMissingStub: <_i3.Item>[],
       ) as List<_i3.Item>);
 
   @override
@@ -347,13 +429,17 @@ class MockItemRepository extends _i1.Mock implements _i10.ItemRepository {
           [],
         ),
         returnValue: <_i3.Item>[],
+        returnValueForMissingStub: <_i3.Item>[],
       ) as List<_i3.Item>);
 
   @override
-  _i3.Item? getItem(String? id) => (super.noSuchMethod(Invocation.method(
-        #getItem,
-        [id],
-      )) as _i3.Item?);
+  _i3.Item? getItem(String? id) => (super.noSuchMethod(
+        Invocation.method(
+          #getItem,
+          [id],
+        ),
+        returnValueForMissingStub: null,
+      ) as _i3.Item?);
 
   @override
   _i6.Future<_i3.Item> createItem(
@@ -369,6 +455,16 @@ class MockItemRepository extends _i1.Mock implements _i10.ItemRepository {
           ],
         ),
         returnValue: _i6.Future<_i3.Item>.value(_FakeItem_2(
+          this,
+          Invocation.method(
+            #createItem,
+            [
+              text,
+              creator,
+            ],
+          ),
+        )),
+        returnValueForMissingStub: _i6.Future<_i3.Item>.value(_FakeItem_2(
           this,
           Invocation.method(
             #createItem,
@@ -394,6 +490,16 @@ class MockItemRepository extends _i1.Mock implements _i10.ItemRepository {
           ],
         ),
         returnValue: _i6.Future<_i3.Item>.value(_FakeItem_2(
+          this,
+          Invocation.method(
+            #updateItem,
+            [
+              item,
+              updater,
+            ],
+          ),
+        )),
+        returnValueForMissingStub: _i6.Future<_i3.Item>.value(_FakeItem_2(
           this,
           Invocation.method(
             #updateItem,
@@ -440,6 +546,7 @@ class MockItemRepository extends _i1.Mock implements _i10.ItemRepository {
           [],
         ),
         returnValue: _i6.Stream<List<_i3.Item>>.empty(),
+        returnValueForMissingStub: _i6.Stream<List<_i3.Item>>.empty(),
       ) as _i6.Stream<List<_i3.Item>>);
 
   @override
@@ -449,6 +556,7 @@ class MockItemRepository extends _i1.Mock implements _i10.ItemRepository {
           [],
         ),
         returnValue: <Map<String, dynamic>>[],
+        returnValueForMissingStub: <Map<String, dynamic>>[],
       ) as List<Map<String, dynamic>>);
 
   @override
@@ -466,14 +574,11 @@ class MockItemRepository extends _i1.Mock implements _i10.ItemRepository {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockSolidAuthState extends _i1.Mock implements _i11.SolidAuthState {
-  MockSolidAuthState() {
-    _i1.throwOnMissingStub(this);
-  }
-
   @override
   bool get isAuthenticated => (super.noSuchMethod(
         Invocation.getter(#isAuthenticated),
         returnValue: false,
+        returnValueForMissingStub: false,
       ) as bool);
 }
 
@@ -482,10 +587,6 @@ class MockSolidAuthState extends _i1.Mock implements _i11.SolidAuthState {
 /// See the documentation for Mockito's code generation for more information.
 class MockSolidAuthOperations extends _i1.Mock
     implements _i12.SolidAuthOperations {
-  MockSolidAuthOperations() {
-    _i1.throwOnMissingStub(this);
-  }
-
   @override
   _i6.Future<String> getIssuer(String? input) => (super.noSuchMethod(
         Invocation.method(
@@ -493,6 +594,14 @@ class MockSolidAuthOperations extends _i1.Mock
           [input],
         ),
         returnValue: _i6.Future<String>.value(_i8.dummyValue<String>(
+          this,
+          Invocation.method(
+            #getIssuer,
+            [input],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i6.Future<String>.value(_i8.dummyValue<String>(
           this,
           Invocation.method(
             #getIssuer,
@@ -524,6 +633,17 @@ class MockSolidAuthOperations extends _i1.Mock
             ],
           ),
         )),
+        returnValueForMissingStub:
+            _i6.Future<_i4.AuthResult>.value(_FakeAuthResult_3(
+          this,
+          Invocation.method(
+            #authenticate,
+            [
+              issuerUri,
+              context,
+            ],
+          ),
+        )),
       ) as _i6.Future<_i4.AuthResult>);
 
   @override
@@ -543,6 +663,7 @@ class MockSolidAuthOperations extends _i1.Mock
           [webId],
         ),
         returnValue: _i6.Future<String?>.value(),
+        returnValueForMissingStub: _i6.Future<String?>.value(),
       ) as _i6.Future<String?>);
 
   @override
@@ -568,6 +689,16 @@ class MockSolidAuthOperations extends _i1.Mock
             ],
           ),
         ),
+        returnValueForMissingStub: _i8.dummyValue<String>(
+          this,
+          Invocation.method(
+            #generateDpopToken,
+            [
+              url,
+              method,
+            ],
+          ),
+        ),
       ) as String);
 }
 
@@ -575,28 +706,27 @@ class MockSolidAuthOperations extends _i1.Mock
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockItemRdfSerializer extends _i1.Mock implements _i14.ItemRdfSerializer {
-  MockItemRdfSerializer() {
-    _i1.throwOnMissingStub(this);
-  }
-
   @override
-  (_i15.RdfGraph, Map<String, String>) itemToRdf(_i3.Item? item) =>
-      (super.noSuchMethod(
+  _i15.RdfGraph itemToRdf(_i3.Item? item) => (super.noSuchMethod(
         Invocation.method(
           #itemToRdf,
           [item],
         ),
-        returnValue: (
-          _i8.dummyValue<_i15.RdfGraph>(
-            this,
-            Invocation.method(
-              #itemToRdf,
-              [item],
-            ),
+        returnValue: _i8.dummyValue<_i15.RdfGraph>(
+          this,
+          Invocation.method(
+            #itemToRdf,
+            [item],
           ),
-          <String, String>{}
         ),
-      ) as (_i15.RdfGraph, Map<String, String>));
+        returnValueForMissingStub: _i8.dummyValue<_i15.RdfGraph>(
+          this,
+          Invocation.method(
+            #itemToRdf,
+            [item],
+          ),
+        ),
+      ) as _i15.RdfGraph);
 
   @override
   _i3.Item rdfToItem(
@@ -621,6 +751,16 @@ class MockItemRdfSerializer extends _i1.Mock implements _i14.ItemRdfSerializer {
             ],
           ),
         ),
+        returnValueForMissingStub: _FakeItem_2(
+          this,
+          Invocation.method(
+            #rdfToItem,
+            [
+              graph,
+              itemUri,
+            ],
+          ),
+        ),
       ) as _i3.Item);
 
   @override
@@ -630,6 +770,13 @@ class MockItemRdfSerializer extends _i1.Mock implements _i14.ItemRdfSerializer {
           [item],
         ),
         returnValue: _i8.dummyValue<String>(
+          this,
+          Invocation.method(
+            #itemToString,
+            [item],
+          ),
+        ),
+        returnValueForMissingStub: _i8.dummyValue<String>(
           this,
           Invocation.method(
             #itemToString,
@@ -664,6 +811,17 @@ class MockItemRdfSerializer extends _i1.Mock implements _i14.ItemRdfSerializer {
             {#documentUrl: documentUrl},
           ),
         ),
+        returnValueForMissingStub: _FakeItem_2(
+          this,
+          Invocation.method(
+            #itemFromString,
+            [
+              content,
+              itemId,
+            ],
+            {#documentUrl: documentUrl},
+          ),
+        ),
       ) as _i3.Item);
 }
 
@@ -671,10 +829,6 @@ class MockItemRdfSerializer extends _i1.Mock implements _i14.ItemRdfSerializer {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockRdfParser extends _i1.Mock implements _i5.RdfParser {
-  MockRdfParser() {
-    _i1.throwOnMissingStub(this);
-  }
-
   @override
   _i15.RdfGraph parse(
     String? input, {
@@ -694,6 +848,14 @@ class MockRdfParser extends _i1.Mock implements _i5.RdfParser {
             {#documentUrl: documentUrl},
           ),
         ),
+        returnValueForMissingStub: _i8.dummyValue<_i15.RdfGraph>(
+          this,
+          Invocation.method(
+            #parse,
+            [input],
+            {#documentUrl: documentUrl},
+          ),
+        ),
       ) as _i15.RdfGraph);
 }
 
@@ -701,10 +863,6 @@ class MockRdfParser extends _i1.Mock implements _i5.RdfParser {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockRdfParserFactory extends _i1.Mock implements _i5.RdfParserFactory {
-  MockRdfParserFactory() {
-    _i1.throwOnMissingStub(this);
-  }
-
   @override
   _i5.RdfParser createParser({String? contentType}) => (super.noSuchMethod(
         Invocation.method(
@@ -713,6 +871,14 @@ class MockRdfParserFactory extends _i1.Mock implements _i5.RdfParserFactory {
           {#contentType: contentType},
         ),
         returnValue: _FakeRdfParser_4(
+          this,
+          Invocation.method(
+            #createParser,
+            [],
+            {#contentType: contentType},
+          ),
+        ),
+        returnValueForMissingStub: _FakeRdfParser_4(
           this,
           Invocation.method(
             #createParser,

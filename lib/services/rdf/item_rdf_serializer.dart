@@ -46,8 +46,7 @@ class ItemRdfSerializer {
        _mapper = mapper ?? ItemRdfMapper(loggerService: loggerService);
 
   /// Converts an Item to an RDF graph
-  (RdfGraph, Map<String, String>) itemToRdf(Item item) =>
-      _mapper.mapItemToRdf(item);
+  RdfGraph itemToRdf(Item item) => _mapper.mapItemToRdf(item);
 
   /// Extracts an Item from an RDF graph
   Item rdfToItem(RdfGraph graph, String itemUri) =>
@@ -55,8 +54,7 @@ class ItemRdfSerializer {
 
   /// Serializes an Item to a string representation in the configured format
   String itemToString(Item item) {
-    final (graph, prefixes) = itemToRdf(item);
-    return _serializer.write(graph, prefixes: prefixes);
+    return _serializer.write(itemToRdf(item), prefixes: _mapper.commonPrefixes);
   }
 
   /// Parses an Item from a string representation in the specified format

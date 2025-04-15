@@ -34,7 +34,7 @@ class ItemRdfMapper {
   };
 
   /// Maps an Item to an RDF graph and returns the graph and prefixes
-  (RdfGraph, Map<String, String>) mapItemToRdf(Item item) {
+  RdfGraph mapItemToRdf(Item item) {
     _logger.debug('Mapping item ${item.id} to RDF');
 
     final triples = <Triple>[];
@@ -118,7 +118,7 @@ class ItemRdfMapper {
     }
 
     final graph = RdfGraph(triples: triples);
-    return (graph, commonPrefixes);
+    return graph;
   }
 
   /// Maps an RDF graph to an Item

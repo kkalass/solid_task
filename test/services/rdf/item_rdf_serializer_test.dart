@@ -36,10 +36,9 @@ void main() {
       originalItem.vectorClock = {'user1': 1, 'user2': 2};
 
       // Convert to RDF
-      final (graph, prefixes) = serializer.itemToRdf(originalItem);
+      final graph = serializer.itemToRdf(originalItem);
 
       // Basic verification
-      expect(prefixes, isNotEmpty);
       expect(graph.isEmpty, isFalse);
 
       // Find triples by subject
