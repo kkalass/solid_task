@@ -1,6 +1,6 @@
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
-import 'package:solid_task/services/sync/sync_manager.dart';
+import 'package:solid_task/ext/solid/sync/sync_manager.dart';
 
 /// A decorator for ItemRepository that automatically triggers sync operations
 /// when data is modified while maintaining the original repository's behavior.

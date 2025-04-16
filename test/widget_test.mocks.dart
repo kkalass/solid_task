@@ -4,24 +4,23 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i9;
-import 'dart:convert' as _i14;
-import 'dart:typed_data' as _i15;
+import 'dart:convert' as _i13;
+import 'dart:typed_data' as _i14;
 
-import 'package:flutter/widgets.dart' as _i11;
 import 'package:http/http.dart' as _i6;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i10;
-import 'package:solid_task/models/auth/auth_result.dart' as _i2;
-import 'package:solid_task/models/item.dart' as _i3;
-import 'package:solid_task/services/auth/interfaces/auth_state_change_provider.dart'
-    as _i12;
-import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart'
+import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart'
+    as _i11;
+import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
     as _i8;
-import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart'
+import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart'
     as _i7;
+import 'package:solid_task/ext/solid/auth/models/auth_result.dart' as _i2;
+import 'package:solid_task/ext/solid/sync/sync_service.dart' as _i4;
+import 'package:solid_task/models/item.dart' as _i3;
 import 'package:solid_task/services/logger_service.dart' as _i5;
-import 'package:solid_task/services/repository/item_repository.dart' as _i13;
-import 'package:solid_task/services/sync/sync_service.dart' as _i4;
+import 'package:solid_task/services/repository/item_repository.dart' as _i12;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -116,8 +115,8 @@ class MockSolidAuthState extends _i1.Mock implements _i7.SolidAuthState {
 /// A class which mocks [SolidAuthOperations].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSolidAuthOperations extends _i1.Mock
-    implements _i8.SolidAuthOperations {
+class MockSolidAuthOperations<C> extends _i1.Mock
+    implements _i8.SolidAuthOperations<C> {
   MockSolidAuthOperations() {
     _i1.throwOnMissingStub(this);
   }
@@ -140,7 +139,7 @@ class MockSolidAuthOperations extends _i1.Mock
   @override
   _i9.Future<_i2.AuthResult> authenticate(
     String? issuerUri,
-    _i11.BuildContext? context,
+    C? context,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -211,7 +210,7 @@ class MockSolidAuthOperations extends _i1.Mock
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockAuthStateChangeProvider extends _i1.Mock
-    implements _i12.AuthStateChangeProvider {
+    implements _i11.AuthStateChangeProvider {
   MockAuthStateChangeProvider() {
     _i1.throwOnMissingStub(this);
   }
@@ -226,7 +225,7 @@ class MockAuthStateChangeProvider extends _i1.Mock
 /// A class which mocks [ItemRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockItemRepository extends _i1.Mock implements _i13.ItemRepository {
+class MockItemRepository extends _i1.Mock implements _i12.ItemRepository {
   MockItemRepository() {
     _i1.throwOnMissingStub(this);
   }
@@ -736,7 +735,7 @@ class MockClient extends _i1.Mock implements _i6.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i14.Encoding? encoding,
+    _i13.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -767,7 +766,7 @@ class MockClient extends _i1.Mock implements _i6.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i14.Encoding? encoding,
+    _i13.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -798,7 +797,7 @@ class MockClient extends _i1.Mock implements _i6.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i14.Encoding? encoding,
+    _i13.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -829,7 +828,7 @@ class MockClient extends _i1.Mock implements _i6.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i14.Encoding? encoding,
+    _i13.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -877,7 +876,7 @@ class MockClient extends _i1.Mock implements _i6.Client {
       ) as _i9.Future<String>);
 
   @override
-  _i9.Future<_i15.Uint8List> readBytes(
+  _i9.Future<_i14.Uint8List> readBytes(
     Uri? url, {
     Map<String, String>? headers,
   }) =>
@@ -887,8 +886,8 @@ class MockClient extends _i1.Mock implements _i6.Client {
           [url],
           {#headers: headers},
         ),
-        returnValue: _i9.Future<_i15.Uint8List>.value(_i15.Uint8List(0)),
-      ) as _i9.Future<_i15.Uint8List>);
+        returnValue: _i9.Future<_i14.Uint8List>.value(_i14.Uint8List(0)),
+      ) as _i9.Future<_i14.Uint8List>);
 
   @override
   _i9.Future<_i6.StreamedResponse> send(_i6.BaseRequest? request) =>

@@ -3,11 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
-import 'package:solid_task/core/service_locator.dart';
+import 'package:solid_task/bootstrap/service_locator.dart';
 import 'package:solid_task/main.dart' as app;
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
-import 'package:solid_task/services/sync/sync_service.dart';
+import 'package:solid_task/ext/solid/sync/sync_service.dart';
 
 import '../test/mocks/integration_test_mocks.dart';
 // Import mocks from test directory instead of generating in integration test directory
@@ -54,15 +54,13 @@ void main() {
     await initServiceLocator(
       configure:
           (builder) => builder
-              .withLogger(logger)
-              .withAuthServices(
-                authState: mockSolidAuthState,
-                authOperations: mockSolidAuthOperations,
-                authStateChangeProvider: mockAuthStateChangeProvider,
+              .withLoggerFactory((_) => logger)
+              .withAuthStateChangeProviderFactory(
+                (_) => mockAuthStateChangeProvider,
               )
-              .withSyncServiceFactory(
-                (_, __, ___, ____, _____) => mockSyncService,
-              ),
+              .withSolidAuthStateFactory((_) => mockSolidAuthState)
+              .withSolidAuthOperationsFactory((_) => mockSolidAuthOperations)
+              .withSyncServiceFactory((_) => mockSyncService),
     );
   });
 

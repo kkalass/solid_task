@@ -12,16 +12,16 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:solid_task/core/service_locator.dart';
+import 'package:solid_task/bootstrap/service_locator.dart';
 import 'package:solid_task/main.dart' as app;
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/screens/items_screen.dart';
-import 'package:solid_task/services/auth/interfaces/auth_state_change_provider.dart';
-import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
-import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
+import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart';
+import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
+import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
-import 'package:solid_task/services/sync/sync_service.dart';
+import 'package:solid_task/ext/solid/sync/sync_service.dart';
 
 import 'mocks/mock_temp_dir_path_provider.dart';
 
@@ -103,17 +103,15 @@ void main() {
     await initServiceLocator(
       configure: (builder) {
         builder
-            .withLogger(mockLoggerService)
-            .withHttpClient(mockHttpClient)
-            .withAuthServices(
-              authState: mockSolidAuthState,
-              authOperations: mockSolidAuthOperations,
-              authStateChangeProvider: mockAuthStateChangeProvider,
+            .withLoggerFactory((_) => mockLoggerService)
+            .withHttpClientFactory((_) => mockHttpClient)
+            .withSolidAuthStateFactory((_) => mockSolidAuthState)
+            .withSolidAuthOperationsFactory((_) => mockSolidAuthOperations)
+            .withAuthStateChangeProviderFactory(
+              (_) => mockAuthStateChangeProvider,
             )
-            .withItemRepositoryFactory((storage, logger) => mockItemRepository)
-            .withSyncServiceFactory(
-              (repo, auth, state, logger, client) => mockSyncService,
-            );
+            .withItemRepositoryFactory((_) => mockItemRepository)
+            .withSyncServiceFactory((_) => mockSyncService);
       },
     );
   });

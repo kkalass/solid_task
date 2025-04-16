@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
-import 'package:solid_task/services/auth/interfaces/solid_provider_service.dart';
+import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
+import 'package:solid_task/ext/solid/auth/interfaces/solid_provider_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../core/service_locator.dart';
+import '../bootstrap/service_locator.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

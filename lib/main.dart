@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'core/service_locator.dart';
+import 'bootstrap/service_locator.dart';
 import 'screens/items_screen.dart';
 import 'services/logger_service.dart';
 
@@ -21,7 +21,7 @@ Future<void> main({
     final initFn =
         initServiceLocatorOverride ??
         (() => initServiceLocator(
-          configure: (builder) => builder.withLogger(logger!),
+          configure: (builder) => builder.withLoggerFactory((_) => logger!),
         ));
 
     await initFn();

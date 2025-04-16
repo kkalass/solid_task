@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:solid_task/models/auth/auth_result.dart';
-import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
-import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
+import 'package:solid_task/ext/solid/auth/models/auth_result.dart';
+import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
+import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 
-import '../core/service_locator.dart';
+import '../bootstrap/service_locator.dart';
 import '../core/utils/date_formatter.dart';
 import '../models/item.dart';
 import '../screens/login_page.dart';
 
 import '../services/repository/item_repository.dart';
-import '../services/sync/sync_manager.dart';
+import '../ext/solid/sync/sync_manager.dart';
 
 class ItemsScreen extends StatefulWidget {
   const ItemsScreen({super.key});

@@ -1,10 +1,10 @@
 import 'package:mockito/annotations.dart';
 
 import 'package:solid_task/services/logger_service.dart';
-import 'package:solid_task/services/sync/sync_service.dart';
-import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart';
-import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart';
-import 'package:solid_task/services/auth/interfaces/auth_state_change_provider.dart';
+import 'package:solid_task/ext/solid/sync/sync_service.dart';
+import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
+import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
+import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart';
 
 /// This file exists to generate mock classes for integration tests
 ///

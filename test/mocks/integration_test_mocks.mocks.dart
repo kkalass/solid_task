@@ -5,18 +5,17 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i6;
 
-import 'package:flutter/widgets.dart' as _i8;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i7;
-import 'package:solid_task/models/auth/auth_result.dart' as _i2;
-import 'package:solid_task/services/auth/interfaces/auth_state_change_provider.dart'
-    as _i9;
-import 'package:solid_task/services/auth/interfaces/solid_auth_operations.dart'
+import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart'
+    as _i8;
+import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
     as _i5;
-import 'package:solid_task/services/auth/interfaces/solid_auth_state.dart'
+import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart'
     as _i4;
-import 'package:solid_task/services/logger_service.dart' as _i10;
-import 'package:solid_task/services/sync/sync_service.dart' as _i3;
+import 'package:solid_task/ext/solid/auth/models/auth_result.dart' as _i2;
+import 'package:solid_task/ext/solid/sync/sync_service.dart' as _i3;
+import 'package:solid_task/services/logger_service.dart' as _i9;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -70,8 +69,8 @@ class MockSolidAuthState extends _i1.Mock implements _i4.SolidAuthState {
 /// A class which mocks [SolidAuthOperations].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSolidAuthOperations extends _i1.Mock
-    implements _i5.SolidAuthOperations {
+class MockSolidAuthOperations<C> extends _i1.Mock
+    implements _i5.SolidAuthOperations<C> {
   MockSolidAuthOperations() {
     _i1.throwOnMissingStub(this);
   }
@@ -94,7 +93,7 @@ class MockSolidAuthOperations extends _i1.Mock
   @override
   _i6.Future<_i2.AuthResult> authenticate(
     String? issuerUri,
-    _i8.BuildContext? context,
+    C? context,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -165,7 +164,7 @@ class MockSolidAuthOperations extends _i1.Mock
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockAuthStateChangeProvider extends _i1.Mock
-    implements _i9.AuthStateChangeProvider {
+    implements _i8.AuthStateChangeProvider {
   MockAuthStateChangeProvider() {
     _i1.throwOnMissingStub(this);
   }
@@ -267,7 +266,7 @@ class MockSyncService extends _i1.Mock implements _i3.SyncService {
 /// A class which mocks [ContextLogger].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockContextLogger extends _i1.Mock implements _i10.ContextLogger {
+class MockContextLogger extends _i1.Mock implements _i9.ContextLogger {
   MockContextLogger() {
     _i1.throwOnMissingStub(this);
   }
