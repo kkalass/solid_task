@@ -36,9 +36,15 @@ class TaskOntologyConstants {
   static const taskBaseUri = 'http://solidtask.org/tasks/';
 
   /// Creates a task URI from an ID
-  static String makeTaskUri(String taskId) => '$taskBaseUri$taskId';
+  static IriTerm makeTaskIri(String taskId) => IriTerm('$taskBaseUri$taskId');
 
   /// Creates a vector clock entry URI for a specific task and client
-  static String makeVectorClockEntryUri(String taskId, String clientId) =>
-      '$taskBaseUri$taskId/vectorClock/$clientId';
+  static String makeVectorClockBaseUri(String taskId) =>
+      '$taskBaseUri$taskId/vectorClock/';
+
+  static IriTerm makeVectorClockEntryIri(String taskId, String clientId) =>
+      IriTerm('${makeVectorClockBaseUri(taskId)}$clientId');
+
+  /// Base URI for app instance identifiers
+  static const appInstanceBaseUri = 'http://solidtask.org/appinstance/';
 }

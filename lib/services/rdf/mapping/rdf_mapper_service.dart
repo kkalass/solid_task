@@ -1,6 +1,6 @@
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/rdf/mapping/rdf_mapper_registry.dart';
-import 'package:solid_task/services/rdf/mapping/rdf_type_converter.dart';
+
 import 'package:solid_task/services/rdf/rdf_graph.dart';
 import 'package:solid_task/services/rdf/rdf_parser.dart';
 import 'package:solid_task/services/rdf/rdf_serializer.dart';
@@ -14,9 +14,9 @@ final class RdfMapperService {
   final ContextLogger _logger;
   final RdfSerializer _serializer;
   final RdfParser _parser;
-  final RdfTypeConverter _typeConverter;
 
   /// Common prefixes for RDF serialization
+  // FIXME KK: does this really belong here?
   final Map<String, String> _commonPrefixes = {
     'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
     'dcterms': 'http://purl.org/dc/terms/',
@@ -26,15 +26,14 @@ final class RdfMapperService {
 
   /// Creates a new RDF mapper service
   RdfMapperService({
-    RdfMapperRegistry? registry,
+    required RdfMapperRegistry registry,
     LoggerService? loggerService,
     RdfSerializer? serializer,
     RdfSerializerFactory? serializerFactory,
     RdfParser? parser,
     RdfParserFactory? parserFactory,
-    RdfTypeConverter? typeConverter,
     String contentType = 'text/turtle',
-  }) : _registry = registry ?? RdfMapperRegistry(loggerService: loggerService),
+  }) : _registry = registry,
        _logger = (loggerService ?? LoggerService()).createLogger(
          'RdfMapperService',
        ),
@@ -46,15 +45,32 @@ final class RdfMapperService {
        _parser =
            parser ??
            (parserFactory ?? RdfParserFactory(loggerService: loggerService))
-               .createParser(contentType: contentType),
-       _typeConverter =
-           typeConverter ?? RdfTypeConverter(loggerService: loggerService);
+               .createParser(contentType: contentType);
 
   /// Access to the registry for registering custom mappers
   RdfMapperRegistry get registry => _registry;
 
-  /// Access to the type converter for basic type conversions
-  RdfTypeConverter get typeConverter => _typeConverter;
+  T fromTriples<T>(List<Triple> triples, RdfSubject rdfSubject) {
+    return fromGraph(RdfGraph(triples: triples), rdfSubject);
+  }
+
+  T fromGraph<T>(
+    RdfGraph graph,
+    RdfSubject rdfSubject, {
+    RdfIriTermDeserializer<T>? iriDeserializer,
+    RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
+  }) {
+    _logger.debug('Delegated mapping graph to ${T.toString()}');
+
+    var context = DeserializationContextImpl(graph: graph, registry: _registry);
+
+    return context.fromRdf(
+      rdfSubject,
+      iriDeserializer,
+      null,
+      blankNodeDeserializer,
+    );
+  }
 
   /// Map an object to RDF graph
   ///
@@ -64,37 +80,19 @@ final class RdfMapperService {
   /// @param uri Optional URI to use as the subject
   /// @return RDF graph representing the object
   /// @throws StateError if no mapper is registered for type T
-  RdfGraph toGraph<T>(T instance, {String? uri}) {
+  RdfGraph toGraph<T>(
+    T instance, {
+    String? uri,
+    RdfToTriplesSerializer? serializer,
+  }) {
     _logger.debug('Converting instance of ${T.toString()} to RDF graph');
 
-    final mapper = _registry.getMapperForInstance<T>(instance);
-    if (mapper == null) {
-      throw StateError('No mapper registered for type ${instance.runtimeType}');
-    }
-
-    final subjectUri = uri ?? mapper.generateUri(instance);
-    final triples = mapper.toTriples(instance, subjectUri);
+    final context = SerializationContextImpl(registry: _registry);
+    final toTriplesSerializer =
+        serializer ?? _registry.getToTriplesSerializer<T>();
+    var triples = toTriplesSerializer.toTriples(instance, context);
 
     return RdfGraph(triples: triples);
-  }
-
-  /// Map RDF graph to object
-  ///
-  /// Reconstructs a domain object from an RDF graph using the registered mapper
-  ///
-  /// @param graph The RDF graph containing the object data
-  /// @param uri The URI of the main resource
-  /// @return The reconstructed domain object
-  /// @throws StateError if no mapper is registered for type T
-  T fromGraph<T>(RdfGraph graph, String uri) {
-    _logger.debug('Converting RDF graph to ${T.toString()}');
-
-    final mapper = _registry.getMapper<T>();
-    if (mapper == null) {
-      throw StateError('No mapper registered for type $T');
-    }
-
-    return mapper.fromTriples(graph.triples, uri);
   }
 
   /// Serialize object to RDF string
@@ -104,10 +102,14 @@ final class RdfMapperService {
   /// @param instance The object to serialize
   /// @param uri Optional URI to use as the subject
   /// @return Serialized RDF string
-  String asString<T>(T instance, {String? uri}) {
+  String asString<T>(
+    T instance, {
+    String? uri,
+    RdfToTriplesSerializer? serializer,
+  }) {
     _logger.debug('Serializing instance of ${T.toString()} to RDF string');
 
-    final graph = toGraph<T>(instance, uri: uri);
+    final graph = toGraph<T>(instance, uri: uri, serializer: serializer);
     return _serializer.write(graph, prefixes: _commonPrefixes);
   }
 
@@ -119,20 +121,21 @@ final class RdfMapperService {
   /// @param uri The URI of the main resource
   /// @param parser Optional custom parser to use
   /// @return The reconstructed domain object
-  T fromString<T>(String rdfString, String uri, {String? documentUrl}) {
+  T fromString<T>(
+    String rdfString,
+    String uri, {
+    String? documentUrl,
+    RdfIriTermDeserializer<T>? iriDeserializer,
+    RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
+  }) {
     _logger.debug('Deserializing RDF string to ${T.toString()}');
 
     final graph = _parser.parse(rdfString, documentUrl: documentUrl);
-    return fromGraph<T>(graph, uri);
-  }
-
-  // FIXME KK - Code Smell
-  /// Update prefixes for serialization
-  ///
-  /// Adds or replaces prefixes used in serialization
-  ///
-  /// @param prefixes Map of prefix to namespace URI pairs
-  void updatePrefixes(Map<String, String> prefixes) {
-    _commonPrefixes.addAll(prefixes);
+    return fromGraph<T>(
+      graph,
+      IriTerm(uri),
+      iriDeserializer: iriDeserializer,
+      blankNodeDeserializer: blankNodeDeserializer,
+    );
   }
 }
