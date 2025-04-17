@@ -24,6 +24,8 @@ class TurtleSerializer implements RdfSerializer {
     Map<String, String> prefixes = const {},
   }) {
     _logger?.debug('Serializing graph to Turtle');
+    // FIXME KK - support base IRIs - store all refs to IRIs within this
+    // pod relative to the pod root (or the application root within the pod?)
 
     final buffer = StringBuffer();
 

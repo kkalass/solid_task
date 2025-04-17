@@ -32,6 +32,9 @@ class TaskOntologyConstants {
   /// IRI for clockValue property in vector clock entries
   static const clockValueIri = IriTerm('${namespace}clockValue');
 
+  // FIXME KK - the base URI should be a directory in the users
+  // pod and thus cannot be a constant.
+  // FIXME KK - create an application root folder in the solid pod and use that as namespace for data managed by our app
   /// Base URI for task identifiers
   static const taskBaseUri = 'http://solidtask.org/tasks/';
 

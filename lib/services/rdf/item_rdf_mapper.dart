@@ -58,6 +58,8 @@ final class ItemRdfMapper
         context.getPropertyValue(iri, TaskOntologyConstants.isDeletedIri) ??
         false;
 
+    // FIXME KK - what about caching for linked Subjects?
+    // FIXME KK - the Map handling here is wrong, we should get the Map from the Deserializer, but we probably need to add something to the API to support those connected Subjects
     // Extract vector clock
     item.vectorClock = Map<String, int>.fromEntries(
       context.getPropertyValues(

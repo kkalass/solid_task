@@ -61,7 +61,7 @@ class TurtleParser {
     _currentToken = _tokenizer.nextToken();
     final triples = <Triple>[];
     _logger.debug('Starting parse with token: $_currentToken');
-
+    // FIXME KK - support @base!!!
     while (_currentToken.type != TokenType.eof) {
       _logger.debug('Processing token: $_currentToken');
       if (_currentToken.type == TokenType.prefix) {
