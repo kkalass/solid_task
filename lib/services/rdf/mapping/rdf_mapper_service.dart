@@ -1,5 +1,6 @@
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/rdf/mapping/rdf_mapper_registry.dart';
+import 'package:solid_task/services/rdf/mapping/rdf_type_converter.dart';
 import 'package:solid_task/services/rdf/rdf_constants.dart';
 import 'package:solid_task/services/rdf/rdf_graph.dart';
 
@@ -88,9 +89,19 @@ final class RdfMapperService {
     geht auch in die Richtung der other map in Java für JSON. Man könnte 
     dafür ja z. B. Json-LD nutzen und die übrigen properties dort hinein 
     packen - aber das ist Zukunftsmusik und für jetzt zu aufwändig. 
-    
+
+    Ok, also: für jetzt tracke ich hier welche subjects ich wegen fehlender 
+    mapper nicht lesen konnte und mecker, aber für die Zukunft mache ich mir
+     ein fixme
     */
 
+    // FIXME KK - track which triples were read from the graph, and only warn about
+    // unserialized subjects (caused by missing mappers) if they really were
+    // unserialized in the end. In addition, support an "any" map in the
+    // dart instance where all other predicate properties are stored with a
+    // default conversion to dart.
+    // Optional: we could also return subjects with the default conversion method
+    // (e.g. as json-ld in dart maps) here for non-registered subjects.
     var deserializationSubjects = graph.findTriples(
       predicate: RdfConstants.typeIri,
     );
@@ -111,7 +122,14 @@ final class RdfMapperService {
             );
             return null;
           }
-          return context.fromRdfByTypeIri(subject, object);
+          try {
+            return context.fromRdfByTypeIri(subject, object);
+          } on DeserializerNotFoundException {
+            _logger.warning(
+              "Will skip deserialization of subject $subject with type $object because there is no Deserializer available in the registry.",
+            );
+            return null;
+          }
         })
         .whereType<Object>()
         .toList();

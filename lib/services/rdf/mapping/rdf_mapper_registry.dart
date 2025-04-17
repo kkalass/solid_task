@@ -832,7 +832,10 @@ final class RdfMapperRegistry {
   ) {
     final deserializer = _subjectDeserializersByTypeIri[typeIri];
     if (deserializer == null) {
-      throw DeserializationException('No Deserializer found for $typeIri');
+      throw DeserializerNotFoundException.forTypeIri(
+        'RdfSubjectDeserializer',
+        typeIri,
+      );
     }
     return deserializer;
   }

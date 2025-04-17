@@ -252,7 +252,17 @@ Das hat aber noch ein paar probleme:
 
 
 */
-            _rdfMapperService.fromGraph(storageRoot, graph, rdfSubject);
+            var allSubjects = _rdfMapperService.fromGraphAllSubjects(
+              storageRoot,
+              graph,
+            );
+            // FIXME KK - provide those to the repository for merging -
+            // we should think more deeply on how the sync service and the repository
+            // interact, especially if and where we use dart types.
+            // IMHO this functionality needs to be application-agnostic.
+            // The application should not worry about anything here - it should
+            // simply instantiate the sync service, and be done.
+
             // Extract the item URI from the filename
             final itemId = _extractItemIdFromUrl(fileUrl);
             final itemUri = 'http://solidtask.org/tasks/$itemId';
