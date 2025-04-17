@@ -12,7 +12,7 @@ import 'package:solid_task/services/rdf/task_ontology_constants.dart';
 /// This class handles the conversion between Item domain objects and their
 /// RDF representation, including vector clock entries for CRDT functionality.
 final class ItemRdfMapper
-    implements RdfIriTermDeserializer<Item>, RdfToTriplesSerializer<Item> {
+    implements RdfIriTermDeserializer<Item>, RdfSubjectSerializer<Item> {
   final ContextLogger _logger;
 
   /// Creates a new ItemRdfMapper
@@ -34,18 +34,19 @@ final class ItemRdfMapper
         iri,
         TaskOntologyConstants.textIri,
       ),
-      // Note: when serialization stores an IRI, we will get the Id part of the IRI here
+
+      // Note: serialization stores an IRI, we get the Id part of the IRI here
       lastModifiedBy: context.getRequiredPropertyValue<String>(
         iri,
         DcTermsConstants.creatorIri,
-        iriDeserializer: IriIdStringDeserializer(
-          expectedSubjectBaseIri: TaskOntologyConstants.appInstanceBaseUri,
-        ),
+        iriDeserializer: AppInstanceIdDeserializer(),
       ),
     );
-    item.id = IriIdStringDeserializer(
-      expectedSubjectBaseIri: TaskOntologyConstants.taskBaseUri,
-    ).fromIriTerm(iri, context);
+
+    item.id = TaskOntologyConstants.extractTaskIdFromIri(
+      context.storageRoot,
+      iri,
+    );
 
     // Extract more properties
     item.createdAt = context.getRequiredPropertyValue<DateTime>(
@@ -55,118 +56,104 @@ final class ItemRdfMapper
 
     // Extract optional properties
     item.isDeleted =
-        context.getPropertyValue(iri, TaskOntologyConstants.isDeletedIri) ??
+        context.getPropertyValue<bool>(
+          iri,
+          TaskOntologyConstants.isDeletedIri,
+        ) ??
         false;
 
-    // FIXME KK - what about caching for linked Subjects?
-    // FIXME KK - the Map handling here is wrong, we should get the Map from the Deserializer, but we probably need to add something to the API to support those connected Subjects
     // Extract vector clock
-    item.vectorClock = Map<String, int>.fromEntries(
-      context.getPropertyValues(
-        iri,
-        TaskOntologyConstants.vectorClockIri,
-        iriDeserializer: VectorClockDeserializer(),
-      ),
+    item.vectorClock = context.getPropertyValueMap(
+      iri,
+      TaskOntologyConstants.vectorClockIri,
+      iriDeserializer: VectorClockDeserializer(),
     );
     return item;
   }
 
   @override
-  List<Triple> toTriples(Item instance, SerializationContext context) {
+  (RdfSubject, List<Triple>) toRdfSubject(
+    Item instance,
+    SerializationContext context, {
+    RdfSubject? parentSubject,
+  }) {
     _logger.debug('Converting Item ${instance.id} to triples');
-    final itemIri = TaskOntologyConstants.makeTaskIri(instance.id);
+    final itemIri = TaskOntologyConstants.makeTaskIri(
+      instance.id,
+      context.storageRoot,
+    );
 
-    return [
-      // Add rdf:type
-      Triple(itemIri, RdfConstants.typeIri, TaskOntologyConstants.taskClassIri),
+    return (
+      itemIri,
+      [
+        // Add rdf:type
+        context.constant(
+          itemIri,
+          RdfConstants.typeIri,
+          TaskOntologyConstants.taskClassIri,
+        ),
 
-      // Add basic properties
-      Triple(
-        itemIri,
-        TaskOntologyConstants.textIri,
-        context.toLiteral(instance.text),
-      ),
+        // Add basic properties
+        context.literal(itemIri, TaskOntologyConstants.textIri, instance.text),
 
-      Triple(
-        itemIri,
-        TaskOntologyConstants.isDeletedIri,
-        context.toLiteral(instance.isDeleted),
-      ),
+        context.literal(
+          itemIri,
+          TaskOntologyConstants.isDeletedIri,
+          instance.isDeleted,
+        ),
 
-      Triple(
-        itemIri,
-        DcTermsConstants.createdIri,
-        context.toLiteral(instance.createdAt),
-      ),
+        context.literal(
+          itemIri,
+          DcTermsConstants.createdIri,
+          instance.createdAt,
+        ),
 
-      Triple(
-        itemIri,
-        DcTermsConstants.creatorIri,
         // creator always actually is the Id of the instance of the app,
         // and we create an IRI for this in order to be able to do more
         // with it in RDF, e.g. associate device name etc so that in theory
         // the user could later find out which device triggered a certain change etc.
-        context.toIri(
+        context.iri(
+          itemIri,
+          DcTermsConstants.creatorIri,
           instance.lastModifiedBy,
-          serializer: IriIdSerializer(
-            baseIri: TaskOntologyConstants.appInstanceBaseUri,
-          ),
+          serializer: AppInstanceIdSerializer(),
         ),
-      ),
 
-      // Store the vector clock map as one RDF Subject per entry and associate
-      // those new vector clock subject as objects with the Item Subject.
-      ...instance.vectorClock.entries.expand((entry) {
-        var clockEntryIri = TaskOntologyConstants.makeVectorClockEntryIri(
-          instance.id,
-          entry.key,
-        );
-        return [
-          // The actual Vector Clock Entry
-          ...context.toTriples(
-            entry,
-            serializer: VectorClockSerializer(clockEntryIri: clockEntryIri),
-          ),
-
-          // Link from Item to Vector Clock Entry
-          Triple(itemIri, TaskOntologyConstants.vectorClockIri, clockEntryIri),
-        ];
-      }),
-    ];
+        // The vectorClock Map will be serialized as a list of Subjects in
+        // their own rights, with the vectorClockIri predicate being the
+        // connection from the item parent to the Subject children
+        ...context.childSubjectMap(
+          itemIri,
+          TaskOntologyConstants.vectorClockIri,
+          instance.vectorClock,
+          VectorClockSerializer(),
+        ),
+      ],
+    );
   }
 }
 
-class VectorClockSerializer
-    implements RdfToTriplesSerializer<MapEntry<String, int>> {
-  final IriTerm _clockEntryIri;
+class AppInstanceIdDeserializer extends ExtractingIriTermDeserializer<String> {
+  AppInstanceIdDeserializer()
+    : super(
+        extract:
+            (term, ctxt) => TaskOntologyConstants.extractAppInstanceIdFromIri(
+              ctxt.storageRoot,
+              term,
+            ),
+      );
+}
 
-  VectorClockSerializer({required IriTerm clockEntryIri})
-    : _clockEntryIri = clockEntryIri;
-
-  @override
-  List<Triple> toTriples(
-    MapEntry<String, int> entry,
-    SerializationContext context,
-  ) {
-    return [
-      // The actual vector clock entry
-      Triple(
-        _clockEntryIri,
-        RdfConstants.typeIri,
-        TaskOntologyConstants.vectorClockEntryIri,
-      ),
-      Triple(
-        _clockEntryIri,
-        TaskOntologyConstants.clientIdIri,
-        context.toLiteral(entry.key),
-      ),
-      Triple(
-        _clockEntryIri,
-        TaskOntologyConstants.clockValueIri,
-        context.toLiteral(entry.value),
-      ),
-    ];
-  }
+class AppInstanceIdSerializer extends IriIdSerializer {
+  AppInstanceIdSerializer()
+    : super(
+        expand:
+            (appInstanceId, context) =>
+                TaskOntologyConstants.makeAppInstanceIri(
+                  context.storageRoot,
+                  appInstanceId,
+                ),
+      );
 }
 
 class VectorClockDeserializer
@@ -177,11 +164,59 @@ class VectorClockDeserializer
       context.getRequiredPropertyValue<String>(
         clockEntryIri,
         TaskOntologyConstants.clientIdIri,
+        iriDeserializer: AppInstanceIdDeserializer(),
       ),
       context.getRequiredPropertyValue<int>(
         clockEntryIri,
         TaskOntologyConstants.clockValueIri,
       ),
+    );
+  }
+}
+
+class VectorClockSerializer
+    implements RdfSubjectSerializer<MapEntry<String, int>> {
+  VectorClockSerializer();
+
+  @override
+  (RdfSubject, List<Triple>) toRdfSubject(
+    MapEntry<String, int> entry,
+    SerializationContext context, {
+    RdfSubject? parentSubject,
+  }) {
+    if (parentSubject == null || parentSubject is! IriTerm) {
+      throw SerializationException(
+        "Vector Clock can only be created for a concrete parent that has an IriTerm, not for $parentSubject",
+      );
+    }
+    var iri = TaskOntologyConstants.makeVectorClockEntryIriFromParentIri(
+      parentSubject,
+      entry.key,
+    );
+
+    return (
+      iri,
+      [
+        // The actual vector clock entry
+
+        // its type
+        context.constant(
+          iri,
+          RdfConstants.typeIri,
+          TaskOntologyConstants.vectorClockEntryIri,
+        ),
+
+        // the reference to the app instance which created the version
+        context.iri(
+          iri,
+          TaskOntologyConstants.clientIdIri,
+          entry.key,
+          serializer: AppInstanceIdSerializer(),
+        ),
+
+        // the version counter
+        context.literal(iri, TaskOntologyConstants.clockValueIri, entry.value),
+      ],
     );
   }
 }

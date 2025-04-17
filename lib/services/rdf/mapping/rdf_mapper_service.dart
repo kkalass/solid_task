@@ -50,11 +50,24 @@ final class RdfMapperService {
   /// Access to the registry for registering custom mappers
   RdfMapperRegistry get registry => _registry;
 
-  T fromTriples<T>(List<Triple> triples, RdfSubject rdfSubject) {
-    return fromGraph(RdfGraph(triples: triples), rdfSubject);
+  T fromTriples<T>(
+    String storageRoot,
+    List<Triple> triples,
+    RdfSubject rdfSubject, {
+    RdfIriTermDeserializer<T>? iriDeserializer,
+    RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
+  }) {
+    return fromGraph(
+      storageRoot,
+      RdfGraph(triples: triples),
+      rdfSubject,
+      iriDeserializer: iriDeserializer,
+      blankNodeDeserializer: blankNodeDeserializer,
+    );
   }
 
   T fromGraph<T>(
+    String storageRoot,
     RdfGraph graph,
     RdfSubject rdfSubject, {
     RdfIriTermDeserializer<T>? iriDeserializer,
@@ -62,7 +75,11 @@ final class RdfMapperService {
   }) {
     _logger.debug('Delegated mapping graph to ${T.toString()}');
 
-    var context = DeserializationContextImpl(graph: graph, registry: _registry);
+    var context = DeserializationContextImpl(
+      storageRoot: storageRoot,
+      graph: graph,
+      registry: _registry,
+    );
 
     return context.fromRdf(
       rdfSubject,
@@ -81,16 +98,19 @@ final class RdfMapperService {
   /// @return RDF graph representing the object
   /// @throws StateError if no mapper is registered for type T
   RdfGraph toGraph<T>(
+    String storageRoot,
     T instance, {
     String? uri,
-    RdfToTriplesSerializer? serializer,
+    RdfSubjectSerializer? serializer,
   }) {
     _logger.debug('Converting instance of ${T.toString()} to RDF graph');
 
-    final context = SerializationContextImpl(registry: _registry);
-    final toTriplesSerializer =
-        serializer ?? _registry.getToTriplesSerializer<T>();
-    var triples = toTriplesSerializer.toTriples(instance, context);
+    final context = SerializationContextImpl(
+      storageRoot: storageRoot,
+      registry: _registry,
+    );
+
+    var (_, triples) = context.subject(instance, serializer: serializer);
 
     return RdfGraph(triples: triples);
   }
@@ -103,13 +123,19 @@ final class RdfMapperService {
   /// @param uri Optional URI to use as the subject
   /// @return Serialized RDF string
   String asString<T>(
+    String storageRoot,
     T instance, {
     String? uri,
-    RdfToTriplesSerializer? serializer,
+    RdfSubjectSerializer? serializer,
   }) {
     _logger.debug('Serializing instance of ${T.toString()} to RDF string');
 
-    final graph = toGraph<T>(instance, uri: uri, serializer: serializer);
+    final graph = toGraph<T>(
+      storageRoot,
+      instance,
+      uri: uri,
+      serializer: serializer,
+    );
     return _serializer.write(graph, prefixes: _commonPrefixes);
   }
 
@@ -122,6 +148,7 @@ final class RdfMapperService {
   /// @param parser Optional custom parser to use
   /// @return The reconstructed domain object
   T fromString<T>(
+    String storageRoot,
     String rdfString,
     String uri, {
     String? documentUrl,
@@ -132,6 +159,7 @@ final class RdfMapperService {
 
     final graph = _parser.parse(rdfString, documentUrl: documentUrl);
     return fromGraph<T>(
+      storageRoot,
       graph,
       IriTerm(uri),
       iriDeserializer: iriDeserializer,

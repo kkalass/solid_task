@@ -13,7 +13,7 @@ sealed class RdfObject extends RdfTerm {
   const RdfObject();
 }
 
-sealed class RdfSubject extends RdfTerm {
+sealed class RdfSubject extends RdfObject {
   const RdfSubject();
 }
 
@@ -22,7 +22,7 @@ sealed class RdfPredicate extends RdfTerm {
 }
 
 /// IRI (Internationalized Resource Identifier) in RDF
-class IriTerm extends RdfTerm implements RdfPredicate, RdfSubject, RdfObject {
+class IriTerm extends RdfTerm implements RdfPredicate, RdfSubject {
   final String iri;
 
   const IriTerm(this.iri);
@@ -40,7 +40,7 @@ class IriTerm extends RdfTerm implements RdfPredicate, RdfSubject, RdfObject {
 }
 
 /// BlankNode (anonymous resource) in RDF
-class BlankNodeTerm extends RdfTerm implements RdfSubject, RdfObject {
+class BlankNodeTerm extends RdfTerm implements RdfSubject {
   final String label;
 
   const BlankNodeTerm(this.label);

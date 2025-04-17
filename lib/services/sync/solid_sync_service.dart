@@ -11,6 +11,10 @@ import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/sync/sync_service.dart';
 import 'package:synchronized/synchronized.dart';
 
+// FIXME KK - beware: we want to store the RDF graph based on the IRIs,
+// e.g. we need to extract all subjects, group by the file urls (without fragment)
+// and store in exactly those locations.
+//
 /// Implementation of SyncService for SOLID pods that stores items as individual Turtle RDF files
 class SolidSyncService implements SyncService {
   final ItemRepository _repository;
