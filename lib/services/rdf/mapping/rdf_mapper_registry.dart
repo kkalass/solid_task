@@ -153,6 +153,7 @@ abstract interface class DeserializationContext {
     RdfSubject subject,
     RdfPredicate predicate, {
     bool enforceSingleValue = true,
+    RdfSubjectDeserializer<T>? subjectDeserializer,
     RdfIriTermDeserializer<T>? iriDeserializer,
     RdfLiteralTermDeserializer<T>? literalDeserializer,
     RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
@@ -163,6 +164,7 @@ abstract interface class DeserializationContext {
     RdfPredicate predicate, {
     bool enforceSingleValue = true,
     RdfIriTermDeserializer<T>? iriDeserializer,
+    RdfSubjectDeserializer<T>? subjectDeserializer,
     RdfLiteralTermDeserializer<T>? literalDeserializer,
     RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
   });
@@ -172,6 +174,7 @@ abstract interface class DeserializationContext {
     RdfPredicate predicate,
     R Function(Iterable<T>) collector, {
     RdfIriTermDeserializer<T>? iriDeserializer,
+    RdfSubjectDeserializer<T>? subjectDeserializer,
     RdfLiteralTermDeserializer<T>? literalDeserializer,
     RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
   });
@@ -180,6 +183,7 @@ abstract interface class DeserializationContext {
     RdfSubject subject,
     RdfPredicate predicate, {
     RdfIriTermDeserializer<T>? iriDeserializer,
+    RdfSubjectDeserializer<T>? subjectDeserializer,
     RdfLiteralTermDeserializer<T>? literalDeserializer,
     RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
   }) => getPropertyValues<T, List<T>>(
@@ -187,6 +191,7 @@ abstract interface class DeserializationContext {
     predicate,
     (it) => it.toList(),
     iriDeserializer: iriDeserializer,
+    subjectDeserializer: subjectDeserializer,
     literalDeserializer: literalDeserializer,
     blankNodeDeserializer: blankNodeDeserializer,
   );
@@ -195,6 +200,7 @@ abstract interface class DeserializationContext {
     RdfSubject subject,
     RdfPredicate predicate, {
     RdfIriTermDeserializer<MapEntry<K, V>>? iriDeserializer,
+    RdfSubjectDeserializer<MapEntry<K, V>>? subjectDeserializer,
     RdfLiteralTermDeserializer<MapEntry<K, V>>? literalDeserializer,
     RdfBlankNodeTermDeserializer<MapEntry<K, V>>? blankNodeDeserializer,
   }) => getPropertyValues<MapEntry<K, V>, Map<K, V>>(
@@ -202,6 +208,7 @@ abstract interface class DeserializationContext {
     predicate,
     (it) => Map<K, V>.fromEntries(it),
     iriDeserializer: iriDeserializer,
+    subjectDeserializer: subjectDeserializer,
     literalDeserializer: literalDeserializer,
     blankNodeDeserializer: blankNodeDeserializer,
   );
@@ -280,7 +287,13 @@ class SerializationContextImpl extends SerializationContext {
       parentSubject: subject,
     );
 
-    return [...childTriples, constant(subject, predicate, childIri)];
+    return [
+      // Add rdf:type for the child
+      constant(childIri, RdfConstants.typeIri, ser.typeIri),
+      ...childTriples,
+      // connect the parent to the child
+      constant(subject, predicate, childIri),
+    ];
   }
 
   @override
@@ -321,9 +334,16 @@ class SerializationContextImpl extends SerializationContext {
     T instance, {
     RdfSubjectSerializer<T>? serializer,
   }) {
-    var (iri, triples) = (serializer ?? _registry.getSubjectSerializer<T>())
-        .toRdfSubject(instance, this);
-    return (iri, triples);
+    var ser = (serializer ?? _registry.getSubjectSerializer<T>());
+    var (iri, triples) = ser.toRdfSubject(instance, this);
+    return (
+      iri,
+      [
+        // Add rdf:type
+        constant(iri, RdfConstants.typeIri, ser.typeIri),
+        ...triples,
+      ],
+    );
   }
 }
 
@@ -340,35 +360,37 @@ class DeserializationContextImpl extends DeserializationContext {
   }) : _graph = graph,
        _registry = registry;
 
+  Object fromRdfByTypeIri(IriTerm subjectIri, IriTerm typeIri) {
+    var context = this;
+    var ser = _registry.getSubjectDeserializerByTypeIri(typeIri);
+    return ser.fromIriTerm(subjectIri, context);
+  }
+
   T fromRdf<T>(
     RdfTerm term,
     RdfIriTermDeserializer<T>? iriDeserializer,
+    RdfSubjectDeserializer<T>? subjectDeserializer,
     RdfLiteralTermDeserializer<T>? literalDeserializer,
     RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
   ) {
     var context = this;
     switch (term) {
       case IriTerm _:
-        if (iriDeserializer != null) {
-          return iriDeserializer.fromIriTerm(term, context);
+        if (subjectDeserializer != null ||
+            _registry.hasSubjectDeserializerFor()) {
+          var ser =
+              subjectDeserializer ?? _registry.getSubjectDeserializer<T>();
+          return ser.fromIriTerm(term, context);
         }
-        return _registry.getIriDeserializer<T>().fromIriTerm(term, context);
+        var ser = iriDeserializer ?? _registry.getIriDeserializer<T>();
+        return ser.fromIriTerm(term, context);
       case LiteralTerm _:
-        if (literalDeserializer != null) {
-          return literalDeserializer.fromLiteralTerm(term, context);
-        }
-        return _registry.getLiteralDeserializer<T>().fromLiteralTerm(
-          term,
-          context,
-        );
+        var ser = literalDeserializer ?? _registry.getLiteralDeserializer<T>();
+        return ser.fromLiteralTerm(term, context);
       case BlankNodeTerm _:
-        if (blankNodeDeserializer != null) {
-          return blankNodeDeserializer.fromBlankNodeTerm(term, context);
-        }
-        return _registry.getBlankNodeDeserializer<T>().fromBlankNodeTerm(
-          term,
-          context,
-        );
+        var ser =
+            blankNodeDeserializer ?? _registry.getBlankNodeDeserializer<T>();
+        return ser.fromBlankNodeTerm(term, context);
     }
   }
 
@@ -378,6 +400,7 @@ class DeserializationContextImpl extends DeserializationContext {
     RdfPredicate predicate, {
     bool enforceSingleValue = true,
     RdfIriTermDeserializer<T>? iriDeserializer,
+    RdfSubjectDeserializer<T>? subjectDeserializer,
     RdfLiteralTermDeserializer<T>? literalDeserializer,
     RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
   }) {
@@ -395,6 +418,7 @@ class DeserializationContextImpl extends DeserializationContext {
     return fromRdf(
       rdfObject,
       iriDeserializer,
+      subjectDeserializer,
       literalDeserializer,
       blankNodeDeserializer,
     );
@@ -406,6 +430,7 @@ class DeserializationContextImpl extends DeserializationContext {
     RdfPredicate predicate,
     R Function(Iterable<T>) collector, {
     RdfIriTermDeserializer<T>? iriDeserializer,
+    RdfSubjectDeserializer<T>? subjectDeserializer,
     RdfLiteralTermDeserializer<T>? literalDeserializer,
     RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
   }) {
@@ -414,6 +439,7 @@ class DeserializationContextImpl extends DeserializationContext {
       (triple) => fromRdf(
         triple.object,
         iriDeserializer,
+        subjectDeserializer,
         literalDeserializer,
         blankNodeDeserializer,
       ),
@@ -427,6 +453,7 @@ class DeserializationContextImpl extends DeserializationContext {
     RdfPredicate predicate, {
     bool enforceSingleValue = true,
     RdfIriTermDeserializer<T>? iriDeserializer,
+    RdfSubjectDeserializer<T>? subjectDeserializer,
     RdfLiteralTermDeserializer<T>? literalDeserializer,
     RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
   }) {
@@ -435,6 +462,7 @@ class DeserializationContextImpl extends DeserializationContext {
       predicate,
       enforceSingleValue: enforceSingleValue,
       iriDeserializer: iriDeserializer,
+      subjectDeserializer: subjectDeserializer,
       literalDeserializer: literalDeserializer,
       blankNodeDeserializer: blankNodeDeserializer,
     );
@@ -446,6 +474,14 @@ class DeserializationContextImpl extends DeserializationContext {
     }
     return result;
   }
+}
+
+abstract interface class RdfSubjectMapper<T>
+    implements RdfSubjectDeserializer<T>, RdfSubjectSerializer<T> {}
+
+abstract interface class RdfSubjectDeserializer<T> {
+  IriTerm get typeIri;
+  T fromIriTerm(IriTerm term, DeserializationContext context);
 }
 
 abstract interface class RdfIriTermDeserializer<T> {
@@ -495,6 +531,7 @@ abstract class RdfLiteralTermSerializer<T> {
 }
 
 abstract interface class RdfSubjectSerializer<T> {
+  IriTerm get typeIri;
   (RdfSubject, List<Triple>) toRdfSubject(
     T value,
     SerializationContext context, {
@@ -520,55 +557,6 @@ abstract class BaseRdfLiteralTermSerializer<T>
   @override
   LiteralTerm toLiteralTerm(T value, SerializationContext context) {
     return LiteralTerm(_convertToString(value), datatype: _datatype);
-  }
-}
-
-@deprecated
-class IriIdStringDeserializer extends BaseIriIdDeserializer<String> {
-  IriIdStringDeserializer({super.expectedSubjectBaseIri})
-    : super(convertFromString: (s) => s);
-}
-
-@deprecated
-class IriIdIntDeserializer extends BaseIriIdDeserializer<int> {
-  IriIdIntDeserializer({super.expectedSubjectBaseIri})
-    : super(convertFromString: (s) => int.parse(s));
-}
-
-@deprecated
-class BaseIriIdDeserializer<T> extends RdfIriTermDeserializer<T> {
-  final T Function(String) _convertFromString;
-  final String? _expectedSubjectBaseIri;
-
-  BaseIriIdDeserializer({
-    required T Function(String) convertFromString,
-    String? expectedSubjectBaseIri,
-  }) : _convertFromString = convertFromString,
-       _expectedSubjectBaseIri = expectedSubjectBaseIri;
-
-  @override
-  fromIriTerm(IriTerm term, DeserializationContext context) {
-    try {
-      final subjectUri = term.iri;
-      var idString = subjectUri.split('/').last;
-      var subjectBaseIri = subjectUri.substring(
-        0,
-        subjectUri.length - idString.length,
-      );
-      if (_expectedSubjectBaseIri != null &&
-          _expectedSubjectBaseIri != subjectBaseIri) {
-        throw DeserializationException(
-          "Expected Base IRI $_expectedSubjectBaseIri but got $subjectBaseIri",
-        );
-      }
-      return _convertFromString(idString);
-    } on DeserializationException {
-      rethrow;
-    } catch (e) {
-      throw DeserializationException(
-        'Failed to parse Iri Id from ${T.toString()}: ${term.iri}. Error: $e',
-      );
-    }
   }
 }
 
@@ -731,6 +719,9 @@ class DeserializationException extends RdfMappingException {
 /// This is the core of the mapping system, managing type-to-mapper associations.
 final class RdfMapperRegistry {
   final Map<Type, RdfIriTermDeserializer<dynamic>> _iriDeserializers = {};
+  final Map<IriTerm, RdfSubjectDeserializer<dynamic>>
+  _subjectDeserializersByTypeIri = {};
+  final Map<Type, RdfSubjectDeserializer<dynamic>> _subjectDeserializers = {};
   final Map<Type, RdfIriTermSerializer<dynamic>> _iriSerializers = {};
   final Map<Type, RdfBlankNodeTermDeserializer<dynamic>>
   _blankNodeDeserializers = {};
@@ -799,6 +790,17 @@ final class RdfMapperRegistry {
     _blankNodeDeserializers[T] = deserializer;
   }
 
+  void registerSubjectMapper<T>(RdfSubjectMapper<T> mapper) {
+    registerSubjectDeserializer(mapper);
+    registerSubjectSerializer(mapper);
+  }
+
+  void registerSubjectDeserializer<T>(RdfSubjectDeserializer<T> deserializer) {
+    _logger.debug('Registering IriTerm serializer for type ${T.toString()}');
+    _subjectDeserializers[T] = deserializer;
+    _subjectDeserializersByTypeIri[deserializer.typeIri] = deserializer;
+  }
+
   void registerSubjectSerializer<T>(RdfSubjectSerializer<T> serializer) {
     _logger.debug(
       'Registering ToTriples deserializer for type ${T.toString()}',
@@ -815,6 +817,24 @@ final class RdfMapperRegistry {
       throw DeserializerNotFoundException('RdfIriTermDeserializer', T);
     }
     return deserializer as RdfIriTermDeserializer<T>;
+  }
+
+  RdfSubjectDeserializer<T> getSubjectDeserializer<T>() {
+    final deserializer = _subjectDeserializers[T];
+    if (deserializer == null) {
+      throw DeserializerNotFoundException('RdfSubjectDeserializer', T);
+    }
+    return deserializer as RdfSubjectDeserializer<T>;
+  }
+
+  RdfSubjectDeserializer<dynamic> getSubjectDeserializerByTypeIri(
+    IriTerm typeIri,
+  ) {
+    final deserializer = _subjectDeserializersByTypeIri[typeIri];
+    if (deserializer == null) {
+      throw DeserializationException('No Deserializer found for $typeIri');
+    }
+    return deserializer;
   }
 
   RdfIriTermSerializer<T> getIriSerializer<T>() {
@@ -861,6 +881,9 @@ final class RdfMapperRegistry {
   ///
   /// @return true if a mapper is registered for type T, false otherwise
   bool hasIriDeserializerFor<T>() => _iriDeserializers.containsKey(T);
+  bool hasSubjectDeserializerFor<T>() => _subjectDeserializers.containsKey(T);
+  bool hasSubjectDeserializerForType(IriTerm typeIri) =>
+      _subjectDeserializersByTypeIri.containsKey(typeIri);
   bool hasLiteralDeserializerFor<T>() => _literalDeserializers.containsKey(T);
   bool hasBlankNodeDeserializerFor<T>() =>
       _blankNodeDeserializers.containsKey(T);

@@ -11,8 +11,10 @@ import 'package:solid_task/services/rdf/task_ontology_constants.dart';
 ///
 /// This class handles the conversion between Item domain objects and their
 /// RDF representation, including vector clock entries for CRDT functionality.
-final class ItemRdfMapper
-    implements RdfIriTermDeserializer<Item>, RdfSubjectSerializer<Item> {
+final class ItemRdfMapper implements RdfSubjectMapper<Item> {
+  @override
+  final IriTerm typeIri = TaskOntologyConstants.taskClassIri;
+
   final ContextLogger _logger;
 
   /// Creates a new ItemRdfMapper
@@ -66,7 +68,7 @@ final class ItemRdfMapper
     item.vectorClock = context.getPropertyValueMap(
       iri,
       TaskOntologyConstants.vectorClockIri,
-      iriDeserializer: VectorClockDeserializer(),
+      subjectDeserializer: VectorClockMapper(),
     );
     return item;
   }
@@ -86,13 +88,6 @@ final class ItemRdfMapper
     return (
       itemIri,
       [
-        // Add rdf:type
-        context.constant(
-          itemIri,
-          RdfConstants.typeIri,
-          TaskOntologyConstants.taskClassIri,
-        ),
-
         // Add basic properties
         context.literal(itemIri, TaskOntologyConstants.textIri, instance.text),
 
@@ -126,7 +121,7 @@ final class ItemRdfMapper
           itemIri,
           TaskOntologyConstants.vectorClockIri,
           instance.vectorClock,
-          VectorClockSerializer(),
+          VectorClockMapper(),
         ),
       ],
     );
@@ -156,8 +151,13 @@ class AppInstanceIdSerializer extends IriIdSerializer {
       );
 }
 
-class VectorClockDeserializer
-    implements RdfIriTermDeserializer<MapEntry<String, int>> {
+class VectorClockMapper
+    implements
+        RdfSubjectDeserializer<MapEntry<String, int>>,
+        RdfSubjectSerializer<MapEntry<String, int>> {
+  @override
+  final IriTerm typeIri = TaskOntologyConstants.vectorClockEntryIri;
+
   @override
   fromIriTerm(IriTerm clockEntryIri, DeserializationContext context) {
     return MapEntry(
@@ -172,11 +172,6 @@ class VectorClockDeserializer
       ),
     );
   }
-}
-
-class VectorClockSerializer
-    implements RdfSubjectSerializer<MapEntry<String, int>> {
-  VectorClockSerializer();
 
   @override
   (RdfSubject, List<Triple>) toRdfSubject(
@@ -198,13 +193,6 @@ class VectorClockSerializer
       iri,
       [
         // The actual vector clock entry
-
-        // its type
-        context.constant(
-          iri,
-          RdfConstants.typeIri,
-          TaskOntologyConstants.vectorClockEntryIri,
-        ),
 
         // the reference to the app instance which created the version
         context.iri(

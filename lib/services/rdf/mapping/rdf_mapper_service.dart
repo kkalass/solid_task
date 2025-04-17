@@ -1,9 +1,7 @@
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/rdf/mapping/rdf_mapper_registry.dart';
-
+import 'package:solid_task/services/rdf/rdf_constants.dart';
 import 'package:solid_task/services/rdf/rdf_graph.dart';
-import 'package:solid_task/services/rdf/rdf_parser.dart';
-import 'package:solid_task/services/rdf/rdf_serializer.dart';
 
 /// Service for converting objects to/from RDF
 ///
@@ -12,40 +10,15 @@ import 'package:solid_task/services/rdf/rdf_serializer.dart';
 final class RdfMapperService {
   final RdfMapperRegistry _registry;
   final ContextLogger _logger;
-  final RdfSerializer _serializer;
-  final RdfParser _parser;
-
-  /// Common prefixes for RDF serialization
-  // FIXME KK: does this really belong here?
-  final Map<String, String> _commonPrefixes = {
-    'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-    'dcterms': 'http://purl.org/dc/terms/',
-    'xsd': 'http://www.w3.org/2001/XMLSchema#',
-    'task': 'http://solidtask.org/ontology#',
-  };
 
   /// Creates a new RDF mapper service
   RdfMapperService({
     required RdfMapperRegistry registry,
     LoggerService? loggerService,
-    RdfSerializer? serializer,
-    RdfSerializerFactory? serializerFactory,
-    RdfParser? parser,
-    RdfParserFactory? parserFactory,
-    String contentType = 'text/turtle',
   }) : _registry = registry,
        _logger = (loggerService ?? LoggerService()).createLogger(
          'RdfMapperService',
-       ),
-       _serializer =
-           serializer ??
-           (serializerFactory ??
-                   RdfSerializerFactory(loggerService: loggerService))
-               .createSerializer(contentType: contentType),
-       _parser =
-           parser ??
-           (parserFactory ?? RdfParserFactory(loggerService: loggerService))
-               .createParser(contentType: contentType);
+       );
 
   /// Access to the registry for registering custom mappers
   RdfMapperRegistry get registry => _registry;
@@ -54,14 +27,14 @@ final class RdfMapperService {
     String storageRoot,
     List<Triple> triples,
     RdfSubject rdfSubject, {
-    RdfIriTermDeserializer<T>? iriDeserializer,
+    RdfSubjectDeserializer<T>? subjectDeserializer,
     RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
   }) {
     return fromGraph(
       storageRoot,
       RdfGraph(triples: triples),
       rdfSubject,
-      iriDeserializer: iriDeserializer,
+      subjectDeserializer: subjectDeserializer,
       blankNodeDeserializer: blankNodeDeserializer,
     );
   }
@@ -70,7 +43,7 @@ final class RdfMapperService {
     String storageRoot,
     RdfGraph graph,
     RdfSubject rdfSubject, {
-    RdfIriTermDeserializer<T>? iriDeserializer,
+    RdfSubjectDeserializer<T>? subjectDeserializer,
     RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
   }) {
     _logger.debug('Delegated mapping graph to ${T.toString()}');
@@ -83,10 +56,65 @@ final class RdfMapperService {
 
     return context.fromRdf(
       rdfSubject,
-      iriDeserializer,
+      null,
+      subjectDeserializer,
       null,
       blankNodeDeserializer,
     );
+  }
+
+  List<Object> fromGraphAllSubjects(String storageRoot, RdfGraph graph) {
+    // FIXME what do we do with type iris that are actually child subjects like the vector clock?
+    /*
+    Das Problem ist: diese können ziemlich generische Typen wie z.Bsp
+    einfach MapEntry<String,int> haben - und ihre Mapper werden normalerweise
+    auch nicht global registriert, sondern lokal am entsprechenden property
+    bzw. bei der (de)serialisierung ihrer parents im code direkt.
+
+    Die kann ich dann also auch gar nicht hier deserialisieren. 
+
+    Ich könnte natürlich einfach warnen dass ich keinen deserializer habe
+    und nicht eine exception werfen. Aber es wäre schon doof, immer diese
+    warnungen zu sehen für solche legitimen Fälle. Macht es denn Sinn, wenn 
+    ein SubjectDeserializer die Typen seiner Children angibt? Dann könnte 
+    ich mir natürlich schon eher etwas basteln um die Warnung zu unterdrücken.
+
+    Nachteil ist hier, dass "unnatürlicher" manueller Aufwand getrieben werden 
+    müsste, es wirkt umständlich und wie eine Krücke.
+
+    Eine andere Option wäre natürlich auch, zu überwachen, welche Triples gelesen wurden.
+    und die dann ggf. über spezielle Objekte raus zu geben oder zu warnen 
+    wenn das Dokument nicht vollständig gelesen wurde. Keine schlechte Idee,
+    geht auch in die Richtung der other map in Java für JSON. Man könnte 
+    dafür ja z. B. Json-LD nutzen und die übrigen properties dort hinein 
+    packen - aber das ist Zukunftsmusik und für jetzt zu aufwändig. 
+    
+    */
+
+    var deserializationSubjects = graph.findTriples(
+      predicate: RdfConstants.typeIri,
+    );
+
+    var context = DeserializationContextImpl(
+      storageRoot: storageRoot,
+      graph: graph,
+      registry: _registry,
+    );
+
+    return deserializationSubjects
+        .map((triple) {
+          final subject = triple.subject;
+          final object = triple.object;
+          if ((subject is! IriTerm) || (object is! IriTerm)) {
+            _logger.warning(
+              "Will skip deserialization of subject $subject with type $object because both subject and type need to be IRIs in order to be able to deserialize.",
+            );
+            return null;
+          }
+          return context.fromRdfByTypeIri(subject, object);
+        })
+        .whereType<Object>()
+        .toList();
   }
 
   /// Map an object to RDF graph
@@ -100,7 +128,6 @@ final class RdfMapperService {
   RdfGraph toGraph<T>(
     String storageRoot,
     T instance, {
-    String? uri,
     RdfSubjectSerializer? serializer,
   }) {
     _logger.debug('Converting instance of ${T.toString()} to RDF graph');
@@ -115,55 +142,23 @@ final class RdfMapperService {
     return RdfGraph(triples: triples);
   }
 
-  /// Serialize object to RDF string
-  ///
-  /// Converts a domain object to a serialized RDF string
-  ///
-  /// @param instance The object to serialize
-  /// @param uri Optional URI to use as the subject
-  /// @return Serialized RDF string
-  String asString<T>(
+  RdfGraph toGraphFromList<T>(
     String storageRoot,
-    T instance, {
-    String? uri,
+    List<T> instances, {
     RdfSubjectSerializer? serializer,
   }) {
-    _logger.debug('Serializing instance of ${T.toString()} to RDF string');
+    _logger.debug('Converting instance of ${T.toString()} to RDF graph');
 
-    final graph = toGraph<T>(
-      storageRoot,
-      instance,
-      uri: uri,
-      serializer: serializer,
+    final context = SerializationContextImpl(
+      storageRoot: storageRoot,
+      registry: _registry,
     );
-    return _serializer.write(graph, prefixes: _commonPrefixes);
-  }
+    var triples =
+        instances.expand((instance) {
+          var (_, triples) = context.subject(instance, serializer: serializer);
+          return triples;
+        }).toList();
 
-  /// Deserialize RDF string to object
-  ///
-  /// Reconstructs a domain object from a serialized RDF string
-  ///
-  /// @param rdfString The serialized RDF string
-  /// @param uri The URI of the main resource
-  /// @param parser Optional custom parser to use
-  /// @return The reconstructed domain object
-  T fromString<T>(
-    String storageRoot,
-    String rdfString,
-    String uri, {
-    String? documentUrl,
-    RdfIriTermDeserializer<T>? iriDeserializer,
-    RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
-  }) {
-    _logger.debug('Deserializing RDF string to ${T.toString()}');
-
-    final graph = _parser.parse(rdfString, documentUrl: documentUrl);
-    return fromGraph<T>(
-      storageRoot,
-      graph,
-      IriTerm(uri),
-      iriDeserializer: iriDeserializer,
-      blankNodeDeserializer: blankNodeDeserializer,
-    );
+    return RdfGraph(triples: triples);
   }
 }
