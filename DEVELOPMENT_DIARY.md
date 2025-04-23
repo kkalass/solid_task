@@ -75,7 +75,16 @@ the agent seems to get itself ever deeper into trouble :-/
 I mean, it is a good idea to add tests, right ;-)?
 
 The annoying thing is, that this stops me from proceeding with what I really wanted
-to get at, so I take it down as a note here just to not forget:
+to get at, so I take it down as a note just to not forget. See further down (Next commands for the agents).
+
+It is actually quite annoying, that the agent sends you off the track every now and then.
+I communicated clearly my architecture preferences, but every time it is supposed to do a
+task that is not so small, it takes multiple rounds to get it right. It violates
+the preferences often without really justifying it.
+
+But the worst thing about working with the copilot agent is, that it constantly makes you wait :-/
+
+### Next commands for the Agent
 
 * "As an expert dart developer who values clean code, idiomatic dart and clean architecture, please review the library in lib/ext/rdf (the tests are in test/ext/rdf) and make suggestions for improvements if any are advisable. Is it well structured? Are the namings good and clear? Is it following dart best practices and is it using idiomatic dart?"
 * "As a senior dart developer, please convert the rdf parser and serializer to a plugin architecture so that library users may add different formats (or different implementations of the formats we support)"

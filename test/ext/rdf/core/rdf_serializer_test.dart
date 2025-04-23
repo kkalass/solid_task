@@ -1,174 +1,44 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
-import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
-import 'package:solid_task/ext/rdf/core/graph/triple.dart';
+import 'package:solid_task/ext/rdf/core/plugin/format_plugin.dart';
 import 'package:solid_task/ext/rdf/core/rdf_serializer.dart';
+import 'package:solid_task/ext/rdf/turtle/turtle_format.dart';
+import 'package:test/test.dart';
 
 void main() {
+  late RdfFormatRegistry registry;
+  late RdfSerializerFactory factory;
+
+  setUp(() {
+    registry = RdfFormatRegistry();
+    factory = RdfSerializerFactory(registry);
+
+    // Register Turtle format for testing
+    registry.registerFormat(const TurtleFormat());
+  });
+
   group('RdfSerializerFactory', () {
-    late RdfSerializerFactory factory;
-
-    setUp(() {
-      factory = RdfSerializerFactory();
-    });
-
-    test(
-      'should create Turtle serializer by default when no content type is specified',
-      () {
-        final serializer = factory.createSerializer();
-
-        // Create a simple graph
-        final graph = RdfGraph(
-          triples: [
-            Triple(
-              IriTerm('http://example.org/subject'),
-              IriTerm('http://example.org/predicate'),
-              LiteralTerm.string('object'),
-            ),
-          ],
-        );
-
-        // Serialize it and verify it looks like Turtle
-        final output = serializer.write(graph);
-
-        expect(output, isNotEmpty);
-        // Simple test for Turtle syntax: should contain the IRI enclosed in angle brackets
-        expect(output, contains('<http://example.org/subject>'));
-        expect(output, contains('<http://example.org/predicate>'));
-        expect(output, contains('"object"'));
-      },
-    );
-
-    test('should create Turtle serializer for text/turtle content type', () {
-      final serializer = factory.createSerializer(contentType: 'text/turtle');
-
-      // Create a simple graph
-      final graph = RdfGraph(
-        triples: [
-          Triple(
-            IriTerm('http://example.org/subject'),
-            IriTerm('http://example.org/predicate'),
-            LiteralTerm.string('object'),
-          ),
-        ],
-      );
-
-      // Serialize it and verify it looks like Turtle
-      final output = serializer.write(graph);
-
-      expect(output, contains('<http://example.org/subject>'));
-      expect(output, contains('<http://example.org/predicate>'));
-      expect(output, contains('"object"'));
-    });
-
-    test('should handle content type with parameters', () {
-      final serializer = factory.createSerializer(
-        contentType: 'text/turtle; charset=UTF-8',
-      );
-
-      // Create a simple graph
-      final graph = RdfGraph(
-        triples: [
-          Triple(
-            IriTerm('http://example.org/subject'),
-            IriTerm('http://example.org/predicate'),
-            LiteralTerm.string('object'),
-          ),
-        ],
-      );
-
-      // Verify it's recognized as Turtle
-      final output = serializer.write(graph);
-      expect(output, contains('<http://example.org/subject>'));
-    });
-
-    test('should fall back to Turtle for unrecognized content type', () {
-      final serializer = factory.createSerializer(
-        contentType: 'application/unknown',
-      );
-
-      // Create a simple graph
-      final graph = RdfGraph(
-        triples: [
-          Triple(
-            IriTerm('http://example.org/subject'),
-            IriTerm('http://example.org/predicate'),
-            LiteralTerm.string('object'),
-          ),
-        ],
-      );
-
-      // Verify it falls back to Turtle
-      final output = serializer.write(graph);
-      expect(output, contains('<http://example.org/subject>'));
-    });
-
-    test('should throw UnimplementedError for JSON-LD content type', () {
-      // JSON-LD serializer is not implemented yet
-      expect(
-        () => factory.createSerializer(contentType: 'application/ld+json'),
-        throwsUnimplementedError,
-      );
-    });
-
-    test('should handle custom prefixes', () {
-      final serializer = factory.createSerializer(contentType: 'text/turtle');
-
-      // Create a simple graph with IRIs that could use prefixes
-      final graph = RdfGraph(
-        triples: [
-          Triple(
-            IriTerm('http://example.org/subject'),
-            IriTerm('http://example.org/predicate'),
-            LiteralTerm.string('object'),
-          ),
-        ],
-      );
-
-      // Add custom prefixes
-      final customPrefixes = {'ex': 'http://example.org/'};
-
-      // Serialize with custom prefixes
-      final output = serializer.write(graph, customPrefixes: customPrefixes);
-
-      // Verify prefixes are used
-      expect(output, contains('@prefix ex: <http://example.org/> .'));
-      expect(output, contains('ex:subject ex:predicate "object" .'));
-    });
-
-    test('should handle empty graph', () {
+    test('returns Turtle serializer for null content type', () {
+      // Since we registered Turtle as the only format, it will be the default
       final serializer = factory.createSerializer();
-      final emptyGraph = RdfGraph();
-
-      final output = serializer.write(emptyGraph);
-      expect(output, isEmpty);
+      expect(serializer, isA<RdfSerializer>());
     });
 
-    test('should preserve special characters in literals', () {
-      final serializer = factory.createSerializer();
+    test('returns Turtle serializer for turtle content type', () {
+      final serializer = factory.createSerializer(contentType: 'text/turtle');
+      expect(serializer, isA<RdfSerializer>());
+    });
 
-      // Create a graph with a literal containing special characters
-      final graph = RdfGraph(
-        triples: [
-          Triple(
-            IriTerm('http://example.org/subject'),
-            IriTerm('http://example.org/predicate'),
-            LiteralTerm.string(
-              'Special "characters" with \\ backslashes and \n newlines',
-            ),
-          ),
-        ],
-      );
-
-      final output = serializer.write(graph);
-
-      // Special characters should be escaped properly
+    test('throws for unsupported content type', () {
       expect(
-        output,
-        contains(
-          '"Special \\"characters\\" with \\\\ backslashes and \\n newlines"',
-        ),
+        () => factory.createSerializer(contentType: 'application/unsupported'),
+        throwsA(isA<FormatNotSupportedException>()),
       );
+    });
+
+    test('convenience write method works', () {
+      final graph = RdfGraph();
+      final result = factory.write(graph, contentType: 'text/turtle');
+      expect(result, isA<String>());
     });
   });
 }

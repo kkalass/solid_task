@@ -1,15 +1,24 @@
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
+import 'package:solid_task/ext/rdf/core/plugin/format_plugin.dart';
 import 'package:solid_task/ext/rdf/core/rdf_parser.dart';
+import 'package:solid_task/ext/rdf/jsonld/jsonld_format.dart';
+import 'package:solid_task/ext/rdf/turtle/turtle_format.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('RdfParser', () {
+    late RdfFormatRegistry registry;
     late RdfParserFactory rdfParserFactory;
     late RdfParser rdfParser;
 
     setUp(() {
-      // Use the factory to create a parser instance
-      rdfParserFactory = RdfParserFactory();
+      // Setup registry with formats
+      registry = RdfFormatRegistry();
+      registry.registerFormat(const TurtleFormat());
+      registry.registerFormat(const JsonLdFormat());
+
+      // Create factory and parser
+      rdfParserFactory = RdfParserFactory(registry);
       rdfParser = rdfParserFactory.createParser();
     });
 
@@ -287,10 +296,14 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
   });
 
   group('RdfParserFactory', () {
+    late RdfFormatRegistry registry;
     late RdfParserFactory factory;
 
     setUp(() {
-      factory = RdfParserFactory();
+      registry = RdfFormatRegistry();
+      registry.registerFormat(const TurtleFormat());
+      registry.registerFormat(const JsonLdFormat());
+      factory = RdfParserFactory(registry);
     });
 
     test('should create the correct parser for content type', () {

@@ -5,8 +5,11 @@ import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_mapper_service.dart';
+import 'package:solid_task/ext/rdf/core/plugin/format_plugin.dart';
 import 'package:solid_task/ext/rdf/core/rdf_parser.dart';
 import 'package:solid_task/ext/rdf/core/rdf_serializer.dart';
+import 'package:solid_task/ext/rdf/turtle/turtle_format.dart';
+import 'package:solid_task/ext/rdf/jsonld/jsonld_format.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/ext/solid/sync/rdf_repository.dart';
 import 'package:solid_task/services/repository/solid_item_rdf_repository_adapter.dart';
@@ -81,8 +84,21 @@ extension SyncServiceLocatorBuilderExtension on ServiceLocatorBuilder {
         );
       });
 
-      sl.registerSingleton(RdfParserFactory());
-      sl.registerSingleton(RdfSerializerFactory());
+      // Register format registry with standard formats
+      sl.registerSingleton<RdfFormatRegistry>(() {
+        final registry = RdfFormatRegistry();
+        registry.registerFormat(const TurtleFormat());
+        registry.registerFormat(const JsonLdFormat());
+        return registry;
+      }());
+
+      // Register parser and serializer factories
+      sl.registerSingleton<RdfParserFactoryBase>(
+        RdfParserFactory(sl<RdfFormatRegistry>()),
+      );
+      sl.registerSingleton<RdfSerializerFactoryBase>(
+        RdfSerializerFactory(sl<RdfFormatRegistry>()),
+      );
 
       // Sync service - depends on repository and auth
       sl.registerLazySingleton<SyncService>(() {
@@ -97,8 +113,8 @@ extension SyncServiceLocatorBuilderExtension on ServiceLocatorBuilder {
             client: sl<http.Client>(),
             rdfMapperService: sl<RdfMapperService>(),
             configProvider: sl<PodStorageConfigurationProvider>(),
-            rdfParserFactory: sl<RdfParserFactory>(),
-            rdfSerializerFactory: sl<RdfSerializerFactory>(),
+            rdfParserFactory: sl<RdfParserFactoryBase>(),
+            rdfSerializerFactory: sl<RdfSerializerFactoryBase>(),
           );
         }
       });

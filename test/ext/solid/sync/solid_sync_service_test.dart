@@ -6,6 +6,7 @@ import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/core/graph/triple.dart';
 import 'package:solid_task/ext/rdf/core/rdf_parser.dart';
+import 'package:solid_task/ext/rdf/core/rdf_serializer.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_mapper_registry.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_mapper_service.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
@@ -25,7 +26,8 @@ import 'solid_sync_service_test.mocks.dart';
   MockSpec<SolidAuthState>(),
   MockSpec<SolidAuthOperations>(),
   MockSpec<RdfParser>(),
-  MockSpec<RdfParserFactory>(),
+  MockSpec<RdfParserFactoryBase>(),
+  MockSpec<RdfSerializerFactoryBase>(),
 ])
 void main() {
   // Provide a dummy value for RdfGraph to solve the MissingDummyValueError
@@ -35,7 +37,8 @@ void main() {
   late MockRdfRepository mockRepository;
   late MockSolidAuthState mockAuthState;
   late MockSolidAuthOperations mockAuthOperations;
-  late MockRdfParserFactory mockParserFactory;
+  late MockRdfParserFactoryBase mockParserFactory;
+  late MockRdfSerializerFactoryBase mockSerializerFactory;
   late MockRdfParser mockParser;
   late SolidSyncService service;
 
@@ -44,7 +47,8 @@ void main() {
     mockRepository = MockRdfRepository();
     mockAuthState = MockSolidAuthState();
     mockAuthOperations = MockSolidAuthOperations();
-    mockParserFactory = MockRdfParserFactory();
+    mockParserFactory = MockRdfParserFactoryBase();
+    mockSerializerFactory = MockRdfSerializerFactoryBase();
     mockParser = MockRdfParser();
 
     when(
@@ -57,6 +61,7 @@ void main() {
       authOperations: mockAuthOperations,
       client: mockClient,
       rdfParserFactory: mockParserFactory,
+      rdfSerializerFactory: mockSerializerFactory,
       rdfMapperService: RdfMapperService(registry: RdfMapperRegistry()),
       configProvider: StaticStorageConfigurationProvider(
         PodStorageConfiguration(storageRoot: "https://example.com/pod/"),
@@ -112,6 +117,7 @@ void main() {
         'https://user.example.org/profile/card#me',
       );
     });
+
     test('dispose should stop periodic sync', () {
       // Arrange
       setupLoggedInUser();

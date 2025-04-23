@@ -2,14 +2,17 @@ import 'package:logging/logging.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/core/graph/triple.dart';
+import 'package:solid_task/ext/rdf/core/plugin/format_plugin.dart';
 import 'package:solid_task/ext/rdf/core/rdf_parser.dart';
+import 'package:solid_task/ext/rdf/turtle/turtle_format.dart';
+import 'package:solid_task/ext/rdf/jsonld/jsonld_format.dart';
 import 'package:solid_task/ext/solid/pod/profile/solid_profile_parser.dart';
 
 final _log = Logger("solid.profile");
 
 /// Implementation for parsing Solid profile documents
 class DefaultSolidProfileParser implements SolidProfileParser {
-  final RdfParserFactory _rdfParserFactory;
+  final RdfParserFactoryBase _rdfParserFactory;
 
   /// Common predicates used to identify storage locations in Solid profiles
   static const _storagePredicates = [
@@ -22,8 +25,16 @@ class DefaultSolidProfileParser implements SolidProfileParser {
   ];
 
   /// Creates a new ProfileParser with the required dependencies
-  DefaultSolidProfileParser({RdfParserFactory? rdfParserFactory})
-    : _rdfParserFactory = rdfParserFactory ?? RdfParserFactory();
+  DefaultSolidProfileParser({RdfParserFactoryBase? rdfParserFactory})
+    : _rdfParserFactory = rdfParserFactory ?? _createDefaultParserFactory();
+
+  /// Creates a default RdfParserFactory with standard formats
+  static RdfParserFactoryBase _createDefaultParserFactory() {
+    final registry = RdfFormatRegistry();
+    registry.registerFormat(const TurtleFormat());
+    registry.registerFormat(const JsonLdFormat());
+    return RdfParserFactory(registry);
+  }
 
   /// Find storage URLs in the parsed graph
   List<String> _findStorageUrls(RdfGraph graph) {

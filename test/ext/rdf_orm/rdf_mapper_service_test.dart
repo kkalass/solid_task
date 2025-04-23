@@ -1,8 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/core/graph/triple.dart';
+import 'package:solid_task/ext/rdf/core/plugin/format_plugin.dart';
 import 'package:solid_task/ext/rdf/core/rdf_parser.dart';
 import 'package:solid_task/ext/rdf/core/rdf_serializer.dart';
+import 'package:solid_task/ext/rdf/turtle/turtle_format.dart';
+import 'package:solid_task/ext/rdf/jsonld/jsonld_format.dart';
 import 'package:solid_task/ext/rdf_orm/deserialization_context.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_mapper_registry.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_mapper_service.dart';
@@ -69,10 +72,23 @@ final class TestItemRdfMapper implements RdfSubjectMapper<TestItem> {
 const storageRoot = "https://example.com/pod/";
 
 void main() {
+  late RdfFormatRegistry formatRegistry;
+  late RdfSerializerFactory serializerFactory;
+  late RdfParserFactory parserFactory;
   late RdfMapperRegistry registry;
   late RdfMapperService mapperService;
 
   setUp(() {
+    // Setup format registry with standard formats
+    formatRegistry = RdfFormatRegistry();
+    formatRegistry.registerFormat(const TurtleFormat());
+    formatRegistry.registerFormat(const JsonLdFormat());
+
+    // Create factories
+    serializerFactory = RdfSerializerFactory(formatRegistry);
+    parserFactory = RdfParserFactory(formatRegistry);
+
+    // Setup mapper registry
     registry = RdfMapperRegistry();
     registry.registerSubjectMapper<TestItem>(TestItemRdfMapper());
 
@@ -117,7 +133,9 @@ void main() {
     });
 
     test('Converting item to turtle', () {
-      final serializer = RdfSerializerFactory().createSerializer();
+      final serializer = serializerFactory.createSerializer(
+        contentType: 'text/turtle',
+      );
       // Create test item
       final originalItem = TestItem(name: 'Graph Conversion Test', age: 42);
 
@@ -142,7 +160,9 @@ void main() {
     });
 
     test('Converting item to turtle with prefixes', () {
-      final serializer = RdfSerializerFactory().createSerializer();
+      final serializer = serializerFactory.createSerializer(
+        contentType: 'text/turtle',
+      );
       // Create test item
       final originalItem = TestItem(name: 'Graph Conversion Test', age: 42);
 
@@ -171,7 +191,7 @@ void main() {
     });
 
     test('Converting item from turtle ', () {
-      final parser = RdfParserFactory().createParser();
+      final parser = parserFactory.createParser(contentType: 'text/turtle');
       // Create test item
       final turtle = """
 @prefix test: <http://kalass.de/dart/rdf/test-ontology#> .

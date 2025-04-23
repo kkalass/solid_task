@@ -4,8 +4,11 @@ import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
+import 'package:solid_task/ext/rdf/core/plugin/format_plugin.dart';
 import 'package:solid_task/ext/rdf/core/rdf_parser.dart';
 import 'package:solid_task/ext/rdf/core/rdf_serializer.dart';
+import 'package:solid_task/ext/rdf/turtle/turtle_format.dart';
+import 'package:solid_task/ext/rdf/jsonld/jsonld_format.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_mapper_service.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
@@ -28,8 +31,8 @@ class SolidSyncService implements SyncService {
   final http.Client _client;
 
   final RdfMapperService _rdfMapperService;
-  final RdfSerializerFactory _rdfSerializerFactory;
-  final RdfParserFactory _rdfParserFactory;
+  final RdfSerializerFactoryBase _rdfSerializerFactory;
+  final RdfParserFactoryBase _rdfParserFactory;
   final PodStorageConfigurationProvider _configProvider;
 
   // Periodic sync
@@ -46,16 +49,35 @@ class SolidSyncService implements SyncService {
     required http.Client client,
     required RdfMapperService rdfMapperService,
     required PodStorageConfigurationProvider configProvider,
-    RdfSerializerFactory? rdfSerializerFactory,
-    RdfParserFactory? rdfParserFactory,
+    RdfSerializerFactoryBase? rdfSerializerFactory,
+    RdfParserFactoryBase? rdfParserFactory,
   }) : _repository = repository,
        _solidAuthState = authState,
        _solidAuthOperations = authOperations,
        _client = client,
        _rdfMapperService = rdfMapperService,
        _configProvider = configProvider,
-       _rdfSerializerFactory = rdfSerializerFactory ?? RdfSerializerFactory(),
-       _rdfParserFactory = rdfParserFactory ?? RdfParserFactory();
+       _rdfSerializerFactory =
+           rdfSerializerFactory ?? _createDefaultSerializerFactory(),
+       _rdfParserFactory = rdfParserFactory ?? _createDefaultParserFactory();
+
+  /// Creates a default registry with standard formats
+  static RdfFormatRegistry _createDefaultRegistry() {
+    final registry = RdfFormatRegistry();
+    registry.registerFormat(const TurtleFormat());
+    registry.registerFormat(const JsonLdFormat());
+    return registry;
+  }
+
+  /// Creates a default parser factory with standard formats
+  static RdfParserFactoryBase _createDefaultParserFactory() {
+    return RdfParserFactory(_createDefaultRegistry());
+  }
+
+  /// Creates a default serializer factory with standard formats
+  static RdfSerializerFactoryBase _createDefaultSerializerFactory() {
+    return RdfSerializerFactory(_createDefaultRegistry());
+  }
 
   @override
   bool get isConnected =>
