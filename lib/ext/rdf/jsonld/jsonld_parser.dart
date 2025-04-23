@@ -208,7 +208,7 @@ class JsonLdParser {
       final key = entry.key;
       final value = entry.value;
 
-      // Skip JSON-LD keywords
+      // Skip JSON-LD keywords except @type
       if (key.startsWith('@')) {
         if (key == '@type') {
           // Handle @type specially to generate rdf:type triples
@@ -326,6 +326,18 @@ class JsonLdParser {
       _log.info(
         'Added type triple: $subject -> $typePredicate -> $expandedType',
       );
+    } else if (typeValue is Map<String, dynamic>) {
+      // Handle case when @type is an object with @id
+      if (typeValue.containsKey('@id')) {
+        final typeId = typeValue['@id'];
+        if (typeId is String) {
+          final expandedType = _expandPredicate(typeId, context);
+          triples.add(Triple(subject, typePredicate, IriTerm(expandedType)));
+          _log.info(
+            'Added type triple from object: $subject -> $typePredicate -> $expandedType',
+          );
+        }
+      }
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:solid_task/ext/rdf/core/constants/rdf_constants.dart';
 import 'package:solid_task/ext/rdf/core/exceptions/exceptions.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/jsonld/jsonld_parser.dart';
@@ -122,6 +123,140 @@ void main() {
         ),
         isTrue,
         reason: 'Type value should be fully expanded using context mapping',
+      );
+    });
+
+    test('handles @type as a prefixed string', () {
+      final jsonLd = '''
+      {
+        "@context": {
+          "foaf": "http://xmlns.com/foaf/0.1/",
+          "name": "http://xmlns.com/foaf/0.1/name"
+        },
+        "@id": "http://example.org/person/john",
+        "@type": "foaf:Person",
+        "name": "John Smith"
+      }
+      ''';
+
+      final parser = JsonLdParser(jsonLd);
+      final triples = parser.parse();
+
+      expect(triples.length, 2);
+
+      // Check the type triple exists with the fully expanded IRI
+      expect(
+        triples.any(
+          (t) =>
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == RdfConstants.typeIri &&
+              t.object == IriTerm('http://xmlns.com/foaf/0.1/Person'),
+        ),
+        isTrue,
+        reason: 'Prefixed type value should be expanded correctly',
+      );
+    });
+
+    test('handles @type as a direct URL', () {
+      final jsonLd = '''
+      {
+        "@context": {
+          "name": "http://xmlns.com/foaf/0.1/name"
+        },
+        "@id": "http://example.org/person/john",
+        "@type": "http://xmlns.com/foaf/0.1/Person",
+        "name": "John Smith"
+      }
+      ''';
+
+      final parser = JsonLdParser(jsonLd);
+      final triples = parser.parse();
+
+      expect(triples.length, 2);
+
+      // Check the type triple exists with the fully expanded IRI
+      expect(
+        triples.any(
+          (t) =>
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == RdfConstants.typeIri &&
+              t.object == IriTerm('http://xmlns.com/foaf/0.1/Person'),
+        ),
+        isTrue,
+        reason: 'Direct URL type should be preserved',
+      );
+    });
+
+    test('handles @type as an object with @id', () {
+      final jsonLd = '''
+      {
+        "@context": {
+          "name": "http://xmlns.com/foaf/0.1/name"
+        },
+        "@id": "http://example.org/person/john",
+        "@type": {"@id": "http://xmlns.com/foaf/0.1/Person"},
+        "name": "John Smith"
+      }
+      ''';
+
+      final parser = JsonLdParser(jsonLd);
+      final triples = parser.parse();
+
+      expect(triples.length, 2);
+
+      // Check the type triple exists with the fully expanded IRI
+      expect(
+        triples.any(
+          (t) =>
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == RdfConstants.typeIri &&
+              t.object == IriTerm('http://xmlns.com/foaf/0.1/Person'),
+        ),
+        isTrue,
+        reason: 'Object with @id type should be handled correctly',
+      );
+    });
+
+    test('handles @type with multiple values', () {
+      final jsonLd = '''
+      {
+        "@context": {
+          "foaf": "http://xmlns.com/foaf/0.1/",
+          "schema": "http://schema.org/",
+          "name": "http://xmlns.com/foaf/0.1/name"
+        },
+        "@id": "http://example.org/person/john",
+        "@type": ["foaf:Person", "schema:Person"],
+        "name": "John Smith"
+      }
+      ''';
+
+      final parser = JsonLdParser(jsonLd);
+      final triples = parser.parse();
+
+      expect(triples.length, 3);
+
+      // Check both type triples exist
+      expect(
+        triples.any(
+          (t) =>
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == RdfConstants.typeIri &&
+              t.object == IriTerm('http://xmlns.com/foaf/0.1/Person'),
+        ),
+        isTrue,
+        reason: 'First type in array should be parsed correctly',
+      );
+
+      expect(
+        triples.any(
+          (t) =>
+              t.subject == IriTerm('http://example.org/person/john') &&
+              t.predicate == RdfConstants.typeIri &&
+              t.object == IriTerm('http://schema.org/Person'),
+        ),
+        isTrue,
+        reason: 'Second type in array should be parsed correctly',
       );
     });
 
