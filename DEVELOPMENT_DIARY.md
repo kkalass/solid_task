@@ -65,3 +65,20 @@ keep the complicated rdf stuff in the serialization layer and let my application
 dart instances, not having to know anything about rdf. But could this mean that I need to support partial
 updates of instances from the server, because I do not get all triples of a single subject? Not sure yet,
 I guess I will have to wait with that.
+
+--- 
+Hmm, really interesting: working with Agents makes it even harder than usual to
+estimate how long a task will take. I asked the agent to add tests to only a 
+specific part of the codebase, but this already takes hours of back and forth and 
+the agent seems to get itself ever deeper into trouble :-/
+
+I mean, it is a good idea to add tests, right ;-)?
+
+The annoying thing is, that this stops me from proceeding with what I really wanted
+to get at, so I take it down as a note here just to not forget:
+
+* "As an expert dart developer who values clean code, idiomatic dart and clean architecture, please review the library in lib/ext/rdf and make suggestions for improvements if applicable. Is it well structured? Are the namings good and clear?"
+* "As an experienced writer of technical documentation, go through all files in lib/ext/rdf and document them thoroughly, especially the API documentation. Your target audience
+are dart developers who are not familiar with RDF and Turtle"
+
+

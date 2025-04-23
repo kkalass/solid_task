@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:solid_task/ext/rdf/core/constants/rdf_constants.dart';
 import 'package:solid_task/ext/rdf/core/constants/xsd_constants.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
@@ -308,5 +309,193 @@ void main() {
         expect(result, contains('    foaf:name "Bob"'));
       },
     );
+
+    test('should handle Unicode characters in literals', () {
+      // Arrange
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/entity'),
+            IriTerm('http://example.org/label'),
+            LiteralTerm.string('Unicode: € ♥ © ≈ ♠ ⚓ 😀'),
+          ),
+        ],
+      );
+
+      // Act
+      final result = serializer.write(graph);
+
+      // Assert
+      // Check for standard Unicode characters (below U+FFFF)
+      expect(
+        result,
+        contains('Unicode: \\u20AC \\u2665 \\u00A9 \\u2248 \\u2660 \\u2693'),
+      );
+
+      // The emoji can be represented either as surrogate pair or as a single U+codepoint
+      // In Dart, code units above U+FFFF are represented as UTF-16 surrogate pairs
+      // Check for either representation (surrogate pairs or 8-digit escape)
+      final containsEmoji =
+          result.contains('\\uD83D\\uDE00') || result.contains('\\U0001F600');
+      expect(
+        containsEmoji,
+        isTrue,
+        reason:
+            'Output should contain emoji 😀 in either surrogate pair or 8-digit format',
+      );
+    });
+
+    test('should handle non-printable ASCII characters', () {
+      // Arrange
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/entity'),
+            IriTerm('http://example.org/value'),
+            LiteralTerm.string('Control chars: \u0001 \u0007 \u001F'),
+          ),
+        ],
+      );
+
+      // Act
+      final result = serializer.write(graph);
+
+      // Assert
+      // Use case-insensitive regex to match the escape sequences
+      expect(
+        result,
+        matches(
+          RegExp(
+            r'Control chars: \\u0001 \\u0007 \\u001[fF]',
+            caseSensitive: false,
+          ),
+        ),
+      );
+    });
+
+    test('should handle empty prefixes properly', () {
+      // Arrange
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/default#resource'),
+            IriTerm('http://example.org/default#property'),
+            LiteralTerm.string('value'),
+          ),
+        ],
+      );
+
+      final prefixes = {'': 'http://example.org/default#'};
+
+      // Act
+      final result = serializer.write(graph, customPrefixes: prefixes);
+
+      // Assert
+      expect(result, contains('@prefix : <http://example.org/default#> .'));
+      expect(result, contains(':resource :property "value" .'));
+    });
+
+    test('should format multiple predicates and objects correctly', () {
+      // Arrange
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/subject'),
+            IriTerm('http://example.org/predicate1'),
+            LiteralTerm.string('value1'),
+          ),
+          Triple(
+            IriTerm('http://example.org/subject'),
+            IriTerm('http://example.org/predicate1'),
+            LiteralTerm.string('value2'),
+          ),
+          Triple(
+            IriTerm('http://example.org/subject'),
+            IriTerm('http://example.org/predicate2'),
+            LiteralTerm.string('value3'),
+          ),
+          Triple(
+            IriTerm('http://example.org/subject'),
+            IriTerm('http://example.org/predicate2'),
+            LiteralTerm.string('value4'),
+          ),
+        ],
+      );
+
+      // Act
+      final result = serializer.write(graph);
+
+      // Assert
+      // Check for correct indentation and separators
+      expect(
+        result,
+        contains(
+          '<http://example.org/subject> <http://example.org/predicate1> "value1", "value2";\n    <http://example.org/predicate2> "value3", "value4" .',
+        ),
+      );
+    });
+
+    test('should handle both xsd:string and language-tagged literals', () {
+      // Arrange
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/book'),
+            IriTerm('http://example.org/title'),
+            LiteralTerm.string('The Little Prince'),
+          ),
+          Triple(
+            IriTerm('http://example.org/book'),
+            IriTerm('http://example.org/title'),
+            LiteralTerm.withLanguage('Le Petit Prince', 'fr'),
+          ),
+          Triple(
+            IriTerm('http://example.org/book'),
+            IriTerm('http://example.org/title'),
+            LiteralTerm.withLanguage('Der kleine Prinz', 'de'),
+          ),
+        ],
+      );
+
+      // Act
+      final result = serializer.write(graph);
+
+      // Assert
+      expect(
+        result,
+        contains(
+          '<http://example.org/book> <http://example.org/title> "The Little Prince", "Le Petit Prince"@fr, "Der kleine Prinz"@de .',
+        ),
+      );
+    });
+
+    test('should correctly use custom prefixes when available', () {
+      // Arrange
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            IriTerm('http://example.org/book/littleprince'),
+            IriTerm('http://purl.org/dc/terms/title'),
+            LiteralTerm.string('The Little Prince'),
+          ),
+        ],
+      );
+
+      final customPrefixes = {
+        'book': 'http://example.org/book/',
+        'dc': 'http://purl.org/dc/terms/',
+      };
+
+      // Act
+      final result = serializer.write(graph, customPrefixes: customPrefixes);
+
+      // Assert
+      expect(result, contains('@prefix book: <http://example.org/book/> .'));
+      expect(result, contains('@prefix dc: <http://purl.org/dc/terms/> .'));
+      expect(
+        result,
+        contains('book:littleprince dc:title "The Little Prince" .'),
+      );
+    });
   });
 }

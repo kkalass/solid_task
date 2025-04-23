@@ -348,9 +348,13 @@ class TurtleSerializer implements RdfSerializer {
           if (codeUnit < 0x20 || codeUnit >= 0x7F) {
             // Escape non-printable ASCII and non-ASCII Unicode characters
             if (codeUnit <= 0xFFFF) {
-              buffer.write('\\u${codeUnit.toRadixString(16).padLeft(4, '0')}');
+              buffer.write(
+                '\\u${codeUnit.toRadixString(16).padLeft(4, '0').toUpperCase()}',
+              );
             } else {
-              buffer.write('\\U${codeUnit.toRadixString(16).padLeft(8, '0')}');
+              buffer.write(
+                '\\U${codeUnit.toRadixString(16).padLeft(8, '0').toUpperCase()}',
+              );
             }
           } else {
             // Regular printable ASCII character

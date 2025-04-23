@@ -34,7 +34,7 @@ final _log = Logger("rdf.turtle");
 class TurtleParser {
   final TurtleTokenizer _tokenizer;
   final Map<String, String> _prefixes = {};
-  final String? _baseUri;
+  String? _baseUri;
   Token _currentToken = Token(TokenType.eof, '', 0, 0);
   final List<Triple> _triples = [];
 
@@ -62,12 +62,15 @@ class TurtleParser {
     _currentToken = _tokenizer.nextToken();
     final triples = <Triple>[];
     _log.info('Starting parse with token: $_currentToken');
-    // FIXME KK - support @base!!!
+
     while (_currentToken.type != TokenType.eof) {
       _log.info('Processing token: $_currentToken');
       if (_currentToken.type == TokenType.prefix) {
         _log.info('Found prefix declaration');
         _parsePrefix();
+      } else if (_currentToken.type == TokenType.base) {
+        _log.info('Found base declaration');
+        _parseBase();
       } else if (_currentToken.type == TokenType.openBracket) {
         _log.info('Found blank node');
         _parseBlankNode();
@@ -86,16 +89,46 @@ class TurtleParser {
         for (final po in predicateObjectList) {
           triples.add(Triple(subject, po.predicate, po.object));
         }
-        if (_currentToken.type != TokenType.eof) {
-          _log.info('Expecting dot, current token: $_currentToken');
-          _expect(TokenType.dot);
-          _currentToken = _tokenizer.nextToken();
-        }
+
+        _log.info('Expecting dot, current token: $_currentToken');
+        _expect(TokenType.dot);
+        _currentToken = _tokenizer.nextToken();
       }
     }
 
     _log.info('Parse complete. Found ${triples.length} triples');
     return [...triples, ..._triples];
+  }
+
+  /// Parses a base URI declaration.
+  ///
+  /// A base declaration has the form:
+  /// ```turtle
+  /// @base <iri> .
+  /// ```
+  ///
+  /// The base URI is stored in the [_baseUri] field and used for resolving relative IRIs.
+  void _parseBase() {
+    _log.info('Parsing base declaration');
+    _expect(TokenType.base);
+    _currentToken = _tokenizer.nextToken();
+    _log.info('After @base: $_currentToken');
+
+    _expect(TokenType.iri);
+    final iriToken = _currentToken.value;
+    // Extract IRI value from <...>
+    final iri = _extractIriValue(iriToken);
+    _log.info('Found base IRI: $iri');
+
+    _baseUri = iri;
+    _log.info('Set base URI to: "$iri"');
+
+    _currentToken = _tokenizer.nextToken();
+    _log.info('After IRI: $_currentToken');
+
+    _expect(TokenType.dot);
+    _currentToken = _tokenizer.nextToken();
+    _log.info('After dot: $_currentToken');
   }
 
   /// Parses a prefix declaration.
@@ -157,7 +190,8 @@ class TurtleParser {
     _log.info('Parsing subject, current token: $_currentToken');
     if (_currentToken.type == TokenType.iri) {
       final iriValue = _extractIriValue(_currentToken.value);
-      final subject = IriTerm(iriValue);
+      final resolvedIri = _resolveIri(iriValue);
+      final subject = IriTerm(resolvedIri);
       _currentToken = _tokenizer.nextToken();
       _log.info('Parsed IRI subject: $subject');
       return subject;
@@ -251,6 +285,15 @@ class TurtleParser {
       }
     }
 
+    // Ensure that statement is properly terminated with a dot
+    if (_currentToken.type != TokenType.dot &&
+        _currentToken.type != TokenType.closeBracket &&
+        _currentToken.type != TokenType.eof) {
+      throw FormatException(
+        'Expected "." to terminate statement at ${_currentToken.line}:${_currentToken.column}',
+      );
+    }
+
     _log.info('Predicate-object list complete: $result');
     return result;
   }
@@ -271,7 +314,8 @@ class TurtleParser {
       return RdfConstants.typeIri;
     } else if (_currentToken.type == TokenType.iri) {
       final iriValue = _extractIriValue(_currentToken.value);
-      final predicate = IriTerm(iriValue);
+      final resolvedIri = _resolveIri(iriValue);
+      final predicate = IriTerm(resolvedIri);
       _currentToken = _tokenizer.nextToken();
       _log.info('Parsed IRI predicate: $predicate');
       return predicate;
@@ -303,7 +347,8 @@ class TurtleParser {
     _log.info('Parsing object, current token: $_currentToken');
     if (_currentToken.type == TokenType.iri) {
       final iriValue = _extractIriValue(_currentToken.value);
-      final object = IriTerm(iriValue);
+      final resolvedIri = _resolveIri(iriValue);
+      final object = IriTerm(resolvedIri);
       _currentToken = _tokenizer.nextToken();
       _log.info('Parsed IRI object: $object');
       return object;
@@ -333,6 +378,21 @@ class TurtleParser {
         'Expected object at ${_currentToken.line}:${_currentToken.column}',
       );
     }
+  }
+
+  /// Resolves a potentially relative IRI against the base URI.
+  ///
+  /// If the IRI is already absolute (starts with a scheme like "http:"),
+  /// returns it unchanged. Otherwise, if a base URI is available,
+  /// resolves the IRI against the base URI.
+  String _resolveIri(String iri) {
+    if (_baseUri == null || Uri.parse(iri).hasScheme) {
+      return iri;
+    }
+
+    final resolved = Uri.parse(_baseUri!).resolve(iri).toString();
+    _log.info('Resolved relative IRI: $iri -> $resolved');
+    return resolved;
   }
 
   /// Parses a blank node expression.
@@ -548,28 +608,7 @@ class TurtleParser {
     final expanded = '${_prefixes[prefix]}$localName';
     _log.info('Expanded prefixed name: $prefixedName -> $expanded');
 
-    // Resolve relative IRIs against the base URI if one is provided
-    if (_baseUri != null && !expanded.startsWith('http')) {
-      if (expanded.startsWith('/')) {
-        // Path-absolute IRI
-        final baseUri = Uri.parse(_baseUri);
-        final resolved =
-            Uri(
-              scheme: baseUri.scheme,
-              host: baseUri.host,
-              path: expanded,
-            ).toString();
-        _log.info('Resolved path-absolute IRI: $expanded -> $resolved');
-        return resolved;
-      } else {
-        // Relative IRI
-        final resolved = Uri.parse(_baseUri).resolve(expanded).toString();
-        _log.info('Resolved relative IRI: $expanded -> $resolved');
-        return resolved;
-      }
-    }
-
-    return expanded;
+    return _resolveIri(expanded);
   }
 
   /// Verifies that the current token is of the expected type.

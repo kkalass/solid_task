@@ -6,6 +6,7 @@ final _log = Logger("rdf.turtle");
 ///
 /// Turtle syntax consists of several types of tokens:
 /// - [prefix]: The '@prefix' keyword for prefix declarations
+/// - [base]: The '@base' keyword for base IRI declarations
 /// - [iri]: Internationalized Resource Identifiers (e.g., <http://example.com/foo>)
 /// - [blankNode]: Anonymous resources (e.g., _:b1)
 /// - [literal]: String values (e.g., "Hello, World!")
@@ -21,6 +22,7 @@ final _log = Logger("rdf.turtle");
 /// - [eof]: End of file marker
 enum TokenType {
   prefix,
+  base,
   iri,
   blankNode,
   literal,
@@ -78,6 +80,7 @@ class Token {
 ///
 /// The tokenizer handles all Turtle syntax elements:
 /// - Prefix declarations (@prefix)
+/// - Base IRI declarations (@base)
 /// - IRIs (<...>)
 /// - Blank nodes (_:...)
 /// - Literals ("...")
@@ -160,6 +163,13 @@ class TurtleTokenizer {
       _position += 7;
       _column += 7;
       return Token(TokenType.prefix, '@prefix', _line, _column - 7);
+    }
+
+    // Handle @base
+    if (_startsWith('@base')) {
+      _position += 5;
+      _column += 5;
+      return Token(TokenType.base, '@base', _line, _column - 5);
     }
 
     // Handle 'a'
