@@ -1,25 +1,48 @@
+/// Turtle Tokenizer - Lexical analysis for Turtle RDF syntax
+///
+/// This file defines the lexical analyzer (tokenizer) for the Turtle RDF serialization
+/// format as specified in the W3C recommendation. It breaks down Turtle input text
+/// into a sequence of tokens that can be consumed by a parser.
+///
+/// The tokenizer is responsible for:
+/// 1. Identifying the basic lexical elements of Turtle (IRIs, literals, etc.)
+/// 2. Handling whitespace, comments, and line breaks
+/// 3. Providing position information for error reporting
+/// 4. Managing escape sequences in strings and IRIs
+///
+/// See: https://www.w3.org/TR/turtle/ for the Turtle specification.
+library turtle_tokenizer;
+
 import 'package:logging/logging.dart';
 
 final _log = Logger("rdf.turtle");
 
 /// Token types in Turtle syntax.
 ///
-/// Turtle syntax consists of several types of tokens:
-/// - [prefix]: The '@prefix' keyword for prefix declarations
+/// Turtle syntax consists of several types of tokens representing the lexical
+/// elements of the language. Each value in this enum represents a specific kind
+/// of token that can appear in valid Turtle documents.
+///
+/// Basic structure tokens:
+/// - [prefix]: The '@prefix' keyword for namespace prefix declarations
 /// - [base]: The '@base' keyword for base IRI declarations
-/// - [iri]: Internationalized Resource Identifiers (e.g., <http://example.com/foo>)
-/// - [blankNode]: Anonymous resources (e.g., _:b1)
-/// - [literal]: String values (e.g., "Hello, World!")
 /// - [dot]: The '.' character that terminates statements
-/// - [semicolon]: The ';' character that separates predicate-object pairs
-/// - [comma]: The ',' character that separates objects in lists
-/// - [openBracket]: The '[' character that starts blank node expressions
-/// - [closeBracket]: The ']' character that ends blank node expressions
-/// - [openParen]: The '(' character that starts collections
-/// - [closeParen]: The ')' character that ends collections
-/// - [a]: The 'a' keyword (shorthand for rdf:type)
-/// - [prefixedName]: Names with prefixes (e.g., foaf:name)
-/// - [eof]: End of file marker
+/// - [semicolon]: The ';' character for predicates sharing the same subject
+/// - [comma]: The ',' character for objects sharing the same subject and predicate
+///
+/// Term tokens:
+/// - [iri]: IRIs enclosed in angle brackets (e.g., <http://example.org/>)
+/// - [prefixedName]: Prefixed names (e.g., foaf:name)
+/// - [blankNode]: Blank nodes with explicit labels (e.g., _:b1)
+/// - [literal]: String literals, possibly with language tags or datatypes
+/// - [a]: The 'a' keyword, shorthand for the rdf:type predicate
+///
+/// Collection tokens:
+/// - [openBracket]/[closeBracket]: The '[' and ']' for blank node property lists
+/// - [openParen]/[closeParen]: The '(' and ')' for RDF collections (ordered lists)
+///
+/// Other:
+/// - [eof]: End of file marker, indicating the input has been fully consumed
 enum TokenType {
   prefix,
   base,
@@ -40,15 +63,18 @@ enum TokenType {
 
 /// A token in Turtle syntax.
 ///
-/// Each token has:
-/// - [type]: The kind of token (see [TokenType])
-/// - [value]: The actual text content of the token
-/// - [line]: The line number where the token starts
-/// - [column]: The column number where the token starts
+/// Each token represents a distinct lexical element in the Turtle syntax and
+/// includes both the token's content and its position in the source document,
+/// which is essential for meaningful error reporting.
 ///
-/// Example:
-/// ```dart
-/// Token(TokenType.iri, "http://example.com/foo", 1, 1)
+/// Position information is 1-based (the first line and column are numbered 1,
+/// not 0) to match standard text editor conventions.
+///
+/// Examples:
+/// ```
+/// Token(TokenType.iri, "<http://example.org/foo>", 1, 1)
+/// Token(TokenType.prefixedName, "foaf:name", 2, 5)
+/// Token(TokenType.literal, "\"Hello\"", 3, 10)
 /// ```
 class Token {
   /// The type of this token.
@@ -63,6 +89,9 @@ class Token {
   /// The column number where this token starts (1-based).
   final int column;
 
+  /// Creates a new token with the specified type, value, and position
+  ///
+  /// Position information should be 1-based (first character is at line 1, column 1).
   Token(this.type, this.value, this.line, this.column);
 
   @override
@@ -71,26 +100,32 @@ class Token {
 
 /// Tokenizer for Turtle syntax.
 ///
-/// This class is responsible for breaking down Turtle input into a sequence of tokens.
-/// It implements a simple state machine that:
-/// 1. Skips whitespace and comments
-/// 2. Identifies the start of each token
-/// 3. Parses the complete token
-/// 4. Returns the token with its type and position
+/// This class breaks down a Turtle document into a sequence of tokens according to
+/// the Turtle grammar rules. It implements a lexical analyzer that processes the input
+/// character by character and builds meaningful tokens.
 ///
-/// The tokenizer handles all Turtle syntax elements:
-/// - Prefix declarations (@prefix)
-/// - Base IRI declarations (@base)
-/// - IRIs (<...>)
-/// - Blank nodes (_:...)
-/// - Literals ("...")
-/// - Prefixed names (prefix:localName)
-/// - Special keywords ('a')
-/// - Punctuation (., ;, [, ], etc.)
+/// The tokenizer handles:
 ///
-/// Example usage:
+/// - IRIs: `<http://example.org/resource>`
+/// - Prefixed names: `ex:resource`
+/// - Literals: `"string"`, `"string"@en`, `"3.14"^^xsd:decimal`
+/// - Blank nodes: `_:blank1`
+/// - Keywords: `a` (shorthand for rdf:type), `@prefix`, `@base`
+/// - Punctuation: `.`, `;`, `,`, `[`, `]`, `(`, `)`
+/// - Comments: `# This is a comment`
+/// - Whitespace and line breaks
+///
+/// The tokenizer skips whitespace and comments between tokens and provides
+/// detailed position information for error reporting.
+///
+/// Example:
 /// ```dart
-/// final tokenizer = TurtleTokenizer('@prefix foaf: <http://xmlns.com/foaf/0.1/> .');
+/// final tokenizer = TurtleTokenizer('''
+///   @prefix ex: <http://example.org/> .
+///   ex:subject a ex:Type ;
+///     ex:predicate "object" .
+/// ''');
+///
 /// Token token;
 /// while ((token = tokenizer.nextToken()).type != TokenType.eof) {
 ///   print(token);
@@ -103,19 +138,34 @@ class TurtleTokenizer {
   int _column = 1;
 
   /// Creates a new tokenizer for the given input string.
+  ///
+  /// The input should be a valid Turtle document or fragment.
+  /// All tokens returned by [nextToken] will be derived from this input.
   TurtleTokenizer(this._input);
 
   /// Gets the next token from the input.
   ///
-  /// This method:
+  /// This method is the main entry point for token extraction. It:
   /// 1. Skips any whitespace and comments
-  /// 2. Identifies the type of the next token
-  /// 3. Parses the complete token
-  /// 4. Returns a [Token] with its type, value, and position
+  /// 2. Identifies the type of the next token based on the current character
+  /// 3. Delegates to specialized parsing methods for complex tokens
+  /// 4. Advances the input position past the token
+  /// 5. Returns the complete Token with its type, value, and position
   ///
-  /// Returns [TokenType.eof] when the end of input is reached.
+  /// When the end of the input is reached, it returns a token with type
+  /// [TokenType.eof]. This makes it convenient to use in a loop that
+  /// continues until EOF is encountered.
   ///
-  /// Throws [FormatException] if an unexpected character is encountered.
+  /// Throws [FormatException] if unexpected characters are encountered
+  /// or if tokens are malformed (e.g., unclosed string literals).
+  ///
+  /// Example:
+  /// ```dart
+  /// Token token;
+  /// while ((token = tokenizer.nextToken()).type != TokenType.eof) {
+  ///   // Process the token
+  /// }
+  /// ```
   Token nextToken() {
     _skipWhitespace();
 
@@ -172,7 +222,7 @@ class TurtleTokenizer {
       return Token(TokenType.base, '@base', _line, _column - 5);
     }
 
-    // Handle 'a'
+    // Handle 'a' (shorthand for rdf:type)
     if (_startsWith('a ') || _startsWith('a\n') || _startsWith('a\t')) {
       _position++;
       _column++;
@@ -208,10 +258,14 @@ class TurtleTokenizer {
 
   /// Skips whitespace and comments in the input.
   ///
-  /// This method:
-  /// 1. Advances past spaces, tabs, and carriage returns
-  /// 2. Handles line breaks by incrementing the line counter
-  /// 3. Skips comments (text after # until end of line)
+  /// This method advances the current position past:
+  /// - Whitespace characters (spaces, tabs, carriage returns)
+  /// - Line breaks (adjusting line and column counters)
+  /// - Comments (from # to the end of the line)
+  ///
+  /// After calling this method, the current position will either:
+  /// - Be at the start of a meaningful token
+  /// - Be at the end of the input (position >= length)
   void _skipWhitespace() {
     while (_position < _input.length) {
       final char = _input[_position];
@@ -233,6 +287,8 @@ class TurtleTokenizer {
   /// Skips a comment in the input.
   ///
   /// Comments in Turtle start with # and continue until the end of the line.
+  /// This method advances the position to the end of the current line.
+  /// Line break handling is left to _skipWhitespace.
   void _skipComment() {
     while (_position < _input.length && _input[_position] != '\n') {
       _position++;
@@ -242,12 +298,19 @@ class TurtleTokenizer {
   /// Parses an IRI token.
   ///
   /// IRIs in Turtle are enclosed in angle brackets (<...>).
-  /// They can contain escaped characters (using backslash).
+  /// This method handles:
+  /// - The opening and closing angle brackets
+  /// - The content between the brackets
+  /// - Escape sequences in the IRI (e.g., \u00A9 for ©)
   ///
-  /// Example:
+  /// Example in Turtle:
   /// ```turtle
-  /// <http://example.com/foo>
+  /// <http://example.org/resource>
+  /// <http://example.org/with\#fragment>
   /// ```
+  ///
+  /// Returns a token of type [TokenType.iri] containing the complete IRI
+  /// including the angle brackets.
   ///
   /// Throws [FormatException] if the IRI is not properly closed.
   Token _parseIri() {
@@ -290,12 +353,16 @@ class TurtleTokenizer {
   /// Parses a blank node token.
   ///
   /// Blank nodes in Turtle start with _: followed by a name.
-  /// They represent anonymous resources.
+  /// They represent anonymous resources that don't need global identifiers.
   ///
-  /// Example:
+  /// Example in Turtle:
   /// ```turtle
   /// _:b1
+  /// _:blank123
   /// ```
+  ///
+  /// Returns a token of type [TokenType.blankNode] containing the complete
+  /// blank node identifier.
   Token _parseBlankNode() {
     final startLine = _line;
     final startColumn = _column;
@@ -322,20 +389,20 @@ class TurtleTokenizer {
 
   /// Parses a literal token.
   ///
-  /// Literals in Turtle are enclosed in double quotes.
-  /// They can have:
-  /// - Language tags (@en)
-  /// - Type specifiers (^^<...>)
-  /// - Type specifiers with prefixed names (^^xsd:integer)
-  /// - Escaped characters (using backslash)
+  /// Literals in Turtle represent string values and can have several forms:
+  /// - Simple strings: "Hello"
+  /// - Language-tagged strings: "Hello"@en
+  /// - Typed literals with datatype IRI: "123"^^<http://www.w3.org/2001/XMLSchema#integer>
+  /// - Typed literals with prefixed names: "123"^^xsd:integer
   ///
-  /// Examples:
-  /// ```turtle
-  /// "Hello, World!"
-  /// "Bonjour"@fr
-  /// "42"^^<http://www.w3.org/2001/XMLSchema#integer>
-  /// "42"^^xsd:integer
-  /// ```
+  /// This method handles:
+  /// - The opening and closing quotes
+  /// - Escape sequences within the string
+  /// - Optional language tags (@lang)
+  /// - Optional datatype annotations (^^datatype)
+  ///
+  /// Returns a token of type [TokenType.literal] containing the complete literal
+  /// including quotes, language tag or datatype annotation.
   ///
   /// Throws [FormatException] if the literal is not properly closed.
   Token _parseLiteral() {
@@ -424,14 +491,22 @@ class TurtleTokenizer {
 
   /// Parses a prefixed name token.
   ///
-  /// Prefixed names in Turtle have the form prefix:localName.
-  /// The prefix can be empty (just :localName).
+  /// Prefixed names in Turtle consist of:
+  /// - An optional prefix (namespace alias)
+  /// - A colon separator (:)
+  /// - A local name (the part after the colon)
   ///
-  /// Examples:
+  /// Examples in Turtle:
   /// ```turtle
-  /// foaf:name
-  /// :me
+  /// foaf:name       # With prefix 'foaf'
+  /// :localName      # With default prefix (empty)
   /// ```
+  ///
+  /// The prefix must have been declared earlier in the document with @prefix.
+  /// This method doesn't validate that requirement; it just tokenizes the syntax.
+  ///
+  /// Returns a token of type [TokenType.prefixedName] containing the
+  /// complete prefixed name.
   Token _parsePrefixedName() {
     final startLine = _line;
     final startColumn = _column;
@@ -502,6 +577,12 @@ class TurtleTokenizer {
   }
 
   /// Checks if the input at the current position starts with the given prefix.
+  ///
+  /// This helper method is used to identify multi-character tokens like
+  /// '@prefix' and '@base' without advancing the position.
+  ///
+  /// Returns true if the input string at the current position starts with
+  /// the specified prefix, false otherwise.
   bool _startsWith(String prefix) {
     if (_position + prefix.length > _input.length) return false;
     return _input.substring(_position, _position + prefix.length) == prefix;
@@ -509,21 +590,30 @@ class TurtleTokenizer {
 
   /// Checks if a character is valid as the start of a name.
   ///
-  /// In Turtle, name start characters are:
+  /// In Turtle, name start characters are defined by the specification as:
   /// - Letters (a-z, A-Z)
   /// - Underscore (_)
-  /// - Colon (:)
+  /// - Colon (:) in some contexts
+  ///
+  /// This is used for prefixed names and local names.
+  ///
+  /// Returns true if the character is valid as a name start character,
+  /// false otherwise.
   bool _isNameStartChar(String char) {
     return RegExp(r'[a-zA-Z_:]').hasMatch(char);
   }
 
-  /// Checks if a character is valid in a name.
+  /// Checks if a character is valid within a name.
   ///
-  /// In Turtle, name characters are:
+  /// In Turtle, name characters (after the first character) can be:
   /// - Letters (a-z, A-Z)
   /// - Digits (0-9)
   /// - Underscore (_)
   /// - Hyphen (-)
+  ///
+  /// This is used for the body of prefixed names and local names.
+  ///
+  /// Returns true if the character is valid within a name, false otherwise.
   bool _isNameChar(String char) {
     return RegExp(r'[a-zA-Z0-9_\-]').hasMatch(char);
   }

@@ -1,3 +1,10 @@
+/// Turtle RDF Format - Human-friendly RDF serialization
+///
+/// This file defines the implementation of the Turtle (Terse RDF Triple Language)
+/// serialization format for RDF data. Turtle provides a compact and human-readable
+/// syntax for encoding RDF graphs as text.
+library turtle_format;
+
 import '../core/graph/rdf_graph.dart';
 import '../core/plugin/format_plugin.dart';
 import '../core/rdf_parser.dart';
@@ -7,11 +14,53 @@ import 'turtle_serializer.dart';
 
 /// RDF Format implementation for the Turtle serialization format.
 ///
-/// Turtle (Terse RDF Triple Language) provides a textual syntax for RDF that is
-/// both readable and writable by humans while being easy to parse by machines.
+/// Turtle (Terse RDF Triple Language) is a textual syntax for RDF that is
+/// both readable by humans and parsable by machines. It is a simplified,
+/// compatible subset of the Notation3 (N3) format.
+///
+/// ## Turtle Syntax Overview
+///
+/// Turtle has several key features that make it popular for RDF serialization:
+///
+/// - **Prefixed names**: Allow abbreviation of IRIs using prefixes
+///   ```turtle
+///   @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+///   <http://example.org/john> foaf:name "John Smith" .
+///   ```
+///
+/// - **Lists**: Compact representation of ordered collections
+///   ```turtle
+///   <http://example.org/list> <http://example.org/property> (1 2 3) .
+///   ```
+///
+/// - **Predicate lists**: Group multiple predicates for the same subject
+///   ```turtle
+///   <http://example.org/john> foaf:name "John Smith" ;
+///                             foaf:age 25 ;
+///                             foaf:mbox <mailto:john@example.org> .
+///   ```
+///
+/// - **Object lists**: Group multiple objects for the same subject-predicate pair
+///   ```turtle
+///   <http://example.org/john> foaf:nick "Johnny", "J", "JJ" .
+///   ```
+///
+/// - **Blank nodes**: Represent anonymous resources
+///   ```turtle
+///   <http://example.org/john> foaf:knows [ foaf:name "Jane" ] .
+///   ```
+///
+/// ## File Extension and MIME Types
+///
+/// Turtle files typically use the `.ttl` file extension.
+/// The primary MIME type is `text/turtle`.
 final class TurtleFormat implements RdfFormat {
   static const _primaryMimeType = 'text/turtle';
 
+  /// All MIME types that this format implementation can handle
+  ///
+  /// Note: This implementation also supports some N3 MIME types, as Turtle is
+  /// a subset of N3. However, full N3 features beyond Turtle are not supported.
   static const _supportedMimeTypes = {
     _primaryMimeType,
     'application/x-turtle',
@@ -21,6 +70,7 @@ final class TurtleFormat implements RdfFormat {
     'application/rdf+n3', // Alternative MIME for N3
   };
 
+  /// Creates a new Turtle format handler
   const TurtleFormat();
 
   @override
@@ -54,6 +104,9 @@ final class TurtleFormat implements RdfFormat {
 }
 
 /// Parser adapter for Turtle format
+///
+/// Internal adapter that bridges the RdfParser interface to the
+/// implementation-specific TurtleParser.
 class _TurtleParserAdapter implements RdfParser {
   @override
   RdfGraph parse(String input, {String? documentUrl}) {
