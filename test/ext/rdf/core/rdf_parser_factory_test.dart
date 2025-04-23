@@ -1,6 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:solid_task/ext/rdf/core/constants/rdf_constants.dart';
-import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/core/rdf_parser.dart';
 

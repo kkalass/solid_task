@@ -1,11 +1,13 @@
 import 'package:logging/logging.dart';
 import 'package:solid_task/ext/rdf/core/constants/rdf_constants.dart';
+import 'package:solid_task/ext/rdf/core/exceptions/exceptions.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/core/graph/triple.dart';
 
 import 'turtle_tokenizer.dart';
 
 final _log = Logger("rdf.turtle");
+const _format = "Turtle";
 
 /// A parser for Turtle syntax, which is a text-based format for representing RDF data.
 ///
@@ -57,47 +59,74 @@ class TurtleParser {
   /// Each triple is added to the result list, and the method returns all
   /// triples found in the input.
   ///
-  /// Throws [FormatException] if the input is not valid Turtle syntax.
+  /// Throws [RdfSyntaxException] if the input is not valid Turtle syntax.
   List<Triple> parse() {
-    _currentToken = _tokenizer.nextToken();
-    final triples = <Triple>[];
-    _log.info('Starting parse with token: $_currentToken');
+    try {
+      _currentToken = _tokenizer.nextToken();
+      final triples = <Triple>[];
+      _log.info('Starting parse with token: $_currentToken');
 
-    while (_currentToken.type != TokenType.eof) {
-      _log.info('Processing token: $_currentToken');
-      if (_currentToken.type == TokenType.prefix) {
-        _log.info('Found prefix declaration');
-        _parsePrefix();
-      } else if (_currentToken.type == TokenType.base) {
-        _log.info('Found base declaration');
-        _parseBase();
-      } else if (_currentToken.type == TokenType.openBracket) {
-        _log.info('Found blank node');
-        _parseBlankNode();
-        _expect(TokenType.dot);
-        _currentToken = _tokenizer.nextToken();
-      } else {
-        _log.info('Parsing subject');
-        final subject = _parseSubject();
-        _log.info('Subject parsed: $subject');
-        _log.info('Current token after subject: $_currentToken');
+      while (_currentToken.type != TokenType.eof) {
+        _log.info('Processing token: $_currentToken');
+        if (_currentToken.type == TokenType.prefix) {
+          _log.info('Found prefix declaration');
+          _parsePrefix();
+        } else if (_currentToken.type == TokenType.base) {
+          _log.info('Found base declaration');
+          _parseBase();
+        } else if (_currentToken.type == TokenType.openBracket) {
+          _log.info('Found blank node');
+          _parseBlankNode();
+          _expect(TokenType.dot);
+          _currentToken = _tokenizer.nextToken();
+        } else {
+          _log.info('Parsing subject');
+          final subject = _parseSubject();
+          _log.info('Subject parsed: $subject');
+          _log.info('Current token after subject: $_currentToken');
 
-        final predicateObjectList = _parsePredicateObjectList();
-        _log.info('Predicate-object list parsed: $predicateObjectList');
-        _log.info('Current token after predicate-object list: $_currentToken');
+          final predicateObjectList = _parsePredicateObjectList();
+          _log.info('Predicate-object list parsed: $predicateObjectList');
+          _log.info(
+            'Current token after predicate-object list: $_currentToken',
+          );
 
-        for (final po in predicateObjectList) {
-          triples.add(Triple(subject, po.predicate, po.object));
+          for (final po in predicateObjectList) {
+            triples.add(Triple(subject, po.predicate, po.object));
+          }
+
+          _log.info('Expecting dot, current token: $_currentToken');
+          _expect(TokenType.dot);
+          _currentToken = _tokenizer.nextToken();
         }
-
-        _log.info('Expecting dot, current token: $_currentToken');
-        _expect(TokenType.dot);
-        _currentToken = _tokenizer.nextToken();
       }
-    }
 
-    _log.info('Parse complete. Found ${triples.length} triples');
-    return [...triples, ..._triples];
+      _log.info('Parse complete. Found ${triples.length} triples');
+      return [...triples, ..._triples];
+    } catch (e, stack) {
+      if (e is RdfException) {
+        // Re-throw RDF exceptions as-is
+        rethrow;
+      }
+
+      // Convert other exceptions to RdfSyntaxException
+      _log.severe('Error during parsing', e, stack);
+      final source =
+          e is FormatException
+              ? SourceLocation(
+                line: _currentToken.line,
+                column: _currentToken.column,
+                context: _currentToken.value,
+              )
+              : null;
+
+      throw RdfSyntaxException(
+        e.toString(),
+        format: _format,
+        cause: e,
+        source: source,
+      );
+    }
   }
 
   /// Parses a base URI declaration.
@@ -213,13 +242,25 @@ class TurtleParser {
     } else if (_currentToken.type == TokenType.a) {
       // Handle the case where 'a' is used as a subject (which is invalid)
       _log.severe('Invalid use of "a" as subject');
-      throw FormatException(
-        'Cannot use "a" as a subject at ${_currentToken.line}:${_currentToken.column}',
+      throw RdfSyntaxException(
+        'Cannot use "a" as a subject',
+        format: _format,
+        source: SourceLocation(
+          line: _currentToken.line,
+          column: _currentToken.column,
+          context: _currentToken.value,
+        ),
       );
     } else {
       _log.severe('Unexpected token type for subject: ${_currentToken.type}');
-      throw FormatException(
-        'Expected subject at ${_currentToken.line}:${_currentToken.column}',
+      throw RdfSyntaxException(
+        'Expected subject',
+        format: _format,
+        source: SourceLocation(
+          line: _currentToken.line,
+          column: _currentToken.column,
+          context: _currentToken.value,
+        ),
       );
     }
   }
@@ -289,8 +330,14 @@ class TurtleParser {
     if (_currentToken.type != TokenType.dot &&
         _currentToken.type != TokenType.closeBracket &&
         _currentToken.type != TokenType.eof) {
-      throw FormatException(
-        'Expected "." to terminate statement at ${_currentToken.line}:${_currentToken.column}',
+      throw RdfSyntaxException(
+        'Expected "." to terminate statement',
+        format: _format,
+        source: SourceLocation(
+          line: _currentToken.line,
+          column: _currentToken.column,
+          context: _currentToken.value,
+        ),
       );
     }
 
@@ -327,8 +374,14 @@ class TurtleParser {
       return predicate;
     } else {
       _log.severe('Unexpected token type for predicate: ${_currentToken.type}');
-      throw FormatException(
-        'Expected predicate at ${_currentToken.line}:${_currentToken.column}',
+      throw RdfSyntaxException(
+        'Expected predicate',
+        format: _format,
+        source: SourceLocation(
+          line: _currentToken.line,
+          column: _currentToken.column,
+          context: _currentToken.value,
+        ),
       );
     }
   }
@@ -374,8 +427,14 @@ class TurtleParser {
       return _parseBlankNode();
     } else {
       _log.severe('Unexpected token type for object: ${_currentToken.type}');
-      throw FormatException(
-        'Expected object at ${_currentToken.line}:${_currentToken.column}',
+      throw RdfSyntaxException(
+        'Expected object',
+        format: _format,
+        source: SourceLocation(
+          line: _currentToken.line,
+          column: _currentToken.column,
+          context: _currentToken.value,
+        ),
       );
     }
   }
@@ -453,7 +512,15 @@ class TurtleParser {
     ).firstMatch(literalToken);
     if (valueMatch == null) {
       _log.severe('Invalid literal format: $literalToken');
-      throw FormatException('Invalid literal format: $literalToken');
+      throw RdfSyntaxException(
+        'Invalid literal format',
+        format: _format,
+        source: SourceLocation(
+          line: _currentToken.line,
+          column: _currentToken.column,
+          context: literalToken,
+        ),
+      );
     }
 
     final escapedValue = valueMatch.group(1)!;
@@ -597,13 +664,29 @@ class TurtleParser {
     final parts = prefixedName.split(':');
     if (parts.length != 2) {
       _log.severe('Invalid prefixed name format: $prefixedName');
-      throw FormatException('Invalid prefixed name: $prefixedName');
+      throw RdfSyntaxException(
+        'Invalid prefixed name format',
+        format: _format,
+        source: SourceLocation(
+          line: _currentToken.line,
+          column: _currentToken.column,
+          context: prefixedName,
+        ),
+      );
     }
     final prefix = parts[0];
     final localName = parts[1];
     if (!_prefixes.containsKey(prefix)) {
       _log.severe('Unknown prefix: $prefix');
-      throw FormatException('Unknown prefix: $prefix');
+      throw RdfSyntaxException(
+        'Unknown prefix',
+        format: _format,
+        source: SourceLocation(
+          line: _currentToken.line,
+          column: _currentToken.column,
+          context: prefix,
+        ),
+      );
     }
     final expanded = '${_prefixes[prefix]}$localName';
     _log.info('Expanded prefixed name: $prefixedName -> $expanded');
@@ -613,7 +696,7 @@ class TurtleParser {
 
   /// Verifies that the current token is of the expected type.
   ///
-  /// Throws a [FormatException] if the current token's type does not match
+  /// Throws a [RdfSyntaxException] if the current token's type does not match
   /// the expected type, including line and column information in the error message.
   void _expect(TokenType type) {
     _log.info('Expecting token type: $type, found: ${_currentToken.type}');
@@ -621,8 +704,14 @@ class TurtleParser {
       _log.severe(
         'Token type mismatch: expected $type but found ${_currentToken.type}',
       );
-      throw FormatException(
-        'Expected $type but found ${_currentToken.type} at ${_currentToken.line}:${_currentToken.column}',
+      throw RdfSyntaxException(
+        'Expected $type but found ${_currentToken.type}',
+        format: _format,
+        source: SourceLocation(
+          line: _currentToken.line,
+          column: _currentToken.column,
+          context: _currentToken.value,
+        ),
       );
     }
   }

@@ -1,4 +1,3 @@
-import 'package:solid_task/ext/rdf/core/constants/xsd_constants.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/core/graph/triple.dart';
 import 'package:test/test.dart';
@@ -59,9 +58,9 @@ void main() {
 
     test('toString returns a readable representation', () {
       expect(triple.toString(), contains('Triple('));
-      expect(triple.toString(), contains('${subject.toString()}'));
-      expect(triple.toString(), contains('${predicate.toString()}'));
-      expect(triple.toString(), contains('${object.toString()}'));
+      expect(triple.toString(), contains(subject.toString()));
+      expect(triple.toString(), contains(predicate.toString()));
+      expect(triple.toString(), contains(object.toString()));
     });
 
     /*

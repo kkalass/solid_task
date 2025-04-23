@@ -29,14 +29,7 @@ class Triple {
   /// Throws [ArgumentError] if:
   /// - subject is not an IRI or blank node
   /// - predicate is not an IRI
-  Triple(this.subject, this.predicate, this.object) {
-    // Validate subject
-    if (subject is! IriTerm && subject is! BlankNodeTerm) {
-      throw ArgumentError('Subject must be an IRI or blank node');
-    }
-
-    // Predicate is already constrained by the type system to be an IriTerm
-  }
+  Triple(this.subject, this.predicate, this.object);
 
   @override
   bool operator ==(Object other) {

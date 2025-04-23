@@ -3,10 +3,12 @@
 import 'dart:convert';
 
 import 'package:logging/logging.dart';
+import 'package:solid_task/ext/rdf/core/exceptions/exceptions.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/core/graph/triple.dart';
 
 final _log = Logger("rdf.jsonld");
+const _format = "JSON-LD";
 
 /// A parser for JSON-LD (JSON for Linked Data) format.
 ///
@@ -68,11 +70,22 @@ class JsonLdParser {
   /// 2. Extracting the @context if present
   /// 3. Processing the document structure to generate RDF triples
   ///
-  /// Throws [FormatException] if the input is not valid JSON-LD.
+  /// Throws [RdfSyntaxException] if the input is not valid JSON-LD.
   List<Triple> parse() {
     try {
       _log.info('Starting JSON-LD parsing');
-      final dynamic jsonData = json.decode(_input);
+      final dynamic jsonData;
+
+      try {
+        jsonData = json.decode(_input);
+      } catch (e) {
+        throw RdfSyntaxException(
+          'Invalid JSON syntax: ${e.toString()}',
+          format: _format,
+          cause: e,
+        );
+      }
+
       final triples = <Triple>[];
 
       if (jsonData is List) {
@@ -83,6 +96,10 @@ class JsonLdParser {
             triples.addAll(_processNode(item));
           } else {
             _log.warning('Skipping non-object item in JSON-LD array');
+            throw RdfSyntaxException(
+              'Array item must be a JSON object',
+              format: _format,
+            );
           }
         }
       } else if (jsonData is Map<String, dynamic>) {
@@ -91,17 +108,26 @@ class JsonLdParser {
         triples.addAll(_processNode(jsonData));
       } else {
         _log.severe('JSON-LD must be an object or array at the top level');
-        throw FormatException('Invalid JSON-LD: must be an object or array');
+        throw RdfSyntaxException(
+          'Invalid JSON-LD: must be an object or array at the top level',
+          format: _format,
+        );
       }
 
       _log.info('JSON-LD parsing complete. Found ${triples.length} triples');
       return triples;
     } catch (e, stack) {
-      _log.severe('Failed to parse JSON-LD', e, stack);
-      if (e is FormatException) {
+      if (e is RdfException) {
+        // Re-throw RDF exceptions as-is
         rethrow;
       }
-      throw FormatException('Invalid JSON-LD: ${e.toString()}');
+
+      _log.severe('Failed to parse JSON-LD', e, stack);
+      throw RdfSyntaxException(
+        'JSON-LD parsing error: ${e.toString()}',
+        format: _format,
+        cause: e,
+      );
     }
   }
 
@@ -222,7 +248,11 @@ class JsonLdParser {
   /// Get the subject identifier from a node
   String _getSubjectId(Map<String, dynamic> node) {
     if (node.containsKey('@id')) {
-      final id = node['@id'] as String;
+      final id = node['@id'];
+
+      if (id is! String) {
+        throw RdfSyntaxException('@id value must be a string', format: _format);
+      }
 
       // First expand any prefixes using the context
       final context = _extractContext(node);
@@ -265,6 +295,7 @@ class JsonLdParser {
     }
 
     // Return the IRI as-is if we can't resolve it
+    _log.warning('Could not expand prefixed IRI: $iri');
     return iri;
   }
 
@@ -421,6 +452,12 @@ class JsonLdParser {
         return Uri.parse(_baseUri).resolve(iri).toString();
       } catch (e) {
         _log.warning('Failed to resolve IRI against base URI: $iri', e);
+        throw RdfInvalidIriException(
+          'Failed to resolve IRI against base URI',
+          iri: iri,
+          format: _format,
+          cause: e,
+        );
       }
     }
 

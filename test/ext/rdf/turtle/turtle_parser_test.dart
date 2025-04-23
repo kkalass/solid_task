@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:solid_task/ext/rdf/core/exceptions/exceptions.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/turtle/turtle_parser.dart';
 
@@ -117,7 +118,7 @@ void main() {
 
     test('should reject using "a" as a subject', () {
       final parser = TurtleParser('a <http://example.com/bar> "baz" .');
-      expect(() => parser.parse(), throwsFormatException);
+      expect(() => parser.parse(), throwsA(isA<RdfSyntaxException>()));
     });
 
     test('should parse a complete profile', () {
@@ -269,11 +270,11 @@ void main() {
       );
     });
 
-    test('should throw FormatException for unknown prefix', () {
+    test('should throw RdfSyntaxException for unknown prefix', () {
       final parser = TurtleParser(
         'unknown:foo <http://example.com/bar> "baz" .',
       );
-      expect(() => parser.parse(), throwsFormatException);
+      expect(() => parser.parse(), throwsA(isA<RdfSyntaxException>()));
     });
 
     test('should parse objects with multiple commas', () {
@@ -331,12 +332,12 @@ void main() {
     });
 
     test(
-      'should throw FormatException for invalid syntax - missing object',
+      'should throw RdfSyntaxException for invalid syntax - missing object',
       () {
         final parser = TurtleParser(
           '<http://example.com/foo> <http://example.com/bar> .',
         );
-        expect(() => parser.parse(), throwsFormatException);
+        expect(() => parser.parse(), throwsA(isA<RdfSyntaxException>()));
       },
     );
 
@@ -798,16 +799,16 @@ void main() {
     });
 
     test(
-      'should throw FormatException for invalid syntax - missing period',
+      'should throw RdfSyntaxException for invalid syntax - missing period',
       () {
         final parser = TurtleParser(
           '<http://example.com/foo> <http://example.com/bar> "baz"',
         );
         try {
           parser.parse();
-          fail('Expected FormatException was not thrown');
+          fail('Expected RdfSyntaxException was not thrown');
         } catch (e) {
-          expect(e, isA<FormatException>());
+          expect(e, isA<RdfSyntaxException>());
         }
       },
     );

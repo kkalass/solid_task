@@ -3,7 +3,6 @@ import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/core/graph/triple.dart';
 import 'package:solid_task/ext/rdf/core/rdf_serializer.dart';
-import 'package:solid_task/ext/rdf/turtle/turtle_serializer.dart';
 
 void main() {
   group('RdfSerializerFactory', () {

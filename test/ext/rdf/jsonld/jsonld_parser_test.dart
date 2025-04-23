@@ -1,3 +1,4 @@
+import 'package:solid_task/ext/rdf/core/exceptions/exceptions.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/jsonld/jsonld_parser.dart';
 import 'package:test/test.dart';
@@ -373,7 +374,7 @@ void main() {
       final invalidJson = '{name: "Invalid JSON"}';
 
       final parser = JsonLdParser(invalidJson);
-      expect(() => parser.parse(), throwsFormatException);
+      expect(() => parser.parse(), throwsA(isA<RdfSyntaxException>()));
     });
   });
 }
