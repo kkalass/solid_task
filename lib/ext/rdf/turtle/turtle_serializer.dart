@@ -143,13 +143,25 @@ class TurtleSerializer implements RdfSerializer {
       return;
     }
 
-    // Then try prefix match (for IRIs that use the namespace plus a local name)
+    // For prefix match, use the longest matching prefix (most specific)
+    // This handles overlapping prefixes correctly (e.g., http://example.org/ and http://example.org/vocabulary/)
+    var bestMatch = '';
+    var bestPrefix = '';
+
     for (final entry in prefixCandidates.entries) {
       final namespace = entry.value;
-      if (iri.startsWith(namespace)) {
-        usedPrefixes[entry.key] = namespace;
-        break;
+      // Skip empty namespaces to avoid generating invalid prefixes
+      if (namespace.isEmpty) continue;
+
+      if (iri.startsWith(namespace) && namespace.length > bestMatch.length) {
+        bestMatch = namespace;
+        bestPrefix = entry.key;
       }
+    }
+
+    // Only add valid prefixes with non-empty namespaces
+    if ((bestPrefix.isNotEmpty || bestPrefix == '') && bestMatch.isNotEmpty) {
+      usedPrefixes[bestPrefix] = bestMatch;
     }
   }
 
@@ -158,10 +170,20 @@ class TurtleSerializer implements RdfSerializer {
     if (prefixes.isEmpty) {
       return;
     }
-    // Write prefixes in alphabetical order for consistent output
-    for (final entry
-        in prefixes.entries.toList()..sort((a, b) => a.key.compareTo(b.key))) {
-      buffer.writeln('@prefix ${entry.key}: <${entry.value}> .');
+
+    // Write prefixes in alphabetical order for consistent output,
+    // but handle empty prefix separately (should appear as ':')
+    final sortedPrefixes =
+        prefixes.entries.toList()..sort((a, b) {
+          // Empty prefix should come first in Turtle convention
+          if (a.key.isEmpty) return -1;
+          if (b.key.isEmpty) return 1;
+          return a.key.compareTo(b.key);
+        });
+
+    for (final entry in sortedPrefixes) {
+      final prefix = entry.key.isEmpty ? ':' : '${entry.key}:';
+      buffer.writeln('@prefix $prefix <${entry.value}> .');
     }
 
     // Add blank line after prefixes
@@ -285,13 +307,15 @@ class TurtleSerializer implements RdfSerializer {
             baseIri = iri;
             localPart = '';
           }
+
           final prefix = prefixesByIri[baseIri];
           if (prefix != null) {
-            return '$prefix:$localPart';
+            // Handle empty prefix specially
+            return prefix.isEmpty ? ':$localPart' : '$prefix:$localPart';
           } else {
             final prefix = prefixesByIri[iri];
             if (prefix != null) {
-              return '$prefix:';
+              return prefix.isEmpty ? ':' : '$prefix:';
             }
           }
         }

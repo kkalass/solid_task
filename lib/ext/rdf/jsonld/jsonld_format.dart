@@ -10,6 +10,7 @@ import '../core/plugin/format_plugin.dart';
 import '../core/rdf_parser.dart';
 import '../core/rdf_serializer.dart';
 import 'jsonld_parser.dart';
+import 'jsonld_serializer.dart';
 
 /// RDF Format implementation for the JSON-LD serialization format.
 ///
@@ -89,9 +90,7 @@ final class JsonLdFormat implements RdfFormat {
   RdfParser createParser() => _JsonLdParserAdapter();
 
   @override
-  RdfSerializer createSerializer() {
-    throw FormatNotSupportedException('JSON-LD serializer not yet implemented');
-  }
+  RdfSerializer createSerializer() => JsonLdSerializer();
 
   @override
   bool canParse(String content) {

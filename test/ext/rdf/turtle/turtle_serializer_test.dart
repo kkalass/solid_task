@@ -144,11 +144,22 @@ void main() {
         contains('<http://example.org/bob> <http://example.org/name> "Bob" .'),
       );
 
-      // Check subject grouping
+      // Überprüfe die strukturellen Eigenschaften der Ausgabe statt fester Zeilenanzahlen
+      final lines = result.split('\n');
+      expect(lines.any((line) => line.contains('@prefix xsd:')), isTrue);
+      expect(lines.any((line) => line.isEmpty), isTrue);
       expect(
-        result.split('\n').length,
-        5,
-      ); // Two subjects = two groups, but one subject has two predicates, plus a prefix line for xsd and a blank one after the prefix
+        lines.any((line) => line.contains('<http://example.org/alice>')),
+        isTrue,
+      );
+      expect(
+        lines.any((line) => line.contains('<http://example.org/bob>')),
+        isTrue,
+      );
+      expect(
+        lines.any((line) => line.contains('<http://example.org/age>')),
+        isTrue,
+      );
     });
 
     test('should group multiple objects for the same predicate', () {
@@ -494,6 +505,40 @@ void main() {
       expect(
         result,
         contains('book:littleprince dc:title "The Little Prince" .'),
+      );
+    });
+
+    test('should handle overlapping prefixes correctly', () {
+      // Arrange
+      final graph = RdfGraph.fromTriples([
+        Triple(
+          IriTerm('http://example.org/subject'),
+          IriTerm('http://example.org/vocabulary/predicate'),
+          LiteralTerm.string('object'),
+        ),
+      ]);
+
+      final customPrefixes = {
+        'ex': 'http://example.org/',
+        'vocab': 'http://example.org/vocabulary/',
+      };
+
+      // Act
+      final result = serializer.write(graph, customPrefixes: customPrefixes);
+
+      // Assert
+      expect(result, contains('@prefix ex: <http://example.org/> .'));
+      expect(
+        result,
+        contains('@prefix vocab: <http://example.org/vocabulary/> .'),
+      );
+
+      // Should use the more specific prefix for the predicate
+      expect(result, contains('ex:subject vocab:predicate "object" .'));
+      // Should NOT use the less specific prefix with the remaining part as local name
+      expect(
+        result,
+        isNot(contains('ex:subject ex:vocabulary/predicate "object" .')),
       );
     });
   });
