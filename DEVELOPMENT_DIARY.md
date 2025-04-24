@@ -89,3 +89,16 @@ But the worst thing about working with the copilot agent is, that it constantly 
 * "As an expert dart developer who values clean code, idiomatic dart and clean architecture, please review the library in lib/ext/rdf (the tests are in test/ext/rdf) and make suggestions for improvements if any are advisable. Is it well structured? Are the namings good and clear? Is it following dart best practices and is it using idiomatic dart?"
 * "As a senior dart developer, please convert the rdf parser and serializer to a plugin architecture so that library users may add different formats (or different implementations of the formats we support)"
 * "As an experienced writer of technical documentation, go through all files in lib/ext/rdf and document them thoroughly. Make sure to especially create great top-of-the-class API documentation, including package level documentation (library directive). Your target audience are dart developers who might not be very familiar with RDF and its serialization formats like e.g. Turtle"
+
+ok, lets do the same for the rdf_orm library now
+* "As an expert dart developer who values clean code, idiomatic dart and clean architecture, please review the library in lib/ext/rdf_orm (the tests are in test/ext/rdf_orm) and make suggestions for improvements if any are advisable. Is it well structured? Are the namings good and clear? Is it following dart best practices and is it using idiomatic dart?"
+* "As an experienced dart developer, implement all sensible tests for all files in lib/ext/rdf_orm   "
+* "As an experienced writer of technical documentation, go through all files in lib/ext/rdf_orm and document them thoroughly. Make sure to especially create great top-of-the-class API documentation, including package level documentation (library directive). Your target audience are dart developers who might not be very familiar with RDF and its serialization formats like e.g. Turtle"
+
+## 2025-04-24
+
+Wow, Copilot Agent is so frustrating! I tried to make it write tests for rdf_orm, but it failed miserably, not being able to 
+fix the compilation errors itself, halucinating code and insisting on changing the API of the main code instead of adjusting the tests
+to use the actually existing API. Very frustrating experience.
+
+So, I will give windsurf a go as they 
