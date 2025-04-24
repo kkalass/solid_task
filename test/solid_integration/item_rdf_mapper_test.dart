@@ -15,7 +15,10 @@ void main() {
 
   setUp(() {
     loggerService = LoggerService();
-    itemMapper = ItemRdfMapper(loggerService: loggerService);
+    itemMapper = ItemRdfMapper(
+      loggerService: loggerService,
+      storageRootProvider: () => storageRoot,
+    );
 
     registry = RdfMapperRegistry();
     registry.registerSubjectMapper<Item>(itemMapper);
@@ -50,20 +53,23 @@ void main() {
       originalItem.vectorClock = {'user3': 3, 'user4': 4};
 
       // Convert to graph
-      final graph = mapperService.toGraph(storageRoot, originalItem);
+      final graph = mapperService.toGraph(originalItem);
       expect(graph.triples, isNotEmpty);
 
       // Convert back to item
-      final reconstructedItem = mapperService.fromGraph<Item>(
-        storageRoot,
+      final reconstructedItem = mapperService.fromGraphByRdfSubjectId<Item>(
         graph,
         IriTerm("${storageRoot}solidtask/task/graph-test-456.ttl"),
       );
+      final reconstructedItem2 = mapperService.fromGraph<Item>(graph);
 
       // Verify properties match
       expect(reconstructedItem.id, equals(originalItem.id));
+      expect(reconstructedItem2.id, equals(originalItem.id));
       expect(reconstructedItem.text, equals(originalItem.text));
+      expect(reconstructedItem2.text, equals(originalItem.text));
       expect(reconstructedItem.vectorClock, equals(originalItem.vectorClock));
+      expect(reconstructedItem2.vectorClock, equals(originalItem.vectorClock));
     });
   });
 }

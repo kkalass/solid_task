@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:solid_task/bootstrap/service_locator_builder.dart';
+import 'package:solid_task/ext/solid/pod/storage/pod_storage_configuration_provider.dart';
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/solid_integration/item_rdf_mapper.dart';
@@ -56,9 +57,18 @@ extension RdfMappingServiceLocatorBuilderExtension on ServiceLocatorBuilder {
 
       // Register item mapper
       sl.registerLazySingleton<ItemRdfMapper>(() {
+        final podStorageConfigurationProvider =
+            sl<PodStorageConfigurationProvider>();
         final factory = config._itemMapperFactory;
         return factory == null
-            ? ItemRdfMapper(loggerService: loggerService)
+            ? ItemRdfMapper(
+              loggerService: loggerService,
+              storageRootProvider:
+                  () =>
+                      podStorageConfigurationProvider
+                          .currentConfiguration!
+                          .appStorageRoot,
+            )
             : factory(sl);
       });
 

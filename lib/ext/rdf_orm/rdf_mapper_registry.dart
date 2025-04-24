@@ -30,6 +30,22 @@ final _log = Logger("rdf_orm.registry");
 /// Provides a way to register and retrieve mappers for specific types.
 /// This is the core of the mapping system, managing type-to-mapper associations.
 final class RdfMapperRegistry {
+  /// Returns a deep copy of this registry, including all registered mappers.
+  RdfMapperRegistry clone() {
+    final copy = RdfMapperRegistry._empty();
+    copy._iriDeserializers.addAll(_iriDeserializers);
+    copy._subjectDeserializersByTypeIri.addAll(_subjectDeserializersByTypeIri);
+    copy._subjectDeserializers.addAll(_subjectDeserializers);
+    copy._iriSerializers.addAll(_iriSerializers);
+    copy._blankNodeDeserializers.addAll(_blankNodeDeserializers);
+    copy._literalDeserializers.addAll(_literalDeserializers);
+    copy._literalSerializers.addAll(_literalSerializers);
+    copy._subjectSerializers.addAll(_subjectSerializers);
+    return copy;
+  }
+
+  /// Internal empty constructor for cloning
+  RdfMapperRegistry._empty();
   final Map<Type, RdfIriTermDeserializer<dynamic>> _iriDeserializers = {};
   final Map<IriTerm, RdfSubjectDeserializer<dynamic>>
   _subjectDeserializersByTypeIri = {};

@@ -4,11 +4,9 @@ import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/core/graph/triple.dart';
 import 'package:solid_task/ext/rdf_orm/deserialization_context_impl.dart';
+import 'package:solid_task/ext/rdf_orm/exceptions/deserialization_exception.dart';
 import 'package:solid_task/ext/rdf_orm/exceptions/deserializer_not_found_exception.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_blank_node_term_deserializer.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_mapper_registry.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_subject_deserializer.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_subject_serializer.dart';
 import 'package:solid_task/ext/rdf_orm/serialization_context_impl.dart';
 
 final _log = Logger("rdf_orm.service");
@@ -27,93 +25,85 @@ final class RdfMapperService {
   /// Access to the registry for registering custom mappers
   RdfMapperRegistry get registry => _registry;
 
-  T fromTriples<T>(
-    String storageRoot,
+  /// Deserialize an object of type [T] from a list of triples.
+  ///
+  /// Optionally, a [register] callback can be provided to temporarily register
+  /// custom mappers for this operation. The callback receives a clone of the registry.
+  T fromTriplesByRdfSubjectId<T>(
     List<Triple> triples,
-    RdfSubject rdfSubject, {
-    RdfSubjectDeserializer<T>? subjectDeserializer,
-    RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
+    RdfSubject rdfSubjectId, {
+    void Function(RdfMapperRegistry registry)? register,
   }) {
-    return fromGraph(
-      storageRoot,
+    return fromGraphByRdfSubjectId(
       RdfGraph(triples: triples),
-      rdfSubject,
-      subjectDeserializer: subjectDeserializer,
-      blankNodeDeserializer: blankNodeDeserializer,
+      rdfSubjectId,
+      register: register,
     );
   }
 
-  T fromGraph<T>(
-    String storageRoot,
+  /// Deserialize an object of type [T] from an RDF graph which is identified by [rdfSubject] parameter.
+  ///
+  /// Optionally, a [register] callback can be provided to temporarily register
+  /// custom mappers for this operation. The callback receives a clone of the registry.
+  ///
+  /// Example:
+  /// ```dart
+  /// orm.fromGraph<MyType>(graph, subject, register: (registry) {
+  ///   registry.registerSubjectMapper(ItemMapper(baseUrl));
+  /// });
+  /// ```
+  T fromGraphByRdfSubjectId<T>(
     RdfGraph graph,
-    RdfSubject rdfSubject, {
-    RdfSubjectDeserializer<T>? subjectDeserializer,
-    RdfBlankNodeTermDeserializer<T>? blankNodeDeserializer,
+    RdfSubject rdfSubjectId, {
+    void Function(RdfMapperRegistry registry)? register,
   }) {
     _log.fine('Delegated mapping graph to ${T.toString()}');
 
-    var context = DeserializationContextImpl(
-      storageRoot: storageRoot,
-      graph: graph,
-      registry: _registry,
-    );
+    // Clone registry if registration callback is provided
+    final registry = register != null ? _registry.clone() : _registry;
+    if (register != null) {
+      register(registry);
+    }
+    var context = DeserializationContextImpl(graph: graph, registry: registry);
 
-    return context.fromRdf<T>(
-      rdfSubject,
-      null,
-      subjectDeserializer,
-      null,
-      blankNodeDeserializer,
-    );
+    return context.fromRdf<T>(rdfSubjectId, null, null, null, null);
   }
 
-  List<Object> fromGraphAllSubjects(String storageRoot, RdfGraph graph) {
-    // FIXME what do we do with type iris that are actually child subjects like the vector clock?
-    /*
-    Das Problem ist: diese können ziemlich generische Typen wie z.Bsp
-    einfach MapEntry<String,int> haben - und ihre Mapper werden normalerweise
-    auch nicht global registriert, sondern lokal am entsprechenden property
-    bzw. bei der (de)serialisierung ihrer parents im code direkt.
+  /// Convenience method to deserialize the single subject [T] from an RDF graph
+  T fromGraph<T>(
+    RdfGraph graph, {
+    void Function(RdfMapperRegistry registry)? register,
+  }) {
+    var result = fromGraphAllSubjects(graph, register: register);
+    if (result.isEmpty) {
+      throw DeserializationException('No subject found in graph');
+    }
+    if (result.length > 1) {
+      throw DeserializationException(
+        'More than one subject found in graph: ${result.map((e) => e.toString()).join(', ')}',
+      );
+    }
+    return result[0] as T;
+  }
 
-    Die kann ich dann also auch gar nicht hier deserialisieren. 
-
-    Ich könnte natürlich einfach warnen dass ich keinen deserializer habe
-    und nicht eine exception werfen. Aber es wäre schon doof, immer diese
-    warnungen zu sehen für solche legitimen Fälle. Macht es denn Sinn, wenn 
-    ein SubjectDeserializer die Typen seiner Children angibt? Dann könnte 
-    ich mir natürlich schon eher etwas basteln um die Warnung zu unterdrücken.
-
-    Nachteil ist hier, dass "unnatürlicher" manueller Aufwand getrieben werden 
-    müsste, es wirkt umständlich und wie eine Krücke.
-
-    Eine andere Option wäre natürlich auch, zu überwachen, welche Triples gelesen wurden.
-    und die dann ggf. über spezielle Objekte raus zu geben oder zu warnen 
-    wenn das Dokument nicht vollständig gelesen wurde. Keine schlechte Idee,
-    geht auch in die Richtung der other map in Java für JSON. Man könnte 
-    dafür ja z. B. Json-LD nutzen und die übrigen properties dort hinein 
-    packen - aber das ist Zukunftsmusik und für jetzt zu aufwändig. 
-
-    Ok, also: für jetzt tracke ich hier welche subjects ich wegen fehlender 
-    mapper nicht lesen konnte und mecker, aber für die Zukunft mache ich mir
-     ein fixme
-    */
-
-    // FIXME KK - track which triples were read from the graph, and only warn about
-    // unserialized subjects (caused by missing mappers) if they really were
-    // unserialized in the end. In addition, support an "any" map in the
-    // dart instance where all other predicate properties are stored with a
-    // default conversion to dart.
-    // Optional: we could also return subjects with the default conversion method
-    // (e.g. as json-ld in dart maps) here for non-registered subjects.
+  /// Deserialize a list of objects from all subjects in the RDF graph.
+  ///
+  /// Optionally, a [register] callback can be provided to temporarily register
+  /// custom mappers for this operation. The callback receives a clone of the registry.
+  List<Object> fromGraphAllSubjects(
+    RdfGraph graph, {
+    void Function(RdfMapperRegistry registry)? register,
+  }) {
     var deserializationSubjects = graph.findTriples(
       predicate: RdfConstants.typeIri,
     );
 
-    var context = DeserializationContextImpl(
-      storageRoot: storageRoot,
-      graph: graph,
-      registry: _registry,
-    );
+    // Clone registry if registration callback is provided
+    final registry = register != null ? _registry.clone() : _registry;
+    if (register != null) {
+      register(registry);
+    }
+    var context = DeserializationContextImpl(graph: graph, registry: registry);
 
     return deserializationSubjects
         .map((triple) {
@@ -138,45 +128,66 @@ final class RdfMapperService {
         .toList();
   }
 
-  /// Map an object to RDF graph
+  /// Serialize an object of type [T] to an RDF graph.
   ///
-  /// Converts a domain object to an RDF graph using the registered mapper
+  /// Optionally, a [register] callback can be provided to temporarily register
+  /// custom mappers for this operation. The callback receives a clone of the registry.
+  /// This allows for dynamic, per-call configuration without affecting the global registry.
   ///
+  /// Example:
+  /// ```dart
+  /// orm.toGraph('root', myObject, register: (registry) {
+  ///   registry.registerSubjectMapper(ItemMapper(baseUrl));
+  /// });
+  /// ```
   /// @param instance The object to convert
   /// @param uri Optional URI to use as the subject
   /// @return RDF graph representing the object
   /// @throws StateError if no mapper is registered for type T
   RdfGraph toGraph<T>(
-    String storageRoot,
     T instance, {
-    RdfSubjectSerializer<T>? serializer,
+    void Function(RdfMapperRegistry registry)? register,
   }) {
     _log.fine('Converting instance of ${T.toString()} to RDF graph');
 
-    final context = SerializationContextImpl(
-      storageRoot: storageRoot,
-      registry: _registry,
-    );
+    // Clone registry if registration callback is provided
+    final registry = register != null ? _registry.clone() : _registry;
+    if (register != null) {
+      register(registry);
+    }
+    final context = SerializationContextImpl(registry: registry);
 
-    var (_, triples) = context.subject<T>(instance, serializer: serializer);
+    var (_, triples) = context.subject<T>(instance);
 
     return RdfGraph(triples: triples);
   }
 
+  /// Serialize a list of objects to an RDF graph.
+  ///
+  /// Optionally, a [register] callback can be provided to temporarily register
+  /// custom mappers for this operation. The callback receives a clone of the registry.
+  ///
+  /// Example:
+  /// ```dart
+  /// orm.toGraphFromList('root', items, register: (registry) {
+  ///   registry.registerSubjectMapper(ItemMapper(baseUrl));
+  /// });
+  /// ```
   RdfGraph toGraphFromList<T>(
-    String storageRoot,
     List<T> instances, {
-    RdfSubjectSerializer? serializer,
+    void Function(RdfMapperRegistry registry)? register,
   }) {
     _log.fine('Converting instance of ${T.toString()} to RDF graph');
 
-    final context = SerializationContextImpl(
-      storageRoot: storageRoot,
-      registry: _registry,
-    );
+    // Clone registry if registration callback is provided
+    final registry = register != null ? _registry.clone() : _registry;
+    if (register != null) {
+      register(registry);
+    }
+    final context = SerializationContextImpl(registry: registry);
     var triples =
         instances.expand((instance) {
-          var (_, triples) = context.subject(instance, serializer: serializer);
+          var (_, triples) = context.subject(instance);
           return triples;
         }).toList();
 

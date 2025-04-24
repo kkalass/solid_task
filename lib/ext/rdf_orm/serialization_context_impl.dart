@@ -8,14 +8,10 @@ import 'package:solid_task/ext/rdf_orm/rdf_subject_serializer.dart';
 import 'package:solid_task/ext/rdf_orm/serialization_context.dart';
 
 class SerializationContextImpl extends SerializationContext {
-  @override
-  final String storageRoot;
   final RdfMapperRegistry _registry;
 
-  SerializationContextImpl({
-    required this.storageRoot,
-    required RdfMapperRegistry registry,
-  }) : _registry = registry;
+  SerializationContextImpl({required RdfMapperRegistry registry})
+    : _registry = registry;
 
   @override
   List<Triple> childSubject<T>(

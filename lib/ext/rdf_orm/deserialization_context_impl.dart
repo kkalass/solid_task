@@ -12,11 +12,8 @@ import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
 class DeserializationContextImpl extends DeserializationContext {
   final RdfGraph _graph;
   final RdfMapperRegistry _registry;
-  @override
-  final String storageRoot;
 
   DeserializationContextImpl({
-    required this.storageRoot,
     required RdfGraph graph,
     required RdfMapperRegistry registry,
   }) : _graph = graph,

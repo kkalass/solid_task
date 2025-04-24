@@ -13,8 +13,6 @@ import 'package:solid_task/models/item.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/solid_integration/task_ontology_constants.dart';
 
-// FIXME KK - register this class!
-
 /// RDF mapper for Item domain objects
 ///
 /// This class handles the conversion between Item domain objects and their
@@ -22,21 +20,25 @@ import 'package:solid_task/solid_integration/task_ontology_constants.dart';
 final class ItemRdfMapper implements RdfSubjectMapper<Item> {
   @override
   final IriTerm typeIri = TaskOntologyConstants.taskClassIri;
-
+  final String Function() _storageRootProvider;
   final ContextLogger _logger;
 
   /// Creates a new ItemRdfMapper
   ///
   /// @param loggerService Optional logger for diagnostic information
-  ItemRdfMapper({LoggerService? loggerService})
-    : _logger = (loggerService ?? LoggerService()).createLogger(
-        'ItemRdfMapper',
-      );
+  ItemRdfMapper({
+    LoggerService? loggerService,
+    required String Function() storageRootProvider,
+  }) : _logger = (loggerService ?? LoggerService()).createLogger(
+         'ItemRdfMapper',
+       ),
+       _storageRootProvider = storageRootProvider;
 
   @override
   Item fromIriTerm(IriTerm iri, DeserializationContext context) {
     _logger.debug('Converting triples to Item with subject: $iri');
 
+    final storageRoot = _storageRootProvider();
     // Create base item
     final item = Item(
       text: context.getRequiredPropertyValue<String>(
@@ -48,14 +50,11 @@ final class ItemRdfMapper implements RdfSubjectMapper<Item> {
       lastModifiedBy: context.getRequiredPropertyValue<String>(
         iri,
         DcTermsConstants.creatorIri,
-        iriDeserializer: AppInstanceIdDeserializer(),
+        iriDeserializer: AppInstanceIdDeserializer(storageRoot: storageRoot),
       ),
     );
 
-    item.id = TaskOntologyConstants.extractTaskIdFromIri(
-      context.storageRoot,
-      iri,
-    );
+    item.id = TaskOntologyConstants.extractTaskIdFromIri(storageRoot, iri);
 
     // Extract more properties
     item.createdAt = context.getRequiredPropertyValue<DateTime>(
@@ -75,7 +74,7 @@ final class ItemRdfMapper implements RdfSubjectMapper<Item> {
     item.vectorClock = context.getPropertyValueMap(
       iri,
       TaskOntologyConstants.vectorClockIri,
-      subjectDeserializer: VectorClockMapper(),
+      subjectDeserializer: VectorClockMapper(storageRoot: storageRoot),
     );
     return item;
   }
@@ -87,10 +86,8 @@ final class ItemRdfMapper implements RdfSubjectMapper<Item> {
     RdfSubject? parentSubject,
   }) {
     _logger.debug('Converting Item ${instance.id} to triples');
-    final itemIri = TaskOntologyConstants.makeTaskIri(
-      context.storageRoot,
-      instance.id,
-    );
+    final storageRoot = _storageRootProvider();
+    final itemIri = TaskOntologyConstants.makeTaskIri(storageRoot, instance.id);
 
     return (
       itemIri,
@@ -118,7 +115,7 @@ final class ItemRdfMapper implements RdfSubjectMapper<Item> {
           itemIri,
           DcTermsConstants.creatorIri,
           instance.lastModifiedBy,
-          serializer: AppInstanceIdSerializer(),
+          serializer: AppInstanceIdSerializer(storageRoot: storageRoot),
         ),
 
         // The vectorClock Map will be serialized as a list of Subjects in
@@ -128,7 +125,7 @@ final class ItemRdfMapper implements RdfSubjectMapper<Item> {
           itemIri,
           TaskOntologyConstants.vectorClockIri,
           instance.vectorClock,
-          VectorClockMapper(),
+          VectorClockMapper(storageRoot: storageRoot),
         ),
       ],
     );
@@ -136,23 +133,25 @@ final class ItemRdfMapper implements RdfSubjectMapper<Item> {
 }
 
 class AppInstanceIdDeserializer extends ExtractingIriTermDeserializer<String> {
-  AppInstanceIdDeserializer()
+  final String storageRoot;
+  AppInstanceIdDeserializer({required this.storageRoot})
     : super(
         extract:
             (term, ctxt) => TaskOntologyConstants.extractAppInstanceIdFromIri(
-              ctxt.storageRoot,
+              storageRoot,
               term,
             ),
       );
 }
 
 class AppInstanceIdSerializer extends IriIdSerializer {
-  AppInstanceIdSerializer()
+  final String storageRoot;
+  AppInstanceIdSerializer({required this.storageRoot})
     : super(
         expand:
             (appInstanceId, context) =>
                 TaskOntologyConstants.makeAppInstanceIri(
-                  context.storageRoot,
+                  storageRoot,
                   appInstanceId,
                 ),
       );
@@ -162,8 +161,11 @@ class VectorClockMapper
     implements
         RdfSubjectDeserializer<MapEntry<String, int>>,
         RdfSubjectSerializer<MapEntry<String, int>> {
+  final String storageRoot;
   @override
   final IriTerm typeIri = TaskOntologyConstants.vectorClockEntryIri;
+
+  VectorClockMapper({required this.storageRoot});
 
   @override
   fromIriTerm(IriTerm clockEntryIri, DeserializationContext context) {
@@ -171,7 +173,7 @@ class VectorClockMapper
       context.getRequiredPropertyValue<String>(
         clockEntryIri,
         TaskOntologyConstants.clientIdIri,
-        iriDeserializer: AppInstanceIdDeserializer(),
+        iriDeserializer: AppInstanceIdDeserializer(storageRoot: storageRoot),
       ),
       context.getRequiredPropertyValue<int>(
         clockEntryIri,
@@ -206,7 +208,7 @@ class VectorClockMapper
           iri,
           TaskOntologyConstants.clientIdIri,
           entry.key,
-          serializer: AppInstanceIdSerializer(),
+          serializer: AppInstanceIdSerializer(storageRoot: storageRoot),
         ),
 
         // the version counter

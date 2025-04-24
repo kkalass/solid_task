@@ -9,8 +9,6 @@ import 'package:solid_task/ext/rdf_orm/rdf_subject_serializer.dart';
 /// Provides access to services and state needed during RDF serialization.
 /// Used to delegate complex type mapping to the parent service.
 abstract class SerializationContext {
-  String get storageRoot;
-
   (RdfSubject, List<Triple>) subject<T>(
     T instance, {
     RdfSubjectSerializer<T>? serializer,

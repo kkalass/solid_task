@@ -9,8 +9,6 @@ import 'package:solid_task/ext/rdf_orm/rdf_subject_deserializer.dart';
 /// Provides access to services and state needed during RDF deserialization.
 /// Used to delegate complex type reconstruction to the parent service.
 abstract class DeserializationContext {
-  String get storageRoot;
-
   /// Gets a property value from the RDF graph
   ///
   /// In RDF, we have triples of "subject", "predicate", "object".

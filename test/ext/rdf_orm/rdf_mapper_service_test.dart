@@ -20,6 +20,10 @@ class TestItem {
 }
 
 final class TestItemRdfMapper implements RdfSubjectMapper<TestItem> {
+  final String storageRoot;
+
+  TestItemRdfMapper({required this.storageRoot});
+
   @override
   final IriTerm typeIri = IriTerm(
     "http://kalass.de/dart/rdf/test-ontology#TestItem",
@@ -46,7 +50,7 @@ final class TestItemRdfMapper implements RdfSubjectMapper<TestItem> {
     RdfSubject? parentSubject,
   }) {
     final itemIri = IriTerm(
-      context.storageRoot + Uri.encodeComponent(instance.name),
+      "$storageRoot${Uri.encodeComponent(instance.name)}",
     );
 
     return (
@@ -69,7 +73,7 @@ final class TestItemRdfMapper implements RdfSubjectMapper<TestItem> {
   }
 }
 
-const storageRoot = "https://example.com/pod/";
+const storageRootForTest = "https://example.com/pod/";
 
 void main() {
   late RdfFormatRegistry formatRegistry;
@@ -90,7 +94,9 @@ void main() {
 
     // Setup mapper registry
     registry = RdfMapperRegistry();
-    registry.registerSubjectMapper<TestItem>(TestItemRdfMapper());
+    registry.registerSubjectMapper<TestItem>(
+      TestItemRdfMapper(storageRoot: "https://some.static.url.example.com/"),
+    );
 
     mapperService = RdfMapperService(registry: registry);
   });
@@ -117,15 +123,11 @@ void main() {
       final originalItem = TestItem(name: 'Graph conversion test', age: 42);
 
       // Convert to graph
-      final graph = mapperService.toGraph<TestItem>(storageRoot, originalItem);
+      final graph = mapperService.toGraph<TestItem>(originalItem);
       expect(graph.triples, isNotEmpty);
 
       // Convert back to item
-      final reconstructedItem = mapperService.fromGraph<TestItem>(
-        storageRoot,
-        graph,
-        graph.triples[0].subject as IriTerm,
-      );
+      final reconstructedItem = mapperService.fromGraph<TestItem>(graph);
 
       // Verify properties match
       expect(reconstructedItem.name, equals(originalItem.name));
@@ -139,8 +141,15 @@ void main() {
       // Create test item
       final originalItem = TestItem(name: 'Graph Conversion Test', age: 42);
 
-      // Convert to graph
-      final graph = mapperService.toGraph<TestItem>(storageRoot, originalItem);
+      // Convert to graph, using a custom deserializer to provide a custom
+      // storage root.
+      final graph = mapperService.toGraph<TestItem>(
+        originalItem,
+        register:
+            (registry) => registry.registerSubjectSerializer(
+              TestItemRdfMapper(storageRoot: storageRootForTest),
+            ),
+      );
       expect(graph.triples, isNotEmpty);
       final turtle = serializer.write(graph);
 
@@ -167,7 +176,13 @@ void main() {
       final originalItem = TestItem(name: 'Graph Conversion Test', age: 42);
 
       // Convert to graph
-      final graph = mapperService.toGraph<TestItem>(storageRoot, originalItem);
+      final graph = mapperService.toGraph<TestItem>(
+        originalItem,
+        register:
+            (registry) => registry.registerSubjectSerializer(
+              TestItemRdfMapper(storageRoot: storageRootForTest),
+            ),
+      );
       expect(graph.triples, isNotEmpty);
       final turtle = serializer.write(
         graph,
@@ -205,8 +220,11 @@ void main() {
       // Convert to graph
       final graph = parser.parse(turtle);
       final allSubjects = mapperService.fromGraphAllSubjects(
-        storageRoot,
         graph,
+        register:
+            (registry) => registry.registerSubjectSerializer(
+              TestItemRdfMapper(storageRoot: storageRootForTest),
+            ),
       );
 
       // Verify generated turtle

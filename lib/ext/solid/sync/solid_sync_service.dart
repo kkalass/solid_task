@@ -117,10 +117,7 @@ class SolidSyncService implements SyncService {
       _log.info('Syncing ${objectsToSync.length} objects to pod');
 
       // Convert objects to RDF graph
-      final graph = _rdfMapperService.toGraphFromList(
-        config.storageRoot,
-        objectsToSync,
-      );
+      final graph = _rdfMapperService.toGraphFromList(objectsToSync);
 
       // Group triples by storage IRI using the strategy
       final triplesByStorageIri = config.storageStrategy.mapTriplesToStorage(
@@ -241,10 +238,7 @@ class SolidSyncService implements SyncService {
 
             // Convert triples to domain objects using the mapper service
             // This is domain-agnostic as it relies on registered mappers
-            final objects = _rdfMapperService.fromGraphAllSubjects(
-              config.storageRoot,
-              graph,
-            );
+            final objects = _rdfMapperService.fromGraphAllSubjects(graph);
 
             downloadedObjects.addAll(objects);
             _log.fine(

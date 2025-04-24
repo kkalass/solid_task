@@ -102,3 +102,32 @@ fix the compilation errors itself, halucinating code and insisting on changing t
 to use the actually existing API. Very frustrating experience.
 
 So, I will give windsurf a go as they 
+
+Hmm, this does not go nicely either. I also tried to let any of the agents implement a rdf_orm facade, but while windsurf
+was a bit better, both did not do so well. 
+
+The main problem seems to be, that those agents are not very good at following instructions. They do not make correct use
+of existing code - they always start to halucinate instead of reminding themselves of the APIs they are going to code against first.
+
+I am currently also thinking about my API here actually: the deserialization context used to have the storage root
+so that the Item deserializer can make use of it. But from the rdf_orm point of view, this feels strange. Both in the 
+serializer and the deserializer. In the end, whether or not a mapper needs the current storage root is an implementation
+detail of that mapper. 
+
+So, I see two ways to solve this problem:
+- Force the user to instantiate a new Mapper (and essentially a new service and a new registry) for every call
+- Find some way to pass data to the Mapper.
+
+So, the typesafe way would probably be, to enhance the Context classes with another type parameter - but this will 
+not be enough. I would have to even use this Context Paramter on the registry, the service and the mappers/serializers/deserializers.
+
+While this is fine for me personally, I believe that others might be scared by this.
+
+OTOH, just passing in and casting some data blob seems so wrong as well, as would be using something like thread locals in java.
+
+We could pass in a registration callback
+```
+orm.toGraph(instance,{register:(registry)=>registry.registerSubjectMapper(ItemMapper(baseUrl))})
+```
+
+That would keep the interface clean, but I am not sure if this is the best way to go.
