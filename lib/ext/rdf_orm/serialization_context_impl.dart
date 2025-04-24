@@ -1,3 +1,4 @@
+import 'package:logging/logging.dart';
 import 'package:solid_task/ext/rdf/core/constants/rdf_constants.dart';
 import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf/core/graph/triple.dart';
@@ -6,6 +7,8 @@ import 'package:solid_task/ext/rdf_orm/rdf_literal_term_serializer.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_mapper_registry.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_subject_serializer.dart';
 import 'package:solid_task/ext/rdf_orm/serialization_context.dart';
+
+final _log = Logger("rdf_orm.serialization");
 
 class SerializationContextImpl extends SerializationContext {
   final RdfMapperRegistry _registry;
@@ -28,9 +31,23 @@ class SerializationContextImpl extends SerializationContext {
       parentSubject: subject,
     );
 
+    // Check if a type triple already exists for the child
+    final hasTypeTriple = childTriples.any(
+      (triple) =>
+          triple.subject == childIri &&
+          triple.predicate == RdfConstants.typeIri,
+    );
+
+    if (hasTypeTriple) {
+      _log.fine(
+        'Mapper for ${T.toString()} already provided a type triple. '
+        'Skipping automatic type triple addition.',
+      );
+    }
+
     return [
-      // Add rdf:type for the child
-      constant(childIri, RdfConstants.typeIri, ser.typeIri),
+      // Add rdf:type for the child only if not already present
+      if (!hasTypeTriple) constant(childIri, RdfConstants.typeIri, ser.typeIri),
       ...childTriples,
       // connect the parent to the child
       constant(subject, predicate, childIri),
@@ -77,11 +94,39 @@ class SerializationContextImpl extends SerializationContext {
   }) {
     var ser = (serializer ?? _registry.getSubjectSerializer<T>());
     var (iri, triples) = ser.toRdfSubject(instance, this);
+
+    // Check if a type triple already exists
+    final hasTypeTriple = triples.any(
+      (triple) =>
+          triple.subject == iri && triple.predicate == RdfConstants.typeIri,
+    );
+
+    if (hasTypeTriple) {
+      // Check if the type is correct
+      final typeTriple = triples.firstWhere(
+        (triple) =>
+            triple.subject == iri && triple.predicate == RdfConstants.typeIri,
+      );
+
+      if (typeTriple.object != ser.typeIri) {
+        _log.warning(
+          'Mapper for ${T.toString()} provided a type triple with different type than '
+          'declared in typeIri property. Expected: ${ser.typeIri}, '
+          'but found: ${typeTriple.object}',
+        );
+      } else {
+        _log.fine(
+          'Mapper for ${T.toString()} already provided a type triple. '
+          'Skipping automatic type triple addition.',
+        );
+      }
+    }
+
     return (
       iri,
       [
-        // Add rdf:type
-        constant(iri, RdfConstants.typeIri, ser.typeIri),
+        // Add rdf:type only if not already present in triples
+        if (!hasTypeTriple) constant(iri, RdfConstants.typeIri, ser.typeIri),
         ...triples,
       ],
     );

@@ -91,34 +91,36 @@ But the worst thing about working with the copilot agent is, that it constantly 
 * "As an experienced writer of technical documentation, go through all files in lib/ext/rdf and document them thoroughly. Make sure to especially create great top-of-the-class API documentation, including package level documentation (library directive). Your target audience are dart developers who might not be very familiar with RDF and its serialization formats like e.g. Turtle"
 
 ok, lets do the same for the rdf_orm library now
+
 * "As an expert dart developer who values clean code, idiomatic dart and clean architecture, please review the library in lib/ext/rdf_orm (the tests are in test/ext/rdf_orm) and make suggestions for improvements if any are advisable. Is it well structured? Are the namings good and clear? Is it following dart best practices and is it using idiomatic dart?"
 * "As an experienced dart developer, implement all sensible tests for all files in lib/ext/rdf_orm   "
 * "As an experienced writer of technical documentation, go through all files in lib/ext/rdf_orm and document them thoroughly. Make sure to especially create great top-of-the-class API documentation, including package level documentation (library directive). Your target audience are dart developers who might not be very familiar with RDF and its serialization formats like e.g. Turtle"
 
 ## 2025-04-24
 
-Wow, Copilot Agent is so frustrating! I tried to make it write tests for rdf_orm, but it failed miserably, not being able to 
+Wow, Copilot Agent is so frustrating! I tried to make it write tests for rdf_orm, but it failed miserably, not being able to
 fix the compilation errors itself, halucinating code and insisting on changing the API of the main code instead of adjusting the tests
 to use the actually existing API. Very frustrating experience.
 
-So, I will give windsurf a go as they 
+So, I will give windsurf a go as they
 
 Hmm, this does not go nicely either. I also tried to let any of the agents implement a rdf_orm facade, but while windsurf
-was a bit better, both did not do so well. 
+was a bit better, both did not do so well.
 
 The main problem seems to be, that those agents are not very good at following instructions. They do not make correct use
 of existing code - they always start to halucinate instead of reminding themselves of the APIs they are going to code against first.
 
 I am currently also thinking about my API here actually: the deserialization context used to have the storage root
-so that the Item deserializer can make use of it. But from the rdf_orm point of view, this feels strange. Both in the 
+so that the Item deserializer can make use of it. But from the rdf_orm point of view, this feels strange. Both in the
 serializer and the deserializer. In the end, whether or not a mapper needs the current storage root is an implementation
-detail of that mapper. 
+detail of that mapper.
 
 So, I see two ways to solve this problem:
-- Force the user to instantiate a new Mapper (and essentially a new service and a new registry) for every call
-- Find some way to pass data to the Mapper.
 
-So, the typesafe way would probably be, to enhance the Context classes with another type parameter - but this will 
+* Force the user to instantiate a new Mapper (and essentially a new service and a new registry) for every call
+* Find some way to pass data to the Mapper.
+
+So, the typesafe way would probably be, to enhance the Context classes with another type parameter - but this will
 not be enough. I would have to even use this Context Paramter on the registry, the service and the mappers/serializers/deserializers.
 
 While this is fine for me personally, I believe that others might be scared by this.
@@ -126,8 +128,24 @@ While this is fine for me personally, I believe that others might be scared by t
 OTOH, just passing in and casting some data blob seems so wrong as well, as would be using something like thread locals in java.
 
 We could pass in a registration callback
-```
+
+```dart
 orm.toGraph(instance,{register:(registry)=>registry.registerSubjectMapper(ItemMapper(baseUrl))})
 ```
 
 That would keep the interface clean, but I am not sure if this is the best way to go.
+
+After fixing the issue with the storageRoot which did not belong in (de)serializationcontext, I went back
+to vscode agent for test generation.
+
+This time, with the following prompt:
+
+> Please implement tests for lib/ext/rdf_orm. But do not invent APIs or classes or methods you use in your implementation, rather read the source code for the classes you need. You find the rdf library code for example in lib/ext/rdf/ - also classes like IriTerm are underneath.
+>
+> Please do not change any of those classes but let your tests use the methods exactly like they are. After implementing a test, compile and run it and fix any errors you find.
+
+Ok, this worked way better than my previous approaches. We had a little bit back-and-forth for fixing some stuff, but the Agent did pretty well with this prompt.
+
+Next I will try to get feedback again on the API itself:
+
+> As an expert dart developer who values clean code, idiomatic dart and clean architecture, please review the library in lib/ext/rdf_orm (the tests are in test/ext/rdf_orm) and make suggestions for improvements if any are advisable. Is it well structured? Are the namings good and clear? Is it following dart best practices and is it using idiomatic dart? Is the API how you would expect it given its functionality, or are some method/class names or signatures unexpected?
