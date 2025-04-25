@@ -149,3 +149,11 @@ Ok, this worked way better than my previous approaches. We had a little bit back
 Next I will try to get feedback again on the API itself:
 
 > As an expert dart developer who values clean code, idiomatic dart and clean architecture, please review the library in lib/ext/rdf_orm (the tests are in test/ext/rdf_orm) and make suggestions for improvements if any are advisable. Is it well structured? Are the namings good and clear? Is it following dart best practices and is it using idiomatic dart? Is the API how you would expect it given its functionality, or are some method/class names or signatures unexpected?
+
+But different topic: In parallel, I am preparing to release lib/ext/rdf as a library in its own right, dubbed rdf_core. I extracted
+the code to a clean and simple fresh new project, but copied over .git directory to keep the history.
+
+Then, I asked windsurf for the next steps with the following prompt:
+
+> Please read the code including comments in lib. I want to publish this as a library on pubdev, and I want this library to be of really high standards. I want a nice github page showing off the library and how clean and nice to use it is. This github page should be similar to those landing pages of really big and successfull libraries and it should include the generated api documentation. What are the next steps? Can you help me with it?
+

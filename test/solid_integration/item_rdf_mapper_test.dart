@@ -57,7 +57,7 @@ void main() {
       expect(graph.triples, isNotEmpty);
 
       // Convert back to item
-      final reconstructedItem = mapperService.fromGraphByRdfSubjectId<Item>(
+      final reconstructedItem = mapperService.fromGraphBySubject<Item>(
         graph,
         IriTerm("${storageRoot}solidtask/task/graph-test-456.ttl"),
       );

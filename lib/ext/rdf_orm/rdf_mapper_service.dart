@@ -34,7 +34,7 @@ final class RdfMapperService {
     RdfSubject rdfSubjectId, {
     void Function(RdfMapperRegistry registry)? register,
   }) {
-    return fromGraphByRdfSubjectId(
+    return fromGraphBySubject(
       RdfGraph(triples: triples),
       rdfSubjectId,
       register: register,
@@ -52,7 +52,7 @@ final class RdfMapperService {
   ///   registry.registerSubjectMapper(ItemMapper(baseUrl));
   /// });
   /// ```
-  T fromGraphByRdfSubjectId<T>(
+  T fromGraphBySubject<T>(
     RdfGraph graph,
     RdfSubject rdfSubjectId, {
     void Function(RdfMapperRegistry registry)? register,

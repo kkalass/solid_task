@@ -104,47 +104,41 @@ void main() {
       },
     );
 
-    test(
-      'fromGraphByRdfSubjectId should deserialize an RDF graph to an object',
-      () {
-        // Register a custom mapper
-        rdfOrm.registry.registerSubjectMapper<TestPerson>(TestPersonMapper());
+    test('fromGraphBySubject should deserialize an RDF graph to an object', () {
+      // Register a custom mapper
+      rdfOrm.registry.registerSubjectMapper<TestPerson>(TestPersonMapper());
 
-        // Create a test graph
-        final subjectId = IriTerm('http://example.org/person/1');
-        final graph = RdfGraph(
-          triples: [
-            Triple(
-              subjectId,
-              IriTerm('http://xmlns.com/foaf/0.1/name'),
-              LiteralTerm.string('John Doe'),
-            ),
-            Triple(
-              subjectId,
-              IriTerm('http://xmlns.com/foaf/0.1/age'),
-              LiteralTerm.typed('30', 'integer'),
-            ),
-            Triple(
-              subjectId,
-              RdfConstants.typeIri,
-              IriTerm('http://xmlns.com/foaf/0.1/Person'),
-            ),
-          ],
-        );
+      // Create a test graph
+      final subjectId = IriTerm('http://example.org/person/1');
+      final graph = RdfGraph(
+        triples: [
+          Triple(
+            subjectId,
+            IriTerm('http://xmlns.com/foaf/0.1/name'),
+            LiteralTerm.string('John Doe'),
+          ),
+          Triple(
+            subjectId,
+            IriTerm('http://xmlns.com/foaf/0.1/age'),
+            LiteralTerm.typed('30', 'integer'),
+          ),
+          Triple(
+            subjectId,
+            RdfConstants.typeIri,
+            IriTerm('http://xmlns.com/foaf/0.1/Person'),
+          ),
+        ],
+      );
 
-        // Deserialize from graph
-        final person = rdfOrm.fromGraphByRdfSubjectId<TestPerson>(
-          graph,
-          subjectId,
-        );
+      // Deserialize from graph
+      final person = rdfOrm.fromGraphBySubject<TestPerson>(graph, subjectId);
 
-        // Verify the object properties
-        expect(person, isNotNull);
-        expect(person.id, equals('http://example.org/person/1'));
-        expect(person.name, equals('John Doe'));
-        expect(person.age, equals(30));
-      },
-    );
+      // Verify the object properties
+      expect(person, isNotNull);
+      expect(person.id, equals('http://example.org/person/1'));
+      expect(person.name, equals('John Doe'));
+      expect(person.age, equals(30));
+    });
 
     test('fromGraph should deserialize the single subject in an RDF graph', () {
       // Register a custom mapper

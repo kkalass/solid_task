@@ -56,17 +56,13 @@ final class RdfOrm {
   RdfMapperRegistry get registry => _service.registry;
 
   /// Deserialize an object of type [T] from an RDF graph, identified by the subject.
-  T fromGraphByRdfSubjectId<T>(
+  T fromGraphBySubject<T>(
     RdfGraph graph,
     RdfSubject subjectId, {
     // Optionally override the subject deserializer
     void Function(RdfMapperRegistry registry)? register,
   }) {
-    return _service.fromGraphByRdfSubjectId<T>(
-      graph,
-      subjectId,
-      register: register,
-    );
+    return _service.fromGraphBySubject<T>(graph, subjectId, register: register);
   }
 
   /// Convenience method to deserialize the single subject [T] from an RDF graph

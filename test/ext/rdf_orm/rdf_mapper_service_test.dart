@@ -50,7 +50,7 @@ void main() {
       expect(person.age, equals(30));
     });
 
-    test('fromGraphByRdfSubjectId deserializes an object from a graph', () {
+    test('fromGraphBySubject deserializes an object from a graph', () {
       // Register a test mapper
       registry.registerSubjectMapper<TestPerson>(TestPersonMapper());
 
@@ -77,10 +77,7 @@ void main() {
       );
 
       // Deserialize the object
-      final person = service.fromGraphByRdfSubjectId<TestPerson>(
-        graph,
-        subject,
-      );
+      final person = service.fromGraphBySubject<TestPerson>(graph, subject);
 
       // Verify the deserialized object
       expect(person.id, equals('http://example.org/person/1'));
