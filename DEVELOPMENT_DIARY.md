@@ -157,3 +157,16 @@ Then, I asked windsurf for the next steps with the following prompt:
 
 > Please read the code including comments in lib. I want to publish this as a library on pubdev, and I want this library to be of really high standards. I want a nice github page showing off the library and how clean and nice to use it is. This github page should be similar to those landing pages of really big and successfull libraries and it should include the generated api documentation. What are the next steps? Can you help me with it?
 
+## 2025-04-25
+
+Nice, my first milestone: I have released <https://kkalass.github.io/rdf_core/> successfully - yay!
+
+Now, I am working on brushing up rdf_mapper, but there is still some way to go for this one:
+
+* extract code from solid_task to rdf_mapper library on github => done
+* Fix the rdf_core handling for blank nodes: They must not require a label, the label merely is a feature of the serialization. Open question: should I optionally allow explicit lables for BlankNodeTerms, or should I put this completely into serialization alone?
+* Update the rdf_mapper to use the correct BlankNodeTerm
+* rdf_mapper: in rdf_mapper_test write meaningful serialization/deserialization tests for all types of mappers
+* rdf_mapper: what about the naming RdfMapper vs. RdfSubjectMapper etc? 
+* rdf_mapper: Make sure the examples in RdfMapper.registerXYZMapper are correct and transport well why one would want to register a mapper of a certain type and where the difference is. (Address vs. Person vs. PersonRef vs. MoneyValue or similar)
+* rdf_mapper: Continue with the publishing: let the LLM review the project, add documentation, example, homepage etc.

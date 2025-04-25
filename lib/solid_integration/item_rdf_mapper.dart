@@ -157,10 +157,7 @@ class AppInstanceIdSerializer extends IriIdSerializer {
       );
 }
 
-class VectorClockMapper
-    implements
-        RdfSubjectDeserializer<MapEntry<String, int>>,
-        RdfSubjectSerializer<MapEntry<String, int>> {
+class VectorClockMapper implements RdfSubjectMapper<MapEntry<String, int>> {
   final String storageRoot;
   @override
   final IriTerm typeIri = TaskOntologyConstants.vectorClockEntryIri;
