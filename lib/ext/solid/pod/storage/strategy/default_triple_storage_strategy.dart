@@ -1,6 +1,6 @@
-import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
-import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
-import 'package:solid_task/ext/rdf/core/graph/triple.dart';
+import 'package:rdf_core/graph/rdf_graph.dart';
+import 'package:rdf_core/graph/rdf_term.dart';
+import 'package:rdf_core/graph/triple.dart';
 import 'package:solid_task/ext/solid/pod/storage/strategy/triple_storage_strategy.dart';
 
 /// Default implementation that organizes triples by subject IRI document

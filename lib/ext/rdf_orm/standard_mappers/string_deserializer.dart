@@ -1,6 +1,6 @@
-import 'package:solid_task/ext/rdf/core/constants/rdf_constants.dart';
-import 'package:solid_task/ext/rdf/core/constants/xsd_constants.dart';
-import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
+import 'package:rdf_core/constants/rdf_constants.dart';
+import 'package:rdf_core/constants/xsd_constants.dart';
+import 'package:rdf_core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf_orm/deserialization_context.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_literal_term_deserializer.dart';
 

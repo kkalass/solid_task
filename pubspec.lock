@@ -713,6 +713,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.2"
+  rdf_core:
+    dependency: "direct main"
+    description:
+      name: rdf_core
+      sha256: "03bbc0d78c3772c043a85154fe4bde878acbd04db905796de74b609968adb630"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
   rxdart:
     dependency: "direct main"
     description:

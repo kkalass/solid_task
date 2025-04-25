@@ -1,4 +1,4 @@
-import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
+import 'package:rdf_core/graph/rdf_term.dart';
 
 /// Ontology constants specific to SolidTask domain
 ///

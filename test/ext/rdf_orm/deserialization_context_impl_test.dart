@@ -1,6 +1,6 @@
-import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
-import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
-import 'package:solid_task/ext/rdf/core/graph/triple.dart';
+import 'package:rdf_core/graph/rdf_graph.dart';
+import 'package:rdf_core/graph/rdf_term.dart';
+import 'package:rdf_core/graph/triple.dart';
 import 'package:solid_task/ext/rdf_orm/deserialization_context_impl.dart';
 import 'package:solid_task/ext/rdf_orm/exceptions/property_value_not_found_exception.dart';
 import 'package:solid_task/ext/rdf_orm/exceptions/too_many_property_values_exception.dart';

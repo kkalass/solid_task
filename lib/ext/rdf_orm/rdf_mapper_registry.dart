@@ -1,5 +1,5 @@
 import 'package:logging/logging.dart';
-import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
+import 'package:rdf_core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf_orm/exceptions/deserializer_not_found_exception.dart';
 import 'package:solid_task/ext/rdf_orm/exceptions/serializer_not_found_exception.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_blank_node_term_deserializer.dart';

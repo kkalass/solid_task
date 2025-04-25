@@ -5,11 +5,11 @@ import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_mapper_service.dart';
-import 'package:solid_task/ext/rdf/core/plugin/format_plugin.dart';
-import 'package:solid_task/ext/rdf/core/rdf_parser.dart';
-import 'package:solid_task/ext/rdf/core/rdf_serializer.dart';
-import 'package:solid_task/ext/rdf/turtle/turtle_format.dart';
-import 'package:solid_task/ext/rdf/jsonld/jsonld_format.dart';
+import 'package:rdf_core/plugin/format_plugin.dart';
+import 'package:rdf_core/rdf_parser.dart';
+import 'package:rdf_core/rdf_serializer.dart';
+import 'package:rdf_core/turtle/turtle_format.dart';
+import 'package:rdf_core/jsonld/jsonld_format.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/ext/solid/sync/rdf_repository.dart';
 import 'package:solid_task/services/repository/solid_item_rdf_repository_adapter.dart';

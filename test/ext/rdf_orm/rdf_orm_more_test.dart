@@ -1,13 +1,13 @@
-import 'package:solid_task/ext/rdf/rdf.dart';
+import 'package:rdf_core/rdf_core.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_orm.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('RdfOrm more tests', () {
-    late RdfLibrary rdf;
+    late RdfCore rdf;
     late RdfOrm orm;
     setUp(() {
-      rdf = RdfLibrary.withStandardFormats();
+      rdf = RdfCore.withStandardFormats();
       orm = RdfOrm.withDefaultRegistry();
       orm.registry.registerSubjectMapper<TestItem>(
         TestItemRdfMapper(storageRoot: "https://some.static.url.example.com/"),

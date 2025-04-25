@@ -1,7 +1,7 @@
 import 'package:logging/logging.dart';
-import 'package:solid_task/ext/rdf/core/constants/rdf_constants.dart';
-import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
-import 'package:solid_task/ext/rdf/core/graph/triple.dart';
+import 'package:rdf_core/constants/rdf_constants.dart';
+import 'package:rdf_core/graph/rdf_term.dart';
+import 'package:rdf_core/graph/triple.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_iri_term_serializer.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_literal_term_serializer.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_mapper_registry.dart';

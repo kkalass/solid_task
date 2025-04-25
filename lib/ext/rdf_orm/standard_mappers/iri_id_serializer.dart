@@ -1,4 +1,4 @@
-import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
+import 'package:rdf_core/graph/rdf_term.dart';
 import 'package:solid_task/ext/rdf_orm/exceptions/serialization_exception.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_iri_term_serializer.dart';
 import 'package:solid_task/ext/rdf_orm/serialization_context.dart';

@@ -1,11 +1,11 @@
 import 'package:logging/logging.dart';
-import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
-import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
-import 'package:solid_task/ext/rdf/core/graph/triple.dart';
-import 'package:solid_task/ext/rdf/core/plugin/format_plugin.dart';
-import 'package:solid_task/ext/rdf/core/rdf_parser.dart';
-import 'package:solid_task/ext/rdf/turtle/turtle_format.dart';
-import 'package:solid_task/ext/rdf/jsonld/jsonld_format.dart';
+import 'package:rdf_core/graph/rdf_graph.dart';
+import 'package:rdf_core/graph/rdf_term.dart';
+import 'package:rdf_core/graph/triple.dart';
+import 'package:rdf_core/plugin/format_plugin.dart';
+import 'package:rdf_core/rdf_parser.dart';
+import 'package:rdf_core/turtle/turtle_format.dart';
+import 'package:rdf_core/jsonld/jsonld_format.dart';
 import 'package:solid_task/ext/solid/pod/profile/solid_profile_parser.dart';
 
 final _log = Logger("solid.profile");

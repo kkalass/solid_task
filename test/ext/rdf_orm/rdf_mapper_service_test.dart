@@ -1,5 +1,5 @@
-import 'package:solid_task/ext/rdf/core/constants/rdf_constants.dart';
-import 'package:solid_task/ext/rdf/rdf.dart';
+import 'package:rdf_core/constants/rdf_constants.dart';
+import 'package:rdf_core/rdf_core.dart';
 import 'package:solid_task/ext/rdf_orm/exceptions/deserialization_exception.dart';
 import 'package:solid_task/ext/rdf_orm/rdf_orm.dart';
 import 'package:test/test.dart';

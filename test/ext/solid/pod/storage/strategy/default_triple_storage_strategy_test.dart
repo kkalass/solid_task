@@ -1,7 +1,7 @@
-import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
-import 'package:solid_task/ext/rdf/core/graph/triple.dart';
+import 'package:rdf_core/graph/rdf_term.dart';
+import 'package:rdf_core/graph/triple.dart';
 import 'package:test/test.dart';
-import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
+import 'package:rdf_core/graph/rdf_graph.dart';
 import 'package:solid_task/ext/solid/pod/storage/strategy/default_triple_storage_strategy.dart';
 
 void main() {

@@ -17,8 +17,8 @@
 ///
 library rdf_orm;
 
-import 'package:solid_task/ext/rdf/core/graph/rdf_graph.dart';
-import 'package:solid_task/ext/rdf/core/graph/rdf_term.dart';
+import 'package:rdf_core/graph/rdf_graph.dart';
+import 'package:rdf_core/graph/rdf_term.dart';
 
 import 'rdf_mapper_registry.dart';
 import 'rdf_mapper_service.dart';
