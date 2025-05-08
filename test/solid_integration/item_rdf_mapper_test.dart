@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rdf_core/graph/rdf_term.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_mapper_registry.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_mapper_service.dart';
+import 'package:rdf_core/rdf_core.dart';
+import 'package:rdf_mapper/rdf_mapper.dart';
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/solid_integration/item_rdf_mapper.dart';
@@ -10,8 +9,7 @@ const storageRoot = "https://example.com/pod/";
 void main() {
   late LoggerService loggerService;
   late ItemRdfMapper itemMapper;
-  late RdfMapperRegistry registry;
-  late RdfMapperService mapperService;
+  late RdfMapper rdfMapper;
 
   setUp(() {
     loggerService = LoggerService();
@@ -20,23 +18,20 @@ void main() {
       storageRootProvider: () => storageRoot,
     );
 
-    registry = RdfMapperRegistry();
-    registry.registerSubjectMapper<Item>(itemMapper);
-
-    mapperService = RdfMapperService(registry: registry);
+    rdfMapper = RdfMapper.withDefaultRegistry()..registerMapper(itemMapper);
   });
 
   group('RdfMapperRegistry', () {
     test('Registering and retrieving mappers works', () {
       // Verify that the mapper is registered
-      expect(registry.hasSubjectDeserializerFor<Item>(), isTrue);
-      expect(registry.hasSubjectSerializerFor<Item>(), isTrue);
+      expect(rdfMapper.registry.hasIriNodeDeserializerFor<Item>(), isTrue);
+      expect(rdfMapper.registry.hasNodeSerializerFor<Item>(), isTrue);
 
       // Retrieve the mapper
-      final deserializer = registry.getSubjectDeserializer<Item>();
+      final deserializer = rdfMapper.registry.getIriNodeDeserializer<Item>();
       expect(deserializer, isNotNull);
       expect(deserializer, equals(itemMapper));
-      final serializer = registry.getSubjectSerializer<Item>();
+      final serializer = rdfMapper.registry.getNodeSerializer<Item>();
       expect(serializer, isNotNull);
       expect(serializer, equals(itemMapper));
     });
@@ -53,15 +48,15 @@ void main() {
       originalItem.vectorClock = {'user3': 3, 'user4': 4};
 
       // Convert to graph
-      final graph = mapperService.toGraph(originalItem);
+      final graph = rdfMapper.graph.serialize(originalItem);
       expect(graph.triples, isNotEmpty);
 
       // Convert back to item
-      final reconstructedItem = mapperService.fromGraphBySubject<Item>(
+      final reconstructedItem = rdfMapper.graph.deserializeBySubject<Item>(
         graph,
         IriTerm("${storageRoot}solidtask/task/graph-test-456.ttl"),
       );
-      final reconstructedItem2 = mapperService.fromGraph<Item>(graph);
+      final reconstructedItem2 = rdfMapper.graph.deserialize<Item>(graph);
 
       // Verify properties match
       expect(reconstructedItem.id, equals(originalItem.id));

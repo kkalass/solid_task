@@ -1,40 +1,32 @@
 import 'package:logging/logging.dart';
-import 'package:rdf_core/graph/rdf_graph.dart';
-import 'package:rdf_core/graph/rdf_term.dart';
-import 'package:rdf_core/graph/triple.dart';
-import 'package:rdf_core/plugin/format_plugin.dart';
-import 'package:rdf_core/rdf_parser.dart';
-import 'package:rdf_core/turtle/turtle_format.dart';
-import 'package:rdf_core/jsonld/jsonld_format.dart';
+
+import 'package:rdf_core/rdf_core.dart';
+import 'package:rdf_mapper/rdf_mapper.dart';
 import 'package:solid_task/ext/solid/pod/profile/solid_profile_parser.dart';
 
 final _log = Logger("solid.profile");
 
 /// Implementation for parsing Solid profile documents
 class DefaultSolidProfileParser implements SolidProfileParser {
-  final RdfParserFactoryBase _rdfParserFactory;
+  final RdfCore _rdfCore;
+
+  static const solid = Namespace("http://www.w3.org/ns/solid/terms#");
+  static const pim = Namespace("http://www.w3.org/ns/pim/space#");
+  static const ldp = Namespace("http://www.w3.org/ns/ldp#");
 
   /// Common predicates used to identify storage locations in Solid profiles
-  static const _storagePredicates = [
-    IriTerm('http://www.w3.org/ns/pim/space#storage'),
-    IriTerm('http://www.w3.org/ns/solid/terms#storage'),
-    IriTerm('http://www.w3.org/ns/ldp#contains'),
-    IriTerm('http://www.w3.org/ns/solid/terms#oidcIssuer'),
-    IriTerm('http://www.w3.org/ns/solid/terms#account'),
-    IriTerm('http://www.w3.org/ns/solid/terms#storageLocation'),
+  static final _storagePredicates = [
+    pim('storage'),
+    solid('storage'),
+    ldp('contains'),
+    solid('oidcIssuer'),
+    solid('account'),
+    solid('storageLocation'),
   ];
 
   /// Creates a new ProfileParser with the required dependencies
-  DefaultSolidProfileParser({RdfParserFactoryBase? rdfParserFactory})
-    : _rdfParserFactory = rdfParserFactory ?? _createDefaultParserFactory();
-
-  /// Creates a default RdfParserFactory with standard formats
-  static RdfParserFactoryBase _createDefaultParserFactory() {
-    final registry = RdfFormatRegistry();
-    registry.registerFormat(const TurtleFormat());
-    registry.registerFormat(const JsonLdFormat());
-    return RdfParserFactory(registry);
-  }
+  DefaultSolidProfileParser({RdfCore? rdfCore})
+    : _rdfCore = rdfCore ?? RdfCore.withStandardFormats();
 
   /// Find storage URLs in the parsed graph
   List<String> _findStorageUrls(RdfGraph graph) {
@@ -94,8 +86,8 @@ class DefaultSolidProfileParser implements SolidProfileParser {
 
       // Use the unified RdfParser to handle both Turtle and JSON-LD
       try {
-        final graph = _rdfParserFactory
-            .createParser(contentType: contentType)
+        final graph = _rdfCore
+            .getParser(contentType: contentType)
             .parse(content, documentUrl: webId);
 
         final storageUrls = _findStorageUrls(graph);

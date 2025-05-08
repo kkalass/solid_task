@@ -163,10 +163,66 @@ Nice, my first milestone: I have released <https://kkalass.github.io/rdf_core/> 
 
 Now, I am working on brushing up rdf_mapper, but there is still some way to go for this one:
 
-* extract code from solid_task to rdf_mapper library on github => done
-* Fix the rdf_core handling for blank nodes: They must not require a label, the label merely is a feature of the serialization. Open question: should I optionally allow explicit lables for BlankNodeTerms, or should I put this completely into serialization alone?
-* Update the rdf_mapper to use the correct BlankNodeTerm
+* DONE: extract code from solid_task to rdf_mapper library on github => done
+* DONE: rdf_core: iriterm validation => done
+* DONE: rdf_core: constants: rethink naming convention (*Iri) and create for all known namespaces constants classes with all known properties to make it easier for newcomes. Open: How to communicate which Types can have which properties?
+* DONE: rdf_core: Brag about the vocab stuff in README and Homepage, make it easy to access it incl. API documentation. Update examples to use vocab where applicable, but make sure to also show how to work directly with the URLs. Make it simple for people new to all this RDF stuff to understand what vocab is and why and how this is useful. Give pointers to resources on the web if applicable
+* DONE: Fix the rdf_core handling for blank nodes: They must not require a label, the label merely is a feature of the serialization. Open question: should I optionally allow explicit lables for BlankNodeTerms, or should I put this completely into serialization alone? => labels are only internal state and are optional. For serialization we always generate new labels. => done
+
+* DONE: Update the rdf_mapper to use the correct BlankNodeTerm
 * rdf_mapper: in rdf_mapper_test write meaningful serialization/deserialization tests for all types of mappers
-* rdf_mapper: what about the naming RdfMapper vs. RdfSubjectMapper etc? 
-* rdf_mapper: Make sure the examples in RdfMapper.registerXYZMapper are correct and transport well why one would want to register a mapper of a certain type and where the difference is. (Address vs. Person vs. PersonRef vs. MoneyValue or similar)
-* rdf_mapper: Continue with the publishing: let the LLM review the project, add documentation, example, homepage etc.
+* DONE: rdf_mapper: what about the naming RdfMapper vs. RdfSubjectMapper etc? 
+* DONE: rdf_mapper: Make sure the examples in RdfMapper.registerXYZMapper are correct and transport well why one would want to register a mapper of a certain type and where the difference is. (Address vs. Person vs. PersonRef vs. MoneyValue or similar)
+* DONE: rdf_mapper: Continue with the publishing: let the LLM review the project, add documentation, example, homepage etc.
+* DONE: rdf_mapper: consistency nitpicking: the subject mapper can be registered directly in the registry, while the others are only registered on the facade. Maybe we should remove the subject mapper registration from the registry.
+
+## 2025-04-30
+
+Nice - I have extracted rdf_mapper in the last few days and updated solid_task to the new, hugely improved API.
+
+There are of course still many possible improvements for rdf_core and rdf_mapper, but my plan is rather, to focus on the solid side of things next.
+
+* introduce rdf_pod_mapper or similar. Idea is: this library sits on top of rdf_mapper and allows to persist into a solid pod, maybe including a fluent SPARQL api in dart.
+* solid_sync on the other hand sits on top of this persistence library and maybe an extra crdt library and allows to sync crdt between a pod and a local storage like my hive based backend. Maybe this is more crdt_sync and possibly not really dependent on solid - or there is a crdt, crdt_sync and a solid_sync library. Lets see. But what would be important to me: we need to be clear on the type of crdt, maybe even supporting both state and command based crdt.
+* can I somehow extract and generalize those files that are shared between projects? I mean tool, .github, .vscode/settings etc.
+
+Ok, I am trying to implement the new way of vocabulary handling (actually: generating dart classes for easy Discoverability) and this is quite advanced because of inheritance across vocabularies and - even worse - enhancements of classes with predicates across vocabularies!
+
+My Testcase currently is rdf:Bag, which is a rdfs:Container which is a rdfs:Resource and it should thus have rdf:type but also some predicates defined in rdfs
+
+The agent is having a hard time, and here are some thoughts that I cannot give to it yet because it is still working on other problems:
+
+* DONE: remove the _knownNamespaceToVocab in cross_vocabulary_resolver.dart. While the parser does not return the prefixes, you can extract them at least from turtle string really easy - just grep for @prefix lines.
+* DONE: we must prefix the predicate with the namespace if we are including cross-namespace predicates
+* The documentation of foreign predicates is worse than the one of own predicates (? still the case?), but it should probably be more verbose.
+* idea: the description often is not very helpful, maybe we should provide a way to load a json with additional or more detailed documentation for well-known vocabularies and let a LLM generate that, maybe even with examples so one knows what rdf:value on Resource is good for and how and when it shall be used?
+* formatting of generated classes unfortunately violates dart conventions
+* DONE: builder quality: there are codepaths for usage without cross_vocabulary_resolver - why? Can't we remove them?
+
+
+### Prompt for rdf_vocabulary_to_dart documentation/readme update
+
+> You are a very senior and experienced technical documentation writer who writes clear yet concise documentation that is very well received by the target audience. Our target audience are dart developers who are not very familiar with rdf and rdf concepts.
+>
+> This project - based on rdf_core - generates classes out of RDF vocabularies (identified by their IRI). It generates two types of classes: the main vocabulary class with IriTerm constants for all the terms within that vocabulary, suitable for people already familiar with RDF and RDF vocabularies.
+>
+> But it also generates for every RDF Class of the vocabulary a distinct class. eg: https://schema.org vocabulary will have all terms in Schema, while the class https://schema.org/Person will lead to a dart class SchemaPerson which contains the IRIs of all properties of that RDF class - including those of superclasses, including rdf and rdfs. Properties from foreign vocabularies will be prefixed accordingly.
+>
+> Look at the build.yaml to understand how it is used.
+>
+> Please rewrite the README to create a world-class readme for our project hosted on github and eventually deployed to pub.dev
+
+## 2025-05-02
+
+Ok, I have extracted the vocabulary generation code to a new project and now need to find ways to correctly process everything.
+
+Currently failing are:
+
+* http://www.w3.org/2001/XMLSchema# 
+
+* http://xmlns.com/foaf/0.1/ => XML/RDF
+* http://www.w3.org/2004/02/skos/core# => XML/RDF
+* http://www.w3.org/2006/vcard/ns# => Turtle, fails due to 'true' instead of "true"^^<xsd:bool>
+* http://www.w3.org/ns/auth/acl# => Turtle, empty IRI
+* https://schema.org => Turtle, fails ?
+* http://www.w3.org/ns/solid/terms# => Turtle, also fails parsing

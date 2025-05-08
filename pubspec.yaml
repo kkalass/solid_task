@@ -58,7 +58,11 @@ dependencies:
   rxdart: ^0.28.0
   uuid: ^4.5.1
   meta: ^1.16.0
-  rdf_core: ^0.1.1
+  rdf_core: ^0.7.6
+  rdf_mapper: 
+    path: ../rdf/rdf_mapper
+  rdf_vocabularies:
+    path: ../rdf/rdf_vocabularies
 
 dev_dependencies:
   flutter_test:

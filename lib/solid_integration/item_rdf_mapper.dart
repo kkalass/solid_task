@@ -1,14 +1,7 @@
-import 'package:rdf_core/constants/dc_terms_constants.dart';
-import 'package:rdf_core/graph/rdf_term.dart';
-import 'package:rdf_core/graph/triple.dart';
-import 'package:solid_task/ext/rdf_orm/deserialization_context.dart';
-import 'package:solid_task/ext/rdf_orm/exceptions/serialization_exception.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_subject_deserializer.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_subject_mapper.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_subject_serializer.dart';
-import 'package:solid_task/ext/rdf_orm/serialization_context.dart';
-import 'package:solid_task/ext/rdf_orm/standard_mappers/extracting_iri_term_deserializer.dart';
-import 'package:solid_task/ext/rdf_orm/standard_mappers/iri_id_serializer.dart';
+import 'package:rdf_core/rdf_core.dart';
+import 'package:rdf_mapper/rdf_mapper.dart';
+import 'package:rdf_vocabularies/dcterms.dart';
+
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/solid_integration/task_ontology_constants.dart';
@@ -17,7 +10,7 @@ import 'package:solid_task/solid_integration/task_ontology_constants.dart';
 ///
 /// This class handles the conversion between Item domain objects and their
 /// RDF representation, including vector clock entries for CRDT functionality.
-final class ItemRdfMapper implements RdfSubjectMapper<Item> {
+final class ItemRdfMapper implements IriNodeMapper<Item> {
   @override
   final IriTerm typeIri = TaskOntologyConstants.taskClassIri;
   final String Function() _storageRootProvider;
@@ -35,52 +28,35 @@ final class ItemRdfMapper implements RdfSubjectMapper<Item> {
        _storageRootProvider = storageRootProvider;
 
   @override
-  Item fromIriTerm(IriTerm iri, DeserializationContext context) {
+  Item fromRdfNode(IriTerm iri, DeserializationContext context) {
     _logger.debug('Converting triples to Item with subject: $iri');
+    final reader = context.reader(iri);
 
     final storageRoot = _storageRootProvider();
     // Create base item
-    final item = Item(
-      text: context.getRequiredPropertyValue<String>(
-        iri,
-        TaskOntologyConstants.textIri,
-      ),
+    return Item(
+        text: reader.require<String>(TaskOntologyConstants.textIri),
 
-      // Note: serialization stores an IRI, we get the Id part of the IRI here
-      lastModifiedBy: context.getRequiredPropertyValue<String>(
-        iri,
-        DcTermsConstants.creatorIri,
-        iriDeserializer: AppInstanceIdDeserializer(storageRoot: storageRoot),
-      ),
-    );
-
-    item.id = TaskOntologyConstants.extractTaskIdFromIri(storageRoot, iri);
-
-    // Extract more properties
-    item.createdAt = context.getRequiredPropertyValue<DateTime>(
-      iri,
-      DcTermsConstants.createdIri,
-    );
-
-    // Extract optional properties
-    item.isDeleted =
-        context.getPropertyValue<bool>(
-          iri,
-          TaskOntologyConstants.isDeletedIri,
-        ) ??
-        false;
-
-    // Extract vector clock
-    item.vectorClock = context.getPropertyValueMap(
-      iri,
-      TaskOntologyConstants.vectorClockIri,
-      subjectDeserializer: VectorClockMapper(storageRoot: storageRoot),
-    );
-    return item;
+        // Note: serialization stores an IRI, we get the Id part of the IRI here
+        lastModifiedBy: reader.require(
+          Dcterms.creator,
+          iriTermDeserializer: AppInstanceIdDeserializer(
+            storageRoot: storageRoot,
+          ),
+        ),
+      )
+      ..id = TaskOntologyConstants.extractTaskIdFromIri(storageRoot, iri)
+      ..createdAt = reader.require<DateTime>(Dcterms.created)
+      ..isDeleted =
+          reader.get<bool>(TaskOntologyConstants.isDeletedIri) ?? false
+      ..vectorClock = reader.getMap(
+        TaskOntologyConstants.vectorClockIri,
+        iriNodeDeserializer: VectorClockMapper(storageRoot: storageRoot),
+      );
   }
 
   @override
-  (RdfSubject, List<Triple>) toRdfSubject(
+  (IriTerm, List<Triple>) toRdfNode(
     Item instance,
     SerializationContext context, {
     RdfSubject? parentSubject,
@@ -89,46 +65,26 @@ final class ItemRdfMapper implements RdfSubjectMapper<Item> {
     final storageRoot = _storageRootProvider();
     final itemIri = TaskOntologyConstants.makeTaskIri(storageRoot, instance.id);
 
-    return (
-      itemIri,
-      [
-        // Add basic properties
-        context.literal(itemIri, TaskOntologyConstants.textIri, instance.text),
-
-        context.literal(
-          itemIri,
-          TaskOntologyConstants.isDeletedIri,
-          instance.isDeleted,
-        ),
-
-        context.literal(
-          itemIri,
-          DcTermsConstants.createdIri,
-          instance.createdAt,
-        ),
-
-        // creator always actually is the Id of the instance of the app,
-        // and we create an IRI for this in order to be able to do more
-        // with it in RDF, e.g. associate device name etc so that in theory
-        // the user could later find out which device triggered a certain change etc.
-        context.iri(
-          itemIri,
-          DcTermsConstants.creatorIri,
+    return context
+        .nodeBuilder(itemIri)
+        .literal(TaskOntologyConstants.textIri, instance.text)
+        .literal(TaskOntologyConstants.isDeletedIri, instance.isDeleted)
+        .literal(Dcterms.created, instance.createdAt)
+        .iri(
+          Dcterms.creator,
           instance.lastModifiedBy,
+          // creator always actually is the Id of the instance of the app,
+          // and we create an IRI for this in order to be able to do more
+          // with it in RDF, e.g. associate device name etc so that in theory
+          // the user could later find out which device triggered a certain change etc.
           serializer: AppInstanceIdSerializer(storageRoot: storageRoot),
-        ),
-
-        // The vectorClock Map will be serialized as a list of Subjects in
-        // their own rights, with the vectorClockIri predicate being the
-        // connection from the item parent to the Subject children
-        ...context.childSubjectMap(
-          itemIri,
+        )
+        .childNodeMap(
           TaskOntologyConstants.vectorClockIri,
           instance.vectorClock,
           VectorClockMapper(storageRoot: storageRoot),
-        ),
-      ],
-    );
+        )
+        .build();
   }
 }
 
@@ -157,7 +113,7 @@ class AppInstanceIdSerializer extends IriIdSerializer {
       );
 }
 
-class VectorClockMapper implements RdfSubjectMapper<MapEntry<String, int>> {
+class VectorClockMapper implements IriNodeMapper<MapEntry<String, int>> {
   final String storageRoot;
   @override
   final IriTerm typeIri = TaskOntologyConstants.vectorClockEntryIri;
@@ -165,22 +121,24 @@ class VectorClockMapper implements RdfSubjectMapper<MapEntry<String, int>> {
   VectorClockMapper({required this.storageRoot});
 
   @override
-  fromIriTerm(IriTerm clockEntryIri, DeserializationContext context) {
+  MapEntry<String, int> fromRdfNode(
+    IriTerm clockEntryIri,
+    DeserializationContext context,
+  ) {
+    final reader = context.reader(clockEntryIri);
     return MapEntry(
-      context.getRequiredPropertyValue<String>(
-        clockEntryIri,
+      reader.require(
         TaskOntologyConstants.clientIdIri,
-        iriDeserializer: AppInstanceIdDeserializer(storageRoot: storageRoot),
+        iriTermDeserializer: AppInstanceIdDeserializer(
+          storageRoot: storageRoot,
+        ),
       ),
-      context.getRequiredPropertyValue<int>(
-        clockEntryIri,
-        TaskOntologyConstants.clockValueIri,
-      ),
+      reader.require(TaskOntologyConstants.clockValueIri),
     );
   }
 
   @override
-  (RdfSubject, List<Triple>) toRdfSubject(
+  (IriTerm, List<Triple>) toRdfNode(
     MapEntry<String, int> entry,
     SerializationContext context, {
     RdfSubject? parentSubject,
@@ -195,22 +153,17 @@ class VectorClockMapper implements RdfSubjectMapper<MapEntry<String, int>> {
       entry.key,
     );
 
-    return (
-      iri,
-      [
-        // The actual vector clock entry
-
+    // Build the actual vector clock map entry
+    return context
+        .nodeBuilder(iri)
         // the reference to the app instance which created the version
-        context.iri(
-          iri,
+        .iri(
           TaskOntologyConstants.clientIdIri,
           entry.key,
           serializer: AppInstanceIdSerializer(storageRoot: storageRoot),
-        ),
-
+        )
         // the version counter
-        context.literal(iri, TaskOntologyConstants.clockValueIri, entry.value),
-      ],
-    );
+        .literal(TaskOntologyConstants.clockValueIri, entry.value)
+        .build();
   }
 }

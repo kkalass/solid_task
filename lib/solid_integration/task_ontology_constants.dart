@@ -1,4 +1,4 @@
-import 'package:rdf_core/graph/rdf_term.dart';
+import 'package:rdf_core/rdf_core.dart';
 
 /// Ontology constants specific to SolidTask domain
 ///
@@ -12,25 +12,27 @@ class TaskOntologyConstants {
   static const String namespace = 'http://solidtask.org/ontology#';
 
   /// IRI for the Task class
-  static const taskClassIri = IriTerm('${namespace}Task');
+  static const taskClassIri = IriTerm.prevalidated('${namespace}Task');
 
   /// IRI for task text property
-  static const textIri = IriTerm('${namespace}text');
+  static const textIri = IriTerm.prevalidated('${namespace}text');
 
   /// IRI for task isDeleted property
-  static const isDeletedIri = IriTerm('${namespace}isDeleted');
+  static const isDeletedIri = IriTerm.prevalidated('${namespace}isDeleted');
 
   /// IRI for task vectorClock property
-  static const vectorClockIri = IriTerm('${namespace}vectorClock');
+  static const vectorClockIri = IriTerm.prevalidated('${namespace}vectorClock');
 
   /// IRI for vectorClockEntry class
-  static const vectorClockEntryIri = IriTerm('${namespace}VectorClockEntry');
+  static const vectorClockEntryIri = IriTerm.prevalidated(
+    '${namespace}VectorClockEntry',
+  );
 
   /// IRI for clientId property in vector clock entries
-  static const clientIdIri = IriTerm('${namespace}clientId');
+  static const clientIdIri = IriTerm.prevalidated('${namespace}clientId');
 
   /// IRI for clockValue property in vector clock entries
-  static const clockValueIri = IriTerm('${namespace}clockValue');
+  static const clockValueIri = IriTerm.prevalidated('${namespace}clockValue');
 
   static String makeAppBaseUri(String storageRoot) =>
       '${storageRoot}solidtask/';
@@ -38,7 +40,7 @@ class TaskOntologyConstants {
       '${makeAppBaseUri(storageRoot)}task/';
 
   static IriTerm makeTaskIri(String storageRoot, String taskId) =>
-      IriTerm('${makeTaskBaseUri(storageRoot)}$taskId.ttl');
+      IriTerm.prevalidated('${makeTaskBaseUri(storageRoot)}$taskId.ttl');
 
   /// Extracts the taskId from a task IRI that was created using makeTaskIri
   ///
@@ -89,17 +91,23 @@ class TaskOntologyConstants {
     String storageRoot,
     String taskId,
     String entryKey,
-  ) => IriTerm('${makeVectorClockBaseUri(storageRoot, taskId)}$entryKey');
+  ) => IriTerm.prevalidated(
+    '${makeVectorClockBaseUri(storageRoot, taskId)}$entryKey',
+  );
 
   static IriTerm makeVectorClockEntryIriFromParentIri(
     IriTerm parentIri,
     String entryKey,
-  ) => IriTerm('${makeVectorClockBaseUriFromParentIri(parentIri)}$entryKey');
+  ) => IriTerm.prevalidated(
+    '${makeVectorClockBaseUriFromParentIri(parentIri)}$entryKey',
+  );
 
   static String makeAppInstanceBaseUri(String storageRoot) =>
       '${makeAppBaseUri(storageRoot)}appinstance/';
   static IriTerm makeAppInstanceIri(String storageRoot, String appInstanceId) =>
-      IriTerm('${makeAppInstanceBaseUri(storageRoot)}$appInstanceId.ttl');
+      IriTerm.prevalidated(
+        '${makeAppInstanceBaseUri(storageRoot)}$appInstanceId.ttl',
+      );
 
   /// Extracts the appInstanceId from an app instance IRI that was created using makeAppInstanceIri
   ///

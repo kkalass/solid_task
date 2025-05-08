@@ -1,6 +1,4 @@
-import 'package:rdf_core/graph/rdf_graph.dart';
-import 'package:rdf_core/graph/rdf_term.dart';
-import 'package:rdf_core/graph/triple.dart';
+import 'package:rdf_core/rdf_core.dart';
 import 'package:solid_task/ext/solid/pod/storage/strategy/triple_storage_strategy.dart';
 
 /// Default implementation that organizes triples by subject IRI document
@@ -29,7 +27,7 @@ final class DefaultTripleStorageStrategy implements TripleStorageStrategy {
       return _deriveStorageIri(subject);
     }
 
-    return const IriTerm('tag:orphaned');
+    return IriTerm('tag:orphaned');
   }
 
   @override

@@ -1,7 +1,5 @@
-import 'package:rdf_core/graph/rdf_term.dart';
-import 'package:rdf_core/graph/triple.dart';
+import 'package:rdf_core/rdf_core.dart';
 import 'package:test/test.dart';
-import 'package:rdf_core/graph/rdf_graph.dart';
 import 'package:solid_task/ext/solid/pod/storage/strategy/default_triple_storage_strategy.dart';
 
 void main() {
@@ -32,7 +30,7 @@ void main() {
 
     test('should handle blank node subjects with special IRI', () {
       final triple = Triple(
-        BlankNodeTerm('b1'),
+        BlankNodeTerm(),
         IriTerm('http://xmlns.com/foaf/0.1/name'),
         LiteralTerm.string('Unknown'),
       );

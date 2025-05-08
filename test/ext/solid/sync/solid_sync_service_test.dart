@@ -2,13 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:rdf_core/graph/rdf_graph.dart';
-import 'package:rdf_core/graph/rdf_term.dart';
-import 'package:rdf_core/graph/triple.dart';
-import 'package:rdf_core/rdf_parser.dart';
-import 'package:rdf_core/rdf_serializer.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_mapper_registry.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_mapper_service.dart';
+import 'package:rdf_core/rdf_core.dart';
+import 'package:rdf_mapper/rdf_mapper.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/ext/solid/auth/models/auth_token.dart';
@@ -25,21 +20,13 @@ import 'solid_sync_service_test.mocks.dart';
   MockSpec<RdfRepository>(),
   MockSpec<SolidAuthState>(),
   MockSpec<SolidAuthOperations>(),
-  MockSpec<RdfParser>(),
-  MockSpec<RdfParserFactoryBase>(),
-  MockSpec<RdfSerializerFactoryBase>(),
 ])
 void main() {
-  // Provide a dummy value for RdfGraph to solve the MissingDummyValueError
-  provideDummy<RdfGraph>(RdfGraph());
-
   late MockClient mockClient;
   late MockRdfRepository mockRepository;
   late MockSolidAuthState mockAuthState;
   late MockSolidAuthOperations mockAuthOperations;
-  late MockRdfParserFactoryBase mockParserFactory;
-  late MockRdfSerializerFactoryBase mockSerializerFactory;
-  late MockRdfParser mockParser;
+
   late SolidSyncService service;
 
   setUp(() {
@@ -47,22 +34,14 @@ void main() {
     mockRepository = MockRdfRepository();
     mockAuthState = MockSolidAuthState();
     mockAuthOperations = MockSolidAuthOperations();
-    mockParserFactory = MockRdfParserFactoryBase();
-    mockSerializerFactory = MockRdfSerializerFactoryBase();
-    mockParser = MockRdfParser();
-
-    when(
-      mockParserFactory.createParser(contentType: anyNamed('contentType')),
-    ).thenReturn(mockParser);
 
     service = SolidSyncService(
       repository: mockRepository,
       authState: mockAuthState,
       authOperations: mockAuthOperations,
       client: mockClient,
-      rdfParserFactory: mockParserFactory,
-      rdfSerializerFactory: mockSerializerFactory,
-      rdfMapperService: RdfMapperService(registry: RdfMapperRegistry()),
+      rdfMapper: RdfMapper.withDefaultRegistry(),
+      rdfCore: RdfCore.withStandardFormats(),
       configProvider: StaticStorageConfigurationProvider(
         PodStorageConfiguration(storageRoot: "https://example.com/pod/"),
       ),
@@ -131,20 +110,4 @@ void main() {
       expect(service.syncTimer, false);
     });
   });
-}
-
-// Helper to create a mock RDF graph with container listing
-RdfGraph createMockGraph(List<String> fileUrls) {
-  return RdfGraph(
-    triples:
-        fileUrls
-            .map(
-              (fileUrl) => Triple(
-                IriTerm('https://example.com/container'),
-                IriTerm('http://www.w3.org/ns/ldp#contains'),
-                IriTerm(fileUrl),
-              ),
-            )
-            .toList(),
-  );
 }

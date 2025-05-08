@@ -1,6 +1,4 @@
-import 'package:rdf_core/graph/rdf_graph.dart';
-import 'package:rdf_core/graph/rdf_term.dart';
-import 'package:rdf_core/graph/triple.dart';
+import 'package:rdf_core/rdf_core.dart';
 
 /// Defines strategy for mapping RDF triples to storage locations in a Solid Pod
 ///

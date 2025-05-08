@@ -2,14 +2,9 @@ import 'dart:async';
 
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
-import 'package:rdf_core/graph/rdf_graph.dart';
-import 'package:rdf_core/graph/rdf_term.dart';
-import 'package:rdf_core/plugin/format_plugin.dart';
-import 'package:rdf_core/rdf_parser.dart';
-import 'package:rdf_core/rdf_serializer.dart';
-import 'package:rdf_core/turtle/turtle_format.dart';
-import 'package:rdf_core/jsonld/jsonld_format.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_mapper_service.dart';
+import 'package:rdf_core/rdf_core.dart';
+import 'package:rdf_mapper/rdf_mapper.dart';
+
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/ext/solid/pod/storage/pod_storage_configuration.dart';
@@ -30,9 +25,8 @@ class SolidSyncService implements SyncService {
   final SolidAuthOperations _solidAuthOperations;
   final http.Client _client;
 
-  final RdfMapperService _rdfMapperService;
-  final RdfSerializerFactoryBase _rdfSerializerFactory;
-  final RdfParserFactoryBase _rdfParserFactory;
+  final RdfMapper _rdfMapper;
+  final RdfCore _rdfCore;
   final PodStorageConfigurationProvider _configProvider;
 
   // Periodic sync
@@ -47,37 +41,16 @@ class SolidSyncService implements SyncService {
     required SolidAuthState authState,
     required SolidAuthOperations authOperations,
     required http.Client client,
-    required RdfMapperService rdfMapperService,
+    required RdfMapper rdfMapper,
     required PodStorageConfigurationProvider configProvider,
-    RdfSerializerFactoryBase? rdfSerializerFactory,
-    RdfParserFactoryBase? rdfParserFactory,
+    required RdfCore rdfCore,
   }) : _repository = repository,
        _solidAuthState = authState,
        _solidAuthOperations = authOperations,
        _client = client,
-       _rdfMapperService = rdfMapperService,
+       _rdfMapper = rdfMapper,
        _configProvider = configProvider,
-       _rdfSerializerFactory =
-           rdfSerializerFactory ?? _createDefaultSerializerFactory(),
-       _rdfParserFactory = rdfParserFactory ?? _createDefaultParserFactory();
-
-  /// Creates a default registry with standard formats
-  static RdfFormatRegistry _createDefaultRegistry() {
-    final registry = RdfFormatRegistry();
-    registry.registerFormat(const TurtleFormat());
-    registry.registerFormat(const JsonLdFormat());
-    return registry;
-  }
-
-  /// Creates a default parser factory with standard formats
-  static RdfParserFactoryBase _createDefaultParserFactory() {
-    return RdfParserFactory(_createDefaultRegistry());
-  }
-
-  /// Creates a default serializer factory with standard formats
-  static RdfSerializerFactoryBase _createDefaultSerializerFactory() {
-    return RdfSerializerFactory(_createDefaultRegistry());
-  }
+       _rdfCore = rdfCore;
 
   @override
   bool get isConnected =>
@@ -117,7 +90,7 @@ class SolidSyncService implements SyncService {
       _log.info('Syncing ${objectsToSync.length} objects to pod');
 
       // Convert objects to RDF graph
-      final graph = _rdfMapperService.toGraphFromList(objectsToSync);
+      final graph = _rdfMapper.graph.serialize(objectsToSync);
 
       // Group triples by storage IRI using the strategy
       final triplesByStorageIri = config.storageStrategy.mapTriplesToStorage(
@@ -132,7 +105,7 @@ class SolidSyncService implements SyncService {
           final fileUrl = fileIri.iri;
           final triplesOfFile = entry.value;
 
-          final serializer = _rdfSerializerFactory.createSerializer(
+          final serializer = _rdfCore.getSerializer(
             contentType: getContentTypeForFile(fileUrl),
           );
 
@@ -232,13 +205,14 @@ class SolidSyncService implements SyncService {
           if (response.statusCode == 200) {
             // Parse the Turtle file
             final turtle = response.body;
-            final graph = _rdfParserFactory
-                .createParser(contentType: getContentTypeForFile(fileUrl))
-                .parse(turtle, documentUrl: fileUrl);
 
             // Convert triples to domain objects using the mapper service
             // This is domain-agnostic as it relies on registered mappers
-            final objects = _rdfMapperService.fromGraphAllSubjects(graph);
+            final objects = _rdfMapper.deserializeAll(
+              turtle,
+              contentType: getContentTypeForFile(fileUrl),
+              documentUrl: fileUrl,
+            );
 
             downloadedObjects.addAll(objects);
             _log.fine(
@@ -444,8 +418,8 @@ class SolidSyncService implements SyncService {
 
       // Parse the container listing (Turtle format)
       final turtle = response.body;
-      final graph = _rdfParserFactory
-          .createParser(contentType: 'text/turtle')
+      final graph = _rdfCore
+          .getParser(contentType: 'text/turtle')
           .parse(turtle, documentUrl: containerUrl);
 
       // Find all contains predicates to get resource URLs

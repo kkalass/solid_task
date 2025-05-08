@@ -1,15 +1,11 @@
 import 'package:get_it/get_it.dart';
+import 'package:rdf_core/rdf_core.dart';
+import 'package:rdf_mapper/rdf_mapper.dart';
 import 'package:solid_task/bootstrap/service_locator_builder.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/services/logger_service.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_mapper_service.dart';
-import 'package:rdf_core/plugin/format_plugin.dart';
-import 'package:rdf_core/rdf_parser.dart';
-import 'package:rdf_core/rdf_serializer.dart';
-import 'package:rdf_core/turtle/turtle_format.dart';
-import 'package:rdf_core/jsonld/jsonld_format.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/ext/solid/sync/rdf_repository.dart';
 import 'package:solid_task/services/repository/solid_item_rdf_repository_adapter.dart';
@@ -84,22 +80,6 @@ extension SyncServiceLocatorBuilderExtension on ServiceLocatorBuilder {
         );
       });
 
-      // Register format registry with standard formats
-      sl.registerSingleton<RdfFormatRegistry>(() {
-        final registry = RdfFormatRegistry();
-        registry.registerFormat(const TurtleFormat());
-        registry.registerFormat(const JsonLdFormat());
-        return registry;
-      }());
-
-      // Register parser and serializer factories
-      sl.registerSingleton<RdfParserFactoryBase>(
-        RdfParserFactory(sl<RdfFormatRegistry>()),
-      );
-      sl.registerSingleton<RdfSerializerFactoryBase>(
-        RdfSerializerFactory(sl<RdfFormatRegistry>()),
-      );
-
       // Sync service - depends on repository and auth
       sl.registerLazySingleton<SyncService>(() {
         var syncServiceFactory = config._syncServiceFactory;
@@ -111,10 +91,9 @@ extension SyncServiceLocatorBuilderExtension on ServiceLocatorBuilder {
             authOperations: sl<SolidAuthOperations>(),
             authState: sl<SolidAuthState>(),
             client: sl<http.Client>(),
-            rdfMapperService: sl<RdfMapperService>(),
+            rdfMapper: sl<RdfMapper>(),
+            rdfCore: sl<RdfCore>(),
             configProvider: sl<PodStorageConfigurationProvider>(),
-            rdfParserFactory: sl<RdfParserFactoryBase>(),
-            rdfSerializerFactory: sl<RdfSerializerFactoryBase>(),
           );
         }
       });

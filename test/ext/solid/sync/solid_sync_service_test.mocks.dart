@@ -3,22 +3,19 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i6;
-import 'dart:convert' as _i7;
-import 'dart:typed_data' as _i9;
+import 'dart:async' as _i4;
+import 'dart:convert' as _i5;
+import 'dart:typed_data' as _i7;
 
 import 'package:http/http.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i8;
-import 'package:rdf_core/graph/rdf_graph.dart' as _i13;
-import 'package:rdf_core/rdf_parser.dart' as _i4;
-import 'package:rdf_core/rdf_serializer.dart' as _i5;
+import 'package:mockito/src/dummies.dart' as _i6;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
-    as _i12;
+    as _i10;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart'
-    as _i11;
+    as _i9;
 import 'package:solid_task/ext/solid/auth/models/auth_result.dart' as _i3;
-import 'package:solid_task/ext/solid/sync/rdf_repository.dart' as _i10;
+import 'package:solid_task/ext/solid/sync/rdf_repository.dart' as _i8;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -35,29 +32,34 @@ import 'package:solid_task/ext/solid/sync/rdf_repository.dart' as _i10;
 // ignore_for_file: subtype_of_sealed_class
 
 class _FakeResponse_0 extends _i1.SmartFake implements _i2.Response {
-  _FakeResponse_0(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
+  _FakeResponse_0(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
 }
 
 class _FakeStreamedResponse_1 extends _i1.SmartFake
     implements _i2.StreamedResponse {
-  _FakeStreamedResponse_1(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
+  _FakeStreamedResponse_1(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
 }
 
 class _FakeAuthResult_2 extends _i1.SmartFake implements _i3.AuthResult {
-  _FakeAuthResult_2(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeRdfParser_3 extends _i1.SmartFake implements _i4.RdfParser {
-  _FakeRdfParser_3(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeRdfSerializer_4 extends _i1.SmartFake implements _i5.RdfSerializer {
-  _FakeRdfSerializer_4(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
+  _FakeAuthResult_2(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
 }
 
 /// A class which mocks [Client].
@@ -65,499 +67,475 @@ class _FakeRdfSerializer_4 extends _i1.SmartFake implements _i5.RdfSerializer {
 /// See the documentation for Mockito's code generation for more information.
 class MockClient extends _i1.Mock implements _i2.Client {
   @override
-  _i6.Future<_i2.Response> head(Uri? url, {Map<String, String>? headers}) =>
+  _i4.Future<_i2.Response> head(
+    Uri? url, {
+    Map<String, String>? headers,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#head, [url], {#headers: headers}),
-            returnValue: _i6.Future<_i2.Response>.value(
-              _FakeResponse_0(
-                this,
-                Invocation.method(#head, [url], {#headers: headers}),
-              ),
-            ),
-            returnValueForMissingStub: _i6.Future<_i2.Response>.value(
-              _FakeResponse_0(
-                this,
-                Invocation.method(#head, [url], {#headers: headers}),
-              ),
-            ),
-          )
-          as _i6.Future<_i2.Response>);
+        Invocation.method(
+          #head,
+          [url],
+          {#headers: headers},
+        ),
+        returnValue: _i4.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #head,
+            [url],
+            {#headers: headers},
+          ),
+        )),
+        returnValueForMissingStub:
+            _i4.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #head,
+            [url],
+            {#headers: headers},
+          ),
+        )),
+      ) as _i4.Future<_i2.Response>);
 
   @override
-  _i6.Future<_i2.Response> get(Uri? url, {Map<String, String>? headers}) =>
+  _i4.Future<_i2.Response> get(
+    Uri? url, {
+    Map<String, String>? headers,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#get, [url], {#headers: headers}),
-            returnValue: _i6.Future<_i2.Response>.value(
-              _FakeResponse_0(
-                this,
-                Invocation.method(#get, [url], {#headers: headers}),
-              ),
-            ),
-            returnValueForMissingStub: _i6.Future<_i2.Response>.value(
-              _FakeResponse_0(
-                this,
-                Invocation.method(#get, [url], {#headers: headers}),
-              ),
-            ),
-          )
-          as _i6.Future<_i2.Response>);
+        Invocation.method(
+          #get,
+          [url],
+          {#headers: headers},
+        ),
+        returnValue: _i4.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #get,
+            [url],
+            {#headers: headers},
+          ),
+        )),
+        returnValueForMissingStub:
+            _i4.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #get,
+            [url],
+            {#headers: headers},
+          ),
+        )),
+      ) as _i4.Future<_i2.Response>);
 
   @override
-  _i6.Future<_i2.Response> post(
+  _i4.Future<_i2.Response> post(
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i7.Encoding? encoding,
+    _i5.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #post,
-              [url],
-              {#headers: headers, #body: body, #encoding: encoding},
-            ),
-            returnValue: _i6.Future<_i2.Response>.value(
-              _FakeResponse_0(
-                this,
-                Invocation.method(
-                  #post,
-                  [url],
-                  {#headers: headers, #body: body, #encoding: encoding},
-                ),
-              ),
-            ),
-            returnValueForMissingStub: _i6.Future<_i2.Response>.value(
-              _FakeResponse_0(
-                this,
-                Invocation.method(
-                  #post,
-                  [url],
-                  {#headers: headers, #body: body, #encoding: encoding},
-                ),
-              ),
-            ),
-          )
-          as _i6.Future<_i2.Response>);
+        Invocation.method(
+          #post,
+          [url],
+          {
+            #headers: headers,
+            #body: body,
+            #encoding: encoding,
+          },
+        ),
+        returnValue: _i4.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #post,
+            [url],
+            {
+              #headers: headers,
+              #body: body,
+              #encoding: encoding,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i4.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #post,
+            [url],
+            {
+              #headers: headers,
+              #body: body,
+              #encoding: encoding,
+            },
+          ),
+        )),
+      ) as _i4.Future<_i2.Response>);
 
   @override
-  _i6.Future<_i2.Response> put(
+  _i4.Future<_i2.Response> put(
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i7.Encoding? encoding,
+    _i5.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #put,
-              [url],
-              {#headers: headers, #body: body, #encoding: encoding},
-            ),
-            returnValue: _i6.Future<_i2.Response>.value(
-              _FakeResponse_0(
-                this,
-                Invocation.method(
-                  #put,
-                  [url],
-                  {#headers: headers, #body: body, #encoding: encoding},
-                ),
-              ),
-            ),
-            returnValueForMissingStub: _i6.Future<_i2.Response>.value(
-              _FakeResponse_0(
-                this,
-                Invocation.method(
-                  #put,
-                  [url],
-                  {#headers: headers, #body: body, #encoding: encoding},
-                ),
-              ),
-            ),
-          )
-          as _i6.Future<_i2.Response>);
+        Invocation.method(
+          #put,
+          [url],
+          {
+            #headers: headers,
+            #body: body,
+            #encoding: encoding,
+          },
+        ),
+        returnValue: _i4.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #put,
+            [url],
+            {
+              #headers: headers,
+              #body: body,
+              #encoding: encoding,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i4.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #put,
+            [url],
+            {
+              #headers: headers,
+              #body: body,
+              #encoding: encoding,
+            },
+          ),
+        )),
+      ) as _i4.Future<_i2.Response>);
 
   @override
-  _i6.Future<_i2.Response> patch(
+  _i4.Future<_i2.Response> patch(
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i7.Encoding? encoding,
+    _i5.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #patch,
-              [url],
-              {#headers: headers, #body: body, #encoding: encoding},
-            ),
-            returnValue: _i6.Future<_i2.Response>.value(
-              _FakeResponse_0(
-                this,
-                Invocation.method(
-                  #patch,
-                  [url],
-                  {#headers: headers, #body: body, #encoding: encoding},
-                ),
-              ),
-            ),
-            returnValueForMissingStub: _i6.Future<_i2.Response>.value(
-              _FakeResponse_0(
-                this,
-                Invocation.method(
-                  #patch,
-                  [url],
-                  {#headers: headers, #body: body, #encoding: encoding},
-                ),
-              ),
-            ),
-          )
-          as _i6.Future<_i2.Response>);
+        Invocation.method(
+          #patch,
+          [url],
+          {
+            #headers: headers,
+            #body: body,
+            #encoding: encoding,
+          },
+        ),
+        returnValue: _i4.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #patch,
+            [url],
+            {
+              #headers: headers,
+              #body: body,
+              #encoding: encoding,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i4.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #patch,
+            [url],
+            {
+              #headers: headers,
+              #body: body,
+              #encoding: encoding,
+            },
+          ),
+        )),
+      ) as _i4.Future<_i2.Response>);
 
   @override
-  _i6.Future<_i2.Response> delete(
+  _i4.Future<_i2.Response> delete(
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i7.Encoding? encoding,
+    _i5.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #delete,
-              [url],
-              {#headers: headers, #body: body, #encoding: encoding},
-            ),
-            returnValue: _i6.Future<_i2.Response>.value(
-              _FakeResponse_0(
-                this,
-                Invocation.method(
-                  #delete,
-                  [url],
-                  {#headers: headers, #body: body, #encoding: encoding},
-                ),
-              ),
-            ),
-            returnValueForMissingStub: _i6.Future<_i2.Response>.value(
-              _FakeResponse_0(
-                this,
-                Invocation.method(
-                  #delete,
-                  [url],
-                  {#headers: headers, #body: body, #encoding: encoding},
-                ),
-              ),
-            ),
-          )
-          as _i6.Future<_i2.Response>);
+        Invocation.method(
+          #delete,
+          [url],
+          {
+            #headers: headers,
+            #body: body,
+            #encoding: encoding,
+          },
+        ),
+        returnValue: _i4.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #delete,
+            [url],
+            {
+              #headers: headers,
+              #body: body,
+              #encoding: encoding,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i4.Future<_i2.Response>.value(_FakeResponse_0(
+          this,
+          Invocation.method(
+            #delete,
+            [url],
+            {
+              #headers: headers,
+              #body: body,
+              #encoding: encoding,
+            },
+          ),
+        )),
+      ) as _i4.Future<_i2.Response>);
 
   @override
-  _i6.Future<String> read(Uri? url, {Map<String, String>? headers}) =>
-      (super.noSuchMethod(
-            Invocation.method(#read, [url], {#headers: headers}),
-            returnValue: _i6.Future<String>.value(
-              _i8.dummyValue<String>(
-                this,
-                Invocation.method(#read, [url], {#headers: headers}),
-              ),
-            ),
-            returnValueForMissingStub: _i6.Future<String>.value(
-              _i8.dummyValue<String>(
-                this,
-                Invocation.method(#read, [url], {#headers: headers}),
-              ),
-            ),
-          )
-          as _i6.Future<String>);
-
-  @override
-  _i6.Future<_i9.Uint8List> readBytes(
+  _i4.Future<String> read(
     Uri? url, {
     Map<String, String>? headers,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(#readBytes, [url], {#headers: headers}),
-            returnValue: _i6.Future<_i9.Uint8List>.value(_i9.Uint8List(0)),
-            returnValueForMissingStub: _i6.Future<_i9.Uint8List>.value(
-              _i9.Uint8List(0),
-            ),
-          )
-          as _i6.Future<_i9.Uint8List>);
+        Invocation.method(
+          #read,
+          [url],
+          {#headers: headers},
+        ),
+        returnValue: _i4.Future<String>.value(_i6.dummyValue<String>(
+          this,
+          Invocation.method(
+            #read,
+            [url],
+            {#headers: headers},
+          ),
+        )),
+        returnValueForMissingStub:
+            _i4.Future<String>.value(_i6.dummyValue<String>(
+          this,
+          Invocation.method(
+            #read,
+            [url],
+            {#headers: headers},
+          ),
+        )),
+      ) as _i4.Future<String>);
 
   @override
-  _i6.Future<_i2.StreamedResponse> send(_i2.BaseRequest? request) =>
+  _i4.Future<_i7.Uint8List> readBytes(
+    Uri? url, {
+    Map<String, String>? headers,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#send, [request]),
-            returnValue: _i6.Future<_i2.StreamedResponse>.value(
-              _FakeStreamedResponse_1(
-                this,
-                Invocation.method(#send, [request]),
-              ),
-            ),
-            returnValueForMissingStub: _i6.Future<_i2.StreamedResponse>.value(
-              _FakeStreamedResponse_1(
-                this,
-                Invocation.method(#send, [request]),
-              ),
-            ),
-          )
-          as _i6.Future<_i2.StreamedResponse>);
+        Invocation.method(
+          #readBytes,
+          [url],
+          {#headers: headers},
+        ),
+        returnValue: _i4.Future<_i7.Uint8List>.value(_i7.Uint8List(0)),
+        returnValueForMissingStub:
+            _i4.Future<_i7.Uint8List>.value(_i7.Uint8List(0)),
+      ) as _i4.Future<_i7.Uint8List>);
+
+  @override
+  _i4.Future<_i2.StreamedResponse> send(_i2.BaseRequest? request) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #send,
+          [request],
+        ),
+        returnValue:
+            _i4.Future<_i2.StreamedResponse>.value(_FakeStreamedResponse_1(
+          this,
+          Invocation.method(
+            #send,
+            [request],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i4.Future<_i2.StreamedResponse>.value(_FakeStreamedResponse_1(
+          this,
+          Invocation.method(
+            #send,
+            [request],
+          ),
+        )),
+      ) as _i4.Future<_i2.StreamedResponse>);
 
   @override
   void close() => super.noSuchMethod(
-    Invocation.method(#close, []),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #close,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 }
 
 /// A class which mocks [RdfRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockRdfRepository extends _i1.Mock implements _i10.RdfRepository {
+class MockRdfRepository extends _i1.Mock implements _i8.RdfRepository {
   @override
-  List<Object> getAllSyncableObjects() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAllSyncableObjects, []),
-            returnValue: <Object>[],
-            returnValueForMissingStub: <Object>[],
-          )
-          as List<Object>);
+  List<Object> getAllSyncableObjects() => (super.noSuchMethod(
+        Invocation.method(
+          #getAllSyncableObjects,
+          [],
+        ),
+        returnValue: <Object>[],
+        returnValueForMissingStub: <Object>[],
+      ) as List<Object>);
 
   @override
-  _i6.Future<int> mergeObjects(List<Object>? objects) =>
-      (super.noSuchMethod(
-            Invocation.method(#mergeObjects, [objects]),
-            returnValue: _i6.Future<int>.value(0),
-            returnValueForMissingStub: _i6.Future<int>.value(0),
-          )
-          as _i6.Future<int>);
+  _i4.Future<int> mergeObjects(List<Object>? objects) => (super.noSuchMethod(
+        Invocation.method(
+          #mergeObjects,
+          [objects],
+        ),
+        returnValue: _i4.Future<int>.value(0),
+        returnValueForMissingStub: _i4.Future<int>.value(0),
+      ) as _i4.Future<int>);
 }
 
 /// A class which mocks [SolidAuthState].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSolidAuthState extends _i1.Mock implements _i11.SolidAuthState {
+class MockSolidAuthState extends _i1.Mock implements _i9.SolidAuthState {
   @override
-  bool get isAuthenticated =>
-      (super.noSuchMethod(
-            Invocation.getter(#isAuthenticated),
-            returnValue: false,
-            returnValueForMissingStub: false,
-          )
-          as bool);
+  bool get isAuthenticated => (super.noSuchMethod(
+        Invocation.getter(#isAuthenticated),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
 }
 
 /// A class which mocks [SolidAuthOperations].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockSolidAuthOperations<C> extends _i1.Mock
-    implements _i12.SolidAuthOperations<C> {
+    implements _i10.SolidAuthOperations<C> {
   @override
-  _i6.Future<String> getIssuer(String? input) =>
-      (super.noSuchMethod(
-            Invocation.method(#getIssuer, [input]),
-            returnValue: _i6.Future<String>.value(
-              _i8.dummyValue<String>(
-                this,
-                Invocation.method(#getIssuer, [input]),
-              ),
-            ),
-            returnValueForMissingStub: _i6.Future<String>.value(
-              _i8.dummyValue<String>(
-                this,
-                Invocation.method(#getIssuer, [input]),
-              ),
-            ),
-          )
-          as _i6.Future<String>);
+  _i4.Future<String> getIssuer(String? input) => (super.noSuchMethod(
+        Invocation.method(
+          #getIssuer,
+          [input],
+        ),
+        returnValue: _i4.Future<String>.value(_i6.dummyValue<String>(
+          this,
+          Invocation.method(
+            #getIssuer,
+            [input],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i4.Future<String>.value(_i6.dummyValue<String>(
+          this,
+          Invocation.method(
+            #getIssuer,
+            [input],
+          ),
+        )),
+      ) as _i4.Future<String>);
 
   @override
-  _i6.Future<_i3.AuthResult> authenticate(String? issuerUri, C? context) =>
+  _i4.Future<_i3.AuthResult> authenticate(
+    String? issuerUri,
+    C? context,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#authenticate, [issuerUri, context]),
-            returnValue: _i6.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_2(
-                this,
-                Invocation.method(#authenticate, [issuerUri, context]),
-              ),
-            ),
-            returnValueForMissingStub: _i6.Future<_i3.AuthResult>.value(
-              _FakeAuthResult_2(
-                this,
-                Invocation.method(#authenticate, [issuerUri, context]),
-              ),
-            ),
-          )
-          as _i6.Future<_i3.AuthResult>);
+        Invocation.method(
+          #authenticate,
+          [
+            issuerUri,
+            context,
+          ],
+        ),
+        returnValue: _i4.Future<_i3.AuthResult>.value(_FakeAuthResult_2(
+          this,
+          Invocation.method(
+            #authenticate,
+            [
+              issuerUri,
+              context,
+            ],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i4.Future<_i3.AuthResult>.value(_FakeAuthResult_2(
+          this,
+          Invocation.method(
+            #authenticate,
+            [
+              issuerUri,
+              context,
+            ],
+          ),
+        )),
+      ) as _i4.Future<_i3.AuthResult>);
 
   @override
-  _i6.Future<void> logout() =>
-      (super.noSuchMethod(
-            Invocation.method(#logout, []),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
+  _i4.Future<void> logout() => (super.noSuchMethod(
+        Invocation.method(
+          #logout,
+          [],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i6.Future<String?> resolvePodUrl(String? webId) =>
-      (super.noSuchMethod(
-            Invocation.method(#resolvePodUrl, [webId]),
-            returnValue: _i6.Future<String?>.value(),
-            returnValueForMissingStub: _i6.Future<String?>.value(),
-          )
-          as _i6.Future<String?>);
+  _i4.Future<String?> resolvePodUrl(String? webId) => (super.noSuchMethod(
+        Invocation.method(
+          #resolvePodUrl,
+          [webId],
+        ),
+        returnValue: _i4.Future<String?>.value(),
+        returnValueForMissingStub: _i4.Future<String?>.value(),
+      ) as _i4.Future<String?>);
 
   @override
-  String generateDpopToken(String? url, String? method) =>
+  String generateDpopToken(
+    String? url,
+    String? method,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#generateDpopToken, [url, method]),
-            returnValue: _i8.dummyValue<String>(
-              this,
-              Invocation.method(#generateDpopToken, [url, method]),
-            ),
-            returnValueForMissingStub: _i8.dummyValue<String>(
-              this,
-              Invocation.method(#generateDpopToken, [url, method]),
-            ),
-          )
-          as String);
-}
-
-/// A class which mocks [RdfParser].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockRdfParser extends _i1.Mock implements _i4.RdfParser {
-  @override
-  _i13.RdfGraph parse(String? input, {String? documentUrl}) =>
-      (super.noSuchMethod(
-            Invocation.method(#parse, [input], {#documentUrl: documentUrl}),
-            returnValue: _i8.dummyValue<_i13.RdfGraph>(
-              this,
-              Invocation.method(#parse, [input], {#documentUrl: documentUrl}),
-            ),
-            returnValueForMissingStub: _i8.dummyValue<_i13.RdfGraph>(
-              this,
-              Invocation.method(#parse, [input], {#documentUrl: documentUrl}),
-            ),
-          )
-          as _i13.RdfGraph);
-}
-
-/// A class which mocks [RdfParserFactoryBase].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockRdfParserFactoryBase extends _i1.Mock
-    implements _i4.RdfParserFactoryBase {
-  @override
-  _i4.RdfParser createParser({String? contentType}) =>
-      (super.noSuchMethod(
-            Invocation.method(#createParser, [], {#contentType: contentType}),
-            returnValue: _FakeRdfParser_3(
-              this,
-              Invocation.method(#createParser, [], {#contentType: contentType}),
-            ),
-            returnValueForMissingStub: _FakeRdfParser_3(
-              this,
-              Invocation.method(#createParser, [], {#contentType: contentType}),
-            ),
-          )
-          as _i4.RdfParser);
-
-  @override
-  _i13.RdfGraph parse(
-    String? input, {
-    String? contentType,
-    String? documentUrl,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(
-              #parse,
-              [input],
-              {#contentType: contentType, #documentUrl: documentUrl},
-            ),
-            returnValue: _i8.dummyValue<_i13.RdfGraph>(
-              this,
-              Invocation.method(
-                #parse,
-                [input],
-                {#contentType: contentType, #documentUrl: documentUrl},
-              ),
-            ),
-            returnValueForMissingStub: _i8.dummyValue<_i13.RdfGraph>(
-              this,
-              Invocation.method(
-                #parse,
-                [input],
-                {#contentType: contentType, #documentUrl: documentUrl},
-              ),
-            ),
-          )
-          as _i13.RdfGraph);
-}
-
-/// A class which mocks [RdfSerializerFactoryBase].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockRdfSerializerFactoryBase extends _i1.Mock
-    implements _i5.RdfSerializerFactoryBase {
-  @override
-  _i5.RdfSerializer createSerializer({String? contentType}) =>
-      (super.noSuchMethod(
-            Invocation.method(#createSerializer, [], {
-              #contentType: contentType,
-            }),
-            returnValue: _FakeRdfSerializer_4(
-              this,
-              Invocation.method(#createSerializer, [], {
-                #contentType: contentType,
-              }),
-            ),
-            returnValueForMissingStub: _FakeRdfSerializer_4(
-              this,
-              Invocation.method(#createSerializer, [], {
-                #contentType: contentType,
-              }),
-            ),
-          )
-          as _i5.RdfSerializer);
-
-  @override
-  String write(
-    _i13.RdfGraph? graph, {
-    String? contentType,
-    String? baseUri,
-    Map<String, String>? customPrefixes = const {},
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(
-              #write,
-              [graph],
-              {
-                #contentType: contentType,
-                #baseUri: baseUri,
-                #customPrefixes: customPrefixes,
-              },
-            ),
-            returnValue: _i8.dummyValue<String>(
-              this,
-              Invocation.method(
-                #write,
-                [graph],
-                {
-                  #contentType: contentType,
-                  #baseUri: baseUri,
-                  #customPrefixes: customPrefixes,
-                },
-              ),
-            ),
-            returnValueForMissingStub: _i8.dummyValue<String>(
-              this,
-              Invocation.method(
-                #write,
-                [graph],
-                {
-                  #contentType: contentType,
-                  #baseUri: baseUri,
-                  #customPrefixes: customPrefixes,
-                },
-              ),
-            ),
-          )
-          as String);
+        Invocation.method(
+          #generateDpopToken,
+          [
+            url,
+            method,
+          ],
+        ),
+        returnValue: _i6.dummyValue<String>(
+          this,
+          Invocation.method(
+            #generateDpopToken,
+            [
+              url,
+              method,
+            ],
+          ),
+        ),
+        returnValueForMissingStub: _i6.dummyValue<String>(
+          this,
+          Invocation.method(
+            #generateDpopToken,
+            [
+              url,
+              method,
+            ],
+          ),
+        ),
+      ) as String);
 }

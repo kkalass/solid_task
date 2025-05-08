@@ -1,11 +1,11 @@
 import 'package:get_it/get_it.dart';
+import 'package:rdf_core/rdf_core.dart';
+import 'package:rdf_mapper/rdf_mapper.dart';
 import 'package:solid_task/bootstrap/service_locator_builder.dart';
 import 'package:solid_task/ext/solid/pod/storage/pod_storage_configuration_provider.dart';
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/solid_integration/item_rdf_mapper.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_mapper_registry.dart';
-import 'package:solid_task/ext/rdf_orm/rdf_mapper_service.dart';
 
 /// Extension for ServiceLocatorBuilder to handle RDF mapping services
 extension RdfMappingServiceLocatorBuilderExtension on ServiceLocatorBuilder {
@@ -13,18 +13,14 @@ extension RdfMappingServiceLocatorBuilderExtension on ServiceLocatorBuilder {
   static final Map<ServiceLocatorBuilder, _RdfMappingConfig> _configs = {};
 
   /// Configuration for RDF mapping services
-  ServiceLocatorBuilder withRdfMapperRegistryFactory(
-    RdfMapperRegistry Function(GetIt)? factory,
-  ) {
-    _configs[this]!._registryFactory = factory;
+  ServiceLocatorBuilder withRdfMapper(RdfMapper Function(GetIt)? factory) {
+    _configs[this]!._rdfMapperFactory = factory;
 
     return this;
   }
 
-  ServiceLocatorBuilder withRdfMapperServiceFactory(
-    RdfMapperService Function(GetIt)? factory,
-  ) {
-    _configs[this]!._mapperServiceFactory = factory;
+  ServiceLocatorBuilder withRdfCore(RdfCore Function(GetIt)? factory) {
+    _configs[this]!._rdfCoreFactory = factory;
 
     return this;
   }
@@ -50,9 +46,9 @@ extension RdfMappingServiceLocatorBuilderExtension on ServiceLocatorBuilder {
       final loggerService = sl<LoggerService>();
 
       // Register mapper registry
-      sl.registerLazySingleton<RdfMapperRegistry>(() {
-        final factory = config._registryFactory;
-        return factory == null ? RdfMapperRegistry() : factory(sl);
+      sl.registerLazySingleton<RdfCore>(() {
+        final factory = config._rdfCoreFactory;
+        return factory == null ? RdfCore.withStandardFormats() : factory(sl);
       });
 
       // Register item mapper
@@ -73,18 +69,21 @@ extension RdfMappingServiceLocatorBuilderExtension on ServiceLocatorBuilder {
       });
 
       // Register mapper service
-      sl.registerLazySingleton<RdfMapperService>(() {
+      sl.registerLazySingleton<RdfMapper>(() {
         // Use provided mapper service or create a new one
-        final factory = config._mapperServiceFactory;
-        final service =
+        final factory = config._rdfMapperFactory;
+        final rdfMapper =
             factory == null
-                ? RdfMapperService(registry: sl<RdfMapperRegistry>())
+                ? RdfMapper(
+                  registry: RdfMapperRegistry(),
+                  rdfCore: sl<RdfCore>(),
+                )
                 : factory(sl);
 
         // Register the item mapper with the registry
-        service.registry.registerSubjectMapper<Item>(sl<ItemRdfMapper>());
+        rdfMapper.registerMapper<Item>(sl<ItemRdfMapper>());
 
-        return service;
+        return rdfMapper;
       });
 
       // Clean up after registration
@@ -95,8 +94,8 @@ extension RdfMappingServiceLocatorBuilderExtension on ServiceLocatorBuilder {
 
 /// Private class to hold RDF mapping configuration
 class _RdfMappingConfig {
-  RdfMapperRegistry Function(GetIt)? _registryFactory;
-  RdfMapperService Function(GetIt)? _mapperServiceFactory;
+  RdfMapper Function(GetIt)? _rdfMapperFactory;
+  RdfCore Function(GetIt)? _rdfCoreFactory;
   ItemRdfMapper Function(GetIt)? _itemMapperFactory;
 
   _RdfMappingConfig();
