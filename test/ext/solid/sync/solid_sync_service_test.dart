@@ -41,7 +41,7 @@ void main() {
       authOperations: mockAuthOperations,
       client: mockClient,
       rdfMapper: RdfMapper.withDefaultRegistry(),
-      rdfCore: RdfCore.withStandardFormats(),
+      rdfCore: RdfCore.withStandardCodecs(),
       configProvider: StaticStorageConfigurationProvider(
         PodStorageConfiguration(storageRoot: "https://example.com/pod/"),
       ),

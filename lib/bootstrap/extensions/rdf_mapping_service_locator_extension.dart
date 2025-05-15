@@ -48,7 +48,7 @@ extension RdfMappingServiceLocatorBuilderExtension on ServiceLocatorBuilder {
       // Register mapper registry
       sl.registerLazySingleton<RdfCore>(() {
         final factory = config._rdfCoreFactory;
-        return factory == null ? RdfCore.withStandardFormats() : factory(sl);
+        return factory == null ? RdfCore.withStandardCodecs() : factory(sl);
       });
 
       // Register item mapper

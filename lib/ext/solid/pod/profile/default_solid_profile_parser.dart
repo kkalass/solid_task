@@ -26,7 +26,7 @@ class DefaultSolidProfileParser implements SolidProfileParser {
 
   /// Creates a new ProfileParser with the required dependencies
   DefaultSolidProfileParser({RdfCore? rdfCore})
-    : _rdfCore = rdfCore ?? RdfCore.withStandardFormats();
+    : _rdfCore = rdfCore ?? RdfCore.withStandardCodecs();
 
   /// Find storage URLs in the parsed graph
   List<String> _findStorageUrls(RdfGraph graph) {
@@ -86,9 +86,11 @@ class DefaultSolidProfileParser implements SolidProfileParser {
 
       // Use the unified RdfParser to handle both Turtle and JSON-LD
       try {
-        final graph = _rdfCore
-            .getParser(contentType: contentType)
-            .parse(content, documentUrl: webId);
+        final graph = _rdfCore.decode(
+          content,
+          contentType: contentType,
+          documentUrl: webId,
+        );
 
         final storageUrls = _findStorageUrls(graph);
         if (storageUrls.isNotEmpty) {

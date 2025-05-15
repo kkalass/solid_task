@@ -717,24 +717,26 @@ packages:
     dependency: "direct main"
     description:
       name: rdf_core
-      sha256: "2053db0e7945ca52dbfe3eb59c8d4af23dc799189668708975e7701a09867dce"
+      sha256: e5da1d35b30ed5cc4ebeca77cf33f110ddf6a9fdc4490033e1b8dbf17f6d918d
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.6"
+    version: "0.9.2"
   rdf_mapper:
     dependency: "direct main"
     description:
-      path: "../rdf/rdf_mapper"
-      relative: true
-    source: path
-    version: "0.2.0-dev"
+      name: rdf_mapper
+      sha256: e238ffcd572867a9bcffaad226732e5ebee477af2e143d3c3d073fc9dbfea467
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0"
   rdf_vocabularies:
     dependency: "direct main"
     description:
-      path: "../rdf/rdf_vocabularies"
-      relative: true
-    source: path
-    version: "0.1.0-dev"
+      name: rdf_vocabularies
+      sha256: "33c102a1c287f9ff91f150596155070fcc22b21de508dbdb82ec3e4ac856db85"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   rxdart:
     dependency: "direct main"
     description:

@@ -90,7 +90,7 @@ class SolidSyncService implements SyncService {
       _log.info('Syncing ${objectsToSync.length} objects to pod');
 
       // Convert objects to RDF graph
-      final graph = _rdfMapper.graph.serialize(objectsToSync);
+      final graph = _rdfMapper.graph.encodeObjects(objectsToSync);
 
       // Group triples by storage IRI using the strategy
       final triplesByStorageIri = config.storageStrategy.mapTriplesToStorage(
@@ -105,11 +105,11 @@ class SolidSyncService implements SyncService {
           final fileUrl = fileIri.iri;
           final triplesOfFile = entry.value;
 
-          final serializer = _rdfCore.getSerializer(
+          final codec = _rdfCore.codec(
             contentType: getContentTypeForFile(fileUrl),
           );
 
-          final turtle = serializer.write(
+          final turtle = codec.encode(
             RdfGraph(triples: triplesOfFile),
             baseUri: config.appStorageRoot,
           );
@@ -208,7 +208,7 @@ class SolidSyncService implements SyncService {
 
             // Convert triples to domain objects using the mapper service
             // This is domain-agnostic as it relies on registered mappers
-            final objects = _rdfMapper.deserializeAll(
+            final objects = _rdfMapper.decodeObjects<Object>(
               turtle,
               contentType: getContentTypeForFile(fileUrl),
               documentUrl: fileUrl,
@@ -418,9 +418,11 @@ class SolidSyncService implements SyncService {
 
       // Parse the container listing (Turtle format)
       final turtle = response.body;
-      final graph = _rdfCore
-          .getParser(contentType: 'text/turtle')
-          .parse(turtle, documentUrl: containerUrl);
+      final graph = _rdfCore.decode(
+        turtle,
+        contentType: 'text/turtle',
+        documentUrl: containerUrl,
+      );
 
       // Find all contains predicates to get resource URLs
       final containsPredicates = [

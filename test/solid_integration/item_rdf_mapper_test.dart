@@ -48,15 +48,15 @@ void main() {
       originalItem.vectorClock = {'user3': 3, 'user4': 4};
 
       // Convert to graph
-      final graph = rdfMapper.graph.serialize(originalItem);
+      final graph = rdfMapper.graph.encodeObject(originalItem);
       expect(graph.triples, isNotEmpty);
 
       // Convert back to item
-      final reconstructedItem = rdfMapper.graph.deserializeBySubject<Item>(
+      final reconstructedItem = rdfMapper.graph.decodeObject<Item>(
         graph,
-        IriTerm("${storageRoot}solidtask/task/graph-test-456.ttl"),
+        subject: IriTerm("${storageRoot}solidtask/task/graph-test-456.ttl"),
       );
-      final reconstructedItem2 = rdfMapper.graph.deserialize<Item>(graph);
+      final reconstructedItem2 = rdfMapper.graph.decodeObject<Item>(graph);
 
       // Verify properties match
       expect(reconstructedItem.id, equals(originalItem.id));

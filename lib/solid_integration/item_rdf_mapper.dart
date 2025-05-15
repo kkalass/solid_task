@@ -1,7 +1,6 @@
 import 'package:rdf_core/rdf_core.dart';
 import 'package:rdf_mapper/rdf_mapper.dart';
 import 'package:rdf_vocabularies/dcterms.dart';
-
 import 'package:solid_task/models/item.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/solid_integration/task_ontology_constants.dart';
