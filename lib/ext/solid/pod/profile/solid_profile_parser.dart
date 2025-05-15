@@ -8,6 +8,6 @@ abstract class SolidProfileParser {
   Future<String?> parseStorageUrl(
     String webId,
     String content,
-    String contentType,
+    String? contentType,
   );
 }

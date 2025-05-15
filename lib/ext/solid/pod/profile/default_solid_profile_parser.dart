@@ -79,7 +79,7 @@ class DefaultSolidProfileParser implements SolidProfileParser {
   Future<String?> parseStorageUrl(
     String webId,
     String content,
-    String contentType,
+    String? contentType,
   ) async {
     try {
       _log.info('Parsing profile with content type: $contentType');

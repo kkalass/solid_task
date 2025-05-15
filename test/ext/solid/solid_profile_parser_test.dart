@@ -319,7 +319,7 @@ pro:card a foaf:PersonalProfileDocument; foaf:maker :me; foaf:primaryTopic :me.
       final result = await profileParser.parseStorageUrl(
         webId,
         jsonLdProfile,
-        'application/octet-stream',
+        null,
       );
       expect(result, 'https://example.com/storage/');
     });
