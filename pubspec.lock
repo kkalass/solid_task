@@ -725,10 +725,10 @@ packages:
     dependency: "direct main"
     description:
       name: rdf_mapper
-      sha256: e238ffcd572867a9bcffaad226732e5ebee477af2e143d3c3d073fc9dbfea467
+      sha256: f946e72fb6d4cf00955cd47b41470e3db513e420253bedfaf1ed7e3c25fc1b73
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "0.5.0"
   rdf_vocabularies:
     dependency: "direct main"
     description:

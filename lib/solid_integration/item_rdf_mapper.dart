@@ -9,7 +9,7 @@ import 'package:solid_task/solid_integration/task_ontology_constants.dart';
 ///
 /// This class handles the conversion between Item domain objects and their
 /// RDF representation, including vector clock entries for CRDT functionality.
-final class ItemRdfMapper implements IriNodeMapper<Item> {
+final class ItemRdfMapper implements GlobalResourceMapper<Item> {
   @override
   final IriTerm typeIri = TaskOntologyConstants.taskClassIri;
   final String Function() _storageRootProvider;
@@ -47,7 +47,7 @@ final class ItemRdfMapper implements IriNodeMapper<Item> {
       ..id = TaskOntologyConstants.extractTaskIdFromIri(storageRoot, iri)
       ..createdAt = reader.require<DateTime>(Dcterms.created)
       ..isDeleted =
-          reader.get<bool>(TaskOntologyConstants.isDeletedIri) ?? false
+          reader.optional<bool>(TaskOntologyConstants.isDeletedIri) ?? false
       ..vectorClock = reader.getMap(
         TaskOntologyConstants.vectorClockIri,
         iriNodeDeserializer: VectorClockMapper(storageRoot: storageRoot),
@@ -65,7 +65,7 @@ final class ItemRdfMapper implements IriNodeMapper<Item> {
     final itemIri = TaskOntologyConstants.makeTaskIri(storageRoot, instance.id);
 
     return context
-        .nodeBuilder(itemIri)
+        .resourceBuilder(itemIri)
         .literal(TaskOntologyConstants.textIri, instance.text)
         .literal(TaskOntologyConstants.isDeletedIri, instance.isDeleted)
         .literal(Dcterms.created, instance.createdAt)
@@ -112,7 +112,7 @@ class AppInstanceIdSerializer extends IriIdSerializer {
       );
 }
 
-class VectorClockMapper implements IriNodeMapper<MapEntry<String, int>> {
+class VectorClockMapper implements GlobalResourceMapper<MapEntry<String, int>> {
   final String storageRoot;
   @override
   final IriTerm typeIri = TaskOntologyConstants.vectorClockEntryIri;
@@ -154,7 +154,7 @@ class VectorClockMapper implements IriNodeMapper<MapEntry<String, int>> {
 
     // Build the actual vector clock map entry
     return context
-        .nodeBuilder(iri)
+        .resourceBuilder(iri)
         // the reference to the app instance which created the version
         .iri(
           TaskOntologyConstants.clientIdIri,
