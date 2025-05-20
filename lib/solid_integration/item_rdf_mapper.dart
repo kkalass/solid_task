@@ -27,7 +27,7 @@ final class ItemRdfMapper implements GlobalResourceMapper<Item> {
        _storageRootProvider = storageRootProvider;
 
   @override
-  Item fromRdfNode(IriTerm iri, DeserializationContext context) {
+  Item fromRdfResource(IriTerm iri, DeserializationContext context) {
     _logger.debug('Converting triples to Item with subject: $iri');
     final reader = context.reader(iri);
 
@@ -50,12 +50,12 @@ final class ItemRdfMapper implements GlobalResourceMapper<Item> {
           reader.optional<bool>(TaskOntologyConstants.isDeletedIri) ?? false
       ..vectorClock = reader.getMap(
         TaskOntologyConstants.vectorClockIri,
-        iriNodeDeserializer: VectorClockMapper(storageRoot: storageRoot),
+        globalResourceDeserializer: VectorClockMapper(storageRoot: storageRoot),
       );
   }
 
   @override
-  (IriTerm, List<Triple>) toRdfNode(
+  (IriTerm, List<Triple>) toRdfResource(
     Item instance,
     SerializationContext context, {
     RdfSubject? parentSubject,
@@ -78,7 +78,7 @@ final class ItemRdfMapper implements GlobalResourceMapper<Item> {
           // the user could later find out which device triggered a certain change etc.
           serializer: AppInstanceIdSerializer(storageRoot: storageRoot),
         )
-        .childNodeMap(
+        .childResourceMap(
           TaskOntologyConstants.vectorClockIri,
           instance.vectorClock,
           VectorClockMapper(storageRoot: storageRoot),
@@ -120,7 +120,7 @@ class VectorClockMapper implements GlobalResourceMapper<MapEntry<String, int>> {
   VectorClockMapper({required this.storageRoot});
 
   @override
-  MapEntry<String, int> fromRdfNode(
+  MapEntry<String, int> fromRdfResource(
     IriTerm clockEntryIri,
     DeserializationContext context,
   ) {
@@ -137,7 +137,7 @@ class VectorClockMapper implements GlobalResourceMapper<MapEntry<String, int>> {
   }
 
   @override
-  (IriTerm, List<Triple>) toRdfNode(
+  (IriTerm, List<Triple>) toRdfResource(
     MapEntry<String, int> entry,
     SerializationContext context, {
     RdfSubject? parentSubject,

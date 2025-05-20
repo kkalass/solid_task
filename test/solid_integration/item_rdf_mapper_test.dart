@@ -24,14 +24,18 @@ void main() {
   group('RdfMapperRegistry', () {
     test('Registering and retrieving mappers works', () {
       // Verify that the mapper is registered
-      expect(rdfMapper.registry.hasIriNodeDeserializerFor<Item>(), isTrue);
-      expect(rdfMapper.registry.hasNodeSerializerFor<Item>(), isTrue);
+      expect(
+        rdfMapper.registry.hasGlobalResourceDeserializerFor<Item>(),
+        isTrue,
+      );
+      expect(rdfMapper.registry.hasResourceSerializerFor<Item>(), isTrue);
 
       // Retrieve the mapper
-      final deserializer = rdfMapper.registry.getIriNodeDeserializer<Item>();
+      final deserializer =
+          rdfMapper.registry.getGlobalResourceDeserializer<Item>();
       expect(deserializer, isNotNull);
       expect(deserializer, equals(itemMapper));
-      final serializer = rdfMapper.registry.getNodeSerializer<Item>();
+      final serializer = rdfMapper.registry.getResourceSerializer<Item>();
       expect(serializer, isNotNull);
       expect(serializer, equals(itemMapper));
     });
