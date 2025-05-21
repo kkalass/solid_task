@@ -66,22 +66,22 @@ final class ItemRdfMapper implements GlobalResourceMapper<Item> {
 
     return context
         .resourceBuilder(itemIri)
-        .literal(TaskOntologyConstants.textIri, instance.text)
-        .literal(TaskOntologyConstants.isDeletedIri, instance.isDeleted)
-        .literal(Dcterms.created, instance.createdAt)
-        .iri(
+        .addValue(TaskOntologyConstants.textIri, instance.text)
+        .addValue(TaskOntologyConstants.isDeletedIri, instance.isDeleted)
+        .addValue(Dcterms.created, instance.createdAt)
+        .addValue(
           Dcterms.creator,
           instance.lastModifiedBy,
           // creator always actually is the Id of the instance of the app,
           // and we create an IRI for this in order to be able to do more
           // with it in RDF, e.g. associate device name etc so that in theory
           // the user could later find out which device triggered a certain change etc.
-          serializer: AppInstanceIdSerializer(storageRoot: storageRoot),
+          iriTermSerializer: AppInstanceIdSerializer(storageRoot: storageRoot),
         )
-        .childResourceMap(
+        .addMap(
           TaskOntologyConstants.vectorClockIri,
           instance.vectorClock,
-          VectorClockMapper(storageRoot: storageRoot),
+          resourceSerializer: VectorClockMapper(storageRoot: storageRoot),
         )
         .build();
   }
@@ -156,13 +156,13 @@ class VectorClockMapper implements GlobalResourceMapper<MapEntry<String, int>> {
     return context
         .resourceBuilder(iri)
         // the reference to the app instance which created the version
-        .iri(
+        .addValue(
           TaskOntologyConstants.clientIdIri,
           entry.key,
-          serializer: AppInstanceIdSerializer(storageRoot: storageRoot),
+          iriTermSerializer: AppInstanceIdSerializer(storageRoot: storageRoot),
         )
         // the version counter
-        .literal(TaskOntologyConstants.clockValueIri, entry.value)
+        .addValue(TaskOntologyConstants.clockValueIri, entry.value)
         .build();
   }
 }

@@ -59,7 +59,8 @@ dependencies:
   uuid: ^4.5.1
   meta: ^1.16.0
   rdf_core: ^0.9.2
-  rdf_mapper: ^0.6.2 
+  rdf_mapper: 
+    path: ../rdf/rdf_mapper
   rdf_vocabularies: ^0.3.0
 
 dev_dependencies:
