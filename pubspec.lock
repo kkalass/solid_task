@@ -724,10 +724,11 @@ packages:
   rdf_mapper:
     dependency: "direct main"
     description:
-      path: "../rdf/rdf_mapper"
-      relative: true
-    source: path
-    version: "0.7.0-dev"
+      name: rdf_mapper
+      sha256: "7c67d7cc224f2044c85a8e4d4e01a4b2adbd9347fbd8b31def88a975f164be56"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.0"
   rdf_vocabularies:
     dependency: "direct main"
     description:
