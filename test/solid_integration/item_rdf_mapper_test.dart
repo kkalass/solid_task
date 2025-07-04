@@ -1,24 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rdf_core/rdf_core.dart';
 import 'package:rdf_mapper/rdf_mapper.dart';
+import 'package:solid_task/init_rdf_mapper.g.dart';
 import 'package:solid_task/models/item.dart';
-import 'package:solid_task/services/logger_service.dart';
-import 'package:solid_task/solid_integration/item_rdf_mapper.dart';
 
 const storageRoot = "https://example.com/pod/";
 void main() {
-  late LoggerService loggerService;
-  late ItemRdfMapper itemMapper;
   late RdfMapper rdfMapper;
 
   setUp(() {
-    loggerService = LoggerService();
-    itemMapper = ItemRdfMapper(
-      loggerService: loggerService,
-      storageRootProvider: () => storageRoot,
-    );
-
-    rdfMapper = RdfMapper.withDefaultRegistry()..registerMapper(itemMapper);
+    rdfMapper = initRdfMapper(storageRootProvider: () => 'http://my.test.pod');
   });
 
   group('RdfMapperRegistry', () {
@@ -34,10 +25,8 @@ void main() {
       final deserializer =
           rdfMapper.registry.getGlobalResourceDeserializer<Item>();
       expect(deserializer, isNotNull);
-      expect(deserializer, equals(itemMapper));
       final serializer = rdfMapper.registry.getResourceSerializer<Item>();
       expect(serializer, isNotNull);
-      expect(serializer, equals(itemMapper));
     });
   });
 

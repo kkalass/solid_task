@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:solid_task/l10n/app_localizations.dart';
 import 'package:solid_task/ext/solid/auth/models/auth_result.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
@@ -108,26 +108,21 @@ class _ItemsScreenState extends State<ItemsScreen> {
               tooltip: l10n.syncError,
             ),
           IconButton(
-            icon:
-                _isConnectedToSolid
-                    ? (isSyncing
-                        ? const SizedBox(
+            icon: _isConnectedToSolid
+                ? (isSyncing
+                      ? const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                        : const Icon(Icons.cloud_done))
-                    : const Icon(Icons.cloud_upload),
-            onPressed:
-                isSyncing
-                    ? null
-                    : (_isConnectedToSolid
-                        ? _disconnectFromPod
-                        : _navigateToLogin),
-            tooltip:
-                _isConnectedToSolid
-                    ? l10n.disconnectFromPod
-                    : l10n.connectToPod,
+                      : const Icon(Icons.cloud_done))
+                : const Icon(Icons.cloud_upload),
+            onPressed: isSyncing
+                ? null
+                : (_isConnectedToSolid ? _disconnectFromPod : _navigateToLogin),
+            tooltip: _isConnectedToSolid
+                ? l10n.disconnectFromPod
+                : l10n.connectToPod,
           ),
         ],
       ),

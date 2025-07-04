@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:solid_task/l10n/app_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:solid_task/core/utils/date_formatter.dart';
 
