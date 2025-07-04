@@ -4,7 +4,7 @@ import 'package:rdf_mapper/rdf_mapper.dart';
 import 'package:solid_task/init_rdf_mapper.g.dart';
 import 'package:solid_task/models/item.dart';
 
-const storageRoot = "https://example.com/pod/";
+const storageRoot = "http://my.test.pod/";
 void main() {
   late RdfMapper rdfMapper;
 
@@ -22,8 +22,8 @@ void main() {
       expect(rdfMapper.registry.hasResourceSerializerFor<Item>(), isTrue);
 
       // Retrieve the mapper
-      final deserializer =
-          rdfMapper.registry.getGlobalResourceDeserializer<Item>();
+      final deserializer = rdfMapper.registry
+          .getGlobalResourceDeserializer<Item>();
       expect(deserializer, isNotNull);
       final serializer = rdfMapper.registry.getResourceSerializer<Item>();
       expect(serializer, isNotNull);
