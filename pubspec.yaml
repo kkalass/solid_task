@@ -75,8 +75,7 @@ dev_dependencies:
   plugin_platform_interface: ^2.1.6
   mockito: ^5.4.5
   test: ^1.24.9
-  rdf_mapper_generator: 
-    path: ../rdf/rdf_mapper_generator
+  rdf_mapper_generator: ^0.2.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

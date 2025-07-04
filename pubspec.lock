@@ -756,9 +756,10 @@ packages:
   rdf_mapper_generator:
     dependency: "direct dev"
     description:
-      path: "../rdf/rdf_mapper_generator"
-      relative: true
-    source: path
+      name: rdf_mapper_generator
+      sha256: "5df9ef48233412fe2c0ef5fee4b6c7d37798f94419661a6c974851c150a32843"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.2.1"
   rdf_vocabularies:
     dependency: "direct main"
