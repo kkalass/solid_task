@@ -1,29 +1,73 @@
 import 'package:hive/hive.dart';
 import 'dart:math' as math;
 import 'package:uuid/uuid.dart';
+import 'package:rdf_mapper_annotations/rdf_mapper_annotations.dart';
+import '../solid_integration/vocab.dart';
+import 'package:rdf_vocabularies/dcterms.dart';
 
 part 'item.g.dart';
 
+@RdfGlobalResource(
+  SolidTaskVectorClockEntry.classIri,
+  IriStrategy(
+    '{+storageRoot}/solidtask/task/{taskId}/vectorclock/{clientId}.ttl',
+  ),
+  registerGlobally: false,
+)
+class VectorClockEntry {
+  @RdfIriPart()
+  @RdfProperty(
+    SolidTaskVectorClockEntry.clientId,
+    iri: IriMapping('{+storageRoot}/solidtask/appinstance/{clientId}.ttl'),
+  )
+  @RdfMapKey()
+  final String clientId;
+
+  @RdfProperty(SolidTaskVectorClockEntry.clockValue)
+  @RdfMapValue()
+  final int clockValue;
+
+  /// Creates a new vector clock entry
+  VectorClockEntry(this.clientId, this.clockValue);
+}
+
+@RdfGlobalResource(
+  SolidTaskTask.classIri,
+  IriStrategy('{+storageRoot}/solidtask/task/{id}.ttl'),
+)
 @HiveType(typeId: 0)
 class Item extends HiveObject {
   // Static UUID generator instance to be reused
   static final Uuid _uuid = Uuid();
 
+  @RdfIriPart()
+  @RdfProvides("taskId")
   @HiveField(0)
   late String id;
 
+  @RdfProperty(SolidTaskTask.text)
   @HiveField(1)
   late String text;
 
+  @RdfProperty(Dcterms.created)
   @HiveField(2)
   late DateTime createdAt;
 
+  @RdfProperty(SolidTaskTask.vectorClock)
+  @RdfMapEntry(VectorClockEntry)
   @HiveField(3)
   late Map<String, int> vectorClock;
 
+  @RdfProperty(SolidTaskTask.isDeleted)
   @HiveField(4)
   late bool isDeleted;
 
+  @RdfProperty(
+    Dcterms.creator,
+    iri: IriMapping(
+      '{+storageRoot}/solidtask/appinstance/{lastModifiedBy}.ttl',
+    ),
+  )
   @HiveField(5)
   late String lastModifiedBy;
 
