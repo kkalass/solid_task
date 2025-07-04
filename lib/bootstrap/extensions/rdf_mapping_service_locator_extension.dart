@@ -46,22 +46,16 @@ extension RdfMappingServiceLocatorBuilderExtension on ServiceLocatorBuilder {
 
         // Use provided mapper service or create a new one
         final factory = config._rdfMapperFactory;
-        final rdfMapper =
-            factory == null
-                ? RdfMapper(
-                  registry: RdfMapperRegistry(),
-                  rdfCore: sl<RdfCore>(),
-                )
-                : factory(sl);
-        initRdfMapper(
-          storageRootProvider:
-              () =>
-                  podStorageConfigurationProvider
-                      .currentConfiguration!
-                      .appStorageRoot,
+        final rdfMapper = factory == null
+            ? RdfMapper(registry: RdfMapperRegistry(), rdfCore: sl<RdfCore>())
+            : factory(sl);
+        return initRdfMapper(
+          rdfMapper: rdfMapper,
+          storageRootProvider: () => podStorageConfigurationProvider
+              .currentConfiguration!
+              .appStorageRoot
+              .replaceFirst(RegExp(r'/$'), ''),
         );
-
-        return rdfMapper;
       });
 
       // Clean up after registration
