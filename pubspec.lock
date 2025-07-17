@@ -733,34 +733,34 @@ packages:
     dependency: "direct main"
     description:
       name: rdf_core
-      sha256: "3533be415e74534301f41d0d3c7b20e5b4979ea3a13f4916b3c872f56eb2724d"
+      sha256: e9688d49883316ade2ae09cb836f3bcadf1eea999d1a3715c953b1fb7ec85f49
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.3"
+    version: "0.9.5"
   rdf_mapper:
     dependency: "direct main"
     description:
       name: rdf_mapper
-      sha256: "901adb1a58601f15cb8585a1016b4bbd4e753b11f7ef2c3608f2e6c31d9fc739"
+      sha256: "967d414da4bb334bce69ffea4b87b351cc443b2ff9b30cb0152de589f041f550"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.6"
+    version: "0.9.1"
   rdf_mapper_annotations:
     dependency: "direct main"
     description:
       name: rdf_mapper_annotations
-      sha256: "8f704c2600d4db9358724aabd4722c7979681607ad5c0241fd377f77dfc9dbdf"
+      sha256: b0b1c0c8c2ceb39d4be89f38341aa113a89390a8a5d82ea1817888efc4bbc52f
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1"
+    version: "0.3.0"
   rdf_mapper_generator:
     dependency: "direct dev"
     description:
       name: rdf_mapper_generator
-      sha256: "5df9ef48233412fe2c0ef5fee4b6c7d37798f94419661a6c974851c150a32843"
+      sha256: "907ca5af4200d0065a28cc993ac52638d5ac07b97304dfae310bcb8efc987559"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1"
+    version: "0.3.0"
   rdf_vocabularies:
     dependency: "direct main"
     description:
