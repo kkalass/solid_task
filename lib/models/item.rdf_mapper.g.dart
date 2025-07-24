@@ -14,12 +14,12 @@ import 'package:rdf_mapper/rdf_mapper.dart';
 // Other imports
 import 'package:solid_task/models/item.dart' as item;
 import 'package:solid_task/solid_integration/vocab.dart';
-import 'package:rdf_vocabularies/dcterms.dart';
+import 'package:rdf_vocabularies_core/dcterms.dart';
 
 /// Generated mapper for [String] global resources.
 ///
 /// This mapper handles serialization and deserialization between Dart objects
-/// and RDF terms for iri terms of type String.
+/// and RDF terms for iri terms of type `String`.
 class VectorClockEntryClientIdMapper implements IriTermMapper<String> {
   static final RegExp _regex = RegExp(
       r'^(?<storageRoot>.*)/solidtask/appinstance/(?<clientId>[^/]*)\.ttl$');
@@ -118,7 +118,7 @@ class VectorClockEntryMapper
 /// Generated mapper for [String] global resources.
 ///
 /// This mapper handles serialization and deserialization between Dart objects
-/// and RDF terms for iri terms of type String.
+/// and RDF terms for iri terms of type `String`.
 class ItemLastModifiedByMapper implements IriTermMapper<String> {
   static final RegExp _regex = RegExp(
       r'^(?<storageRoot>.*)/solidtask/appinstance/(?<lastModifiedBy>[^/]*)\.ttl$');

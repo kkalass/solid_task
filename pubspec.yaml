@@ -58,10 +58,11 @@ dependencies:
   rxdart: ^0.28.0
   uuid: ^4.5.1
   meta: ^1.16.0
-  rdf_core: ^0.9.2
-  rdf_mapper: ^0.9.1
-  rdf_vocabularies: ^0.3.0
-  rdf_mapper_annotations: ^0.3.0
+  rdf_core: ^0.9.11
+  rdf_mapper: ^0.10.0
+  rdf_vocabularies_schema: ^0.4.1
+  rdf_vocabularies_core: ^0.4.1
+  rdf_mapper_annotations: ^0.10.0 
 
 dev_dependencies:
   flutter_test:
@@ -75,7 +76,7 @@ dev_dependencies:
   plugin_platform_interface: ^2.1.6
   mockito: ^5.4.5
   test: ^1.24.9
-  rdf_mapper_generator: ^0.3.0
+  rdf_mapper_generator: ^0.10.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

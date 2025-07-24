@@ -733,42 +733,50 @@ packages:
     dependency: "direct main"
     description:
       name: rdf_core
-      sha256: e9688d49883316ade2ae09cb836f3bcadf1eea999d1a3715c953b1fb7ec85f49
+      sha256: "501198b3f9ba81a3ad75a26cd17c8264a9dd6b8bd9b6f0b9e85cb5a0807372a4"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.5"
+    version: "0.9.11"
   rdf_mapper:
     dependency: "direct main"
     description:
       name: rdf_mapper
-      sha256: "967d414da4bb334bce69ffea4b87b351cc443b2ff9b30cb0152de589f041f550"
+      sha256: "40571724565284e86033d5ae7a38d615bc967475b90bbfcdb61bc386b1ba0b90"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.1"
+    version: "0.10.0"
   rdf_mapper_annotations:
     dependency: "direct main"
     description:
       name: rdf_mapper_annotations
-      sha256: b0b1c0c8c2ceb39d4be89f38341aa113a89390a8a5d82ea1817888efc4bbc52f
+      sha256: "9ba441c8fdc1183a288d99fde6d56802769c72b7331439d4ce4c0240105d3ad2"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.10.0"
   rdf_mapper_generator:
     dependency: "direct dev"
     description:
       name: rdf_mapper_generator
-      sha256: "907ca5af4200d0065a28cc993ac52638d5ac07b97304dfae310bcb8efc987559"
+      sha256: "66575f774f5b6c7eba555e2fc0f902e721cc3318f85727686a0fb94d18cc249c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
-  rdf_vocabularies:
+    version: "0.10.0"
+  rdf_vocabularies_core:
     dependency: "direct main"
     description:
-      name: rdf_vocabularies
-      sha256: "33c102a1c287f9ff91f150596155070fcc22b21de508dbdb82ec3e4ac856db85"
+      name: rdf_vocabularies_core
+      sha256: cd054e1b3b64929e9d7d886fb75919e22e8fb58079f16c251b0438259a4031ca
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.4.1"
+  rdf_vocabularies_schema:
+    dependency: "direct main"
+    description:
+      name: rdf_vocabularies_schema
+      sha256: "1e7b3deb7ad25e01335d6a227a271f256f70749c5f243475f4c3809b627771b9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.1"
   rxdart:
     dependency: "direct main"
     description:

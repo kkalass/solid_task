@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:uuid/uuid.dart';
 import 'package:rdf_mapper_annotations/rdf_mapper_annotations.dart';
 import '../solid_integration/vocab.dart';
-import 'package:rdf_vocabularies/dcterms.dart';
+import 'package:rdf_vocabularies_core/dcterms.dart';
 
 part 'item.g.dart';
 
