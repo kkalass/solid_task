@@ -14,8 +14,17 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
   OidcUserManager? _manager;
   final WebIdProfileLoader _webIdProfileLoader;
 
+  // DPoP key pair management - using solid_auth generated keys
+  Map<String, dynamic>? _rsaInfo;
+
   SolidAuthenticationOidc({required WebIdProfileLoader webIdProfileLoader})
     : _webIdProfileLoader = webIdProfileLoader;
+
+  /// Generate RSA key pair for DPoP token generation using solid_auth
+  Future<void> _generateDpopKeyPair() async {
+    final rsaInfo = await solid_auth.genRsaKeyPair();
+    _rsaInfo = Map<String, dynamic>.from(rsaInfo);
+  }
 
   ({Uri frontChannelLogoutUri, Uri redirectUri, Uri postLogoutRedirectUri})
   _computeUris() {
@@ -91,6 +100,10 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
 
     _log.info('OIDC User authenticated: ${oidcUser.uid ?? 'unknown'}');
 
+    // Generate RSA key pair for DPoP token generation
+    await _generateDpopKeyPair();
+    _log.info('DPoP RSA key pair generated');
+
     // Extract WebID from the OIDC token using the Solid-OIDC spec methods
     final webId = _extractWebIdFromOidcUser(oidcUser);
 
@@ -103,28 +116,27 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
       throw Exception('No access token available for DPoP generation');
     }
 
-    //solid_auth.genDpopToken(endPointUrl, rsaKeyPair, publicKeyJwk, httpMethod)
+    // Generate DPoP key pair if not already created
+    if (_rsaInfo == null) {
+      // We need to generate the key pair synchronously, but solid_auth.genRsaKeyPair() is async
+      // This is a limitation - we should generate keys during authentication
+      throw Exception('RSA key pair not generated. Call authenticate first.');
+    }
+
+    final rsaKeyPair = _rsaInfo!['rsa'];
+    final publicKeyJwk = _rsaInfo!['pubKeyJwk'];
+
+    final dpopToken = solid_auth.genDpopToken(
+      url,
+      rsaKeyPair,
+      publicKeyJwk,
+      method,
+    );
+
     // Get the access token from the current user
     final accessToken = _manager!.currentUser!.token.accessToken!;
 
-    // For now, we'll return a simple DPoP implementation
-    // In a full implementation, you would need to generate a proper DPoP JWT
-    // with a public/private key pair and include the required claims
-
-    // TODO: Implement proper DPoP token generation according to RFC 7800
-    // This requires:
-    // 1. Generate a JWK key pair
-    // 2. Create a DPoP JWT with proper claims (jti, htm, htu, iat, etc.)
-    // 3. Sign the JWT with the private key
-
-    _log.warning(
-      'DPoP token generation not fully implemented. Using placeholder.',
-    );
-
-    return DPoP(
-      dpopToken: 'placeholder-dpop-token', // TODO: Generate proper DPoP JWT
-      accessToken: accessToken,
-    );
+    return DPoP(dpopToken: dpopToken, accessToken: accessToken);
   }
 
   @override
