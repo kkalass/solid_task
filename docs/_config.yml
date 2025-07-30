@@ -1,0 +1,9 @@
+# Enable GitHub Pages
+include:
+  - "*.jsonld"
+  - "*.html"
+  - "*.js"
+  - "*.css"
+  - "*.png"
+  - "*.ico"
+  - "*.json"

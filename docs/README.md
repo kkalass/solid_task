@@ -9,18 +9,26 @@ This directory contains the files needed for Solid-OIDC authentication using a P
 
 ## Hosting
 
-These files need to be publicly accessible via HTTPS. For this project, they should be hosted on GitHub Pages at:
+These files are automatically deployed to GitHub Pages along with the Flutter web app via GitHub Actions. The files will be available at:
 
 - https://kkalass.github.io/solid_task/client-identifier.jsonld
 - https://kkalass.github.io/solid_task/redirect.html
+- https://kkalass.github.io/solid_task/ (main Flutter web app)
 
-## Setup GitHub Pages
+## Automated Deployment
+
+The GitHub Actions workflow (`.github/workflows/deploy-web.yml`) automatically:
+
+1. **Builds the Flutter web app** when code is pushed to main branch
+2. **Copies the client identifier files** from this docs directory
+3. **Deploys everything to GitHub Pages** at the URLs above
+
+## Setup GitHub Pages (One-time)
 
 1. Go to your repository settings
-2. Navigate to "Pages" section
-3. Set source to "Deploy from a branch"
-4. Select "main" branch and "/docs" folder
-5. The files will be available at the URLs above
+2. Navigate to "Pages" section  
+3. Set source to "GitHub Actions"
+4. The workflow will automatically deploy on the next push to main
 
 ## Solid-OIDC Compliance
 
