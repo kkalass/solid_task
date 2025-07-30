@@ -203,12 +203,7 @@ class SolidAuthServiceImpl
   ) async {
     try {
       // Include webid scope for Solid-OIDC authentication
-      final List<String> scopes = [
-        'openid',
-        'profile',
-        'offline_access',
-        'webid',
-      ];
+      final List<String> scopes = ['openid', 'offline_access', 'webid'];
 
       final authData = await _authBackend.authenticate(
         Uri.parse(issuerUri),

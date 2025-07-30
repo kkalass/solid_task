@@ -13,6 +13,38 @@ I want to explore the following in this project:
 
  So basically, I want to combine technologies that seem to be a really good match: Flutter for cross-platform, CRDT for distributed editing and conflict resolution, SOLID for cloud syncing where the users bring their storage service themselves, and AI assisted coding. All of this should be perfect for "hobby projects" where the developer is not interested in having direct access to the users data at all, has limited coding time and does not want to pay for some kind of servers.
 
+## ⚠️ IMPORTANT REQUIREMENTS
+
+**🚨 SOLID POD PROVIDER COMPATIBILITY**
+
+This app uses **Solid-OIDC with Public Client Identifier Documents** for authentication. **NOT ALL SOLID POD PROVIDERS SUPPORT THIS FEATURE!**
+
+### ✅ Compatible Providers (Tested)
+- **Inrupt ESS** (Enterprise Solid Server) - `https://broker.pod.inrupt.com`
+- **SolidCommunity.net** - `https://solidcommunity.net`
+- **Community Solid Server** (self-hosted)
+
+### ❌ Incompatible Providers (Known Issues)
+- **iGrant.io** - `https://datapod.igrant.io` ❌ Does NOT support client identifier documents
+- Any provider that only supports basic OIDC without Solid-OIDC extensions
+
+### 📋 Requirements Checklist
+Before using this app, make sure your Solid pod provider supports:
+- ✅ **Solid-OIDC specification** (not just basic OIDC)
+- ✅ **Client Identifier Documents** (WebID-based client identification)
+- ✅ **Public clients** with `token_endpoint_auth_method: "none"`
+- ✅ **WebID scope** in OIDC flows
+
+### 🔍 How to Check Compatibility
+1. Check if your provider's documentation mentions "Solid-OIDC" or "Client Identifier Documents"
+2. Look for support of public clients (no client secret required)
+3. Test authentication - if you get "Unauthorized" errors, the provider likely doesn't support this feature
+
+### 🆘 If Your Provider Isn't Compatible
+- Switch to a compatible provider (recommended: SolidCommunity.net for testing)
+- Contact your provider to request Solid-OIDC support
+- Consider self-hosting a Community Solid Server
+
 ## Status
 
 **THIS IS WORK IN PROGRESS!!!**

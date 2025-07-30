@@ -6,6 +6,7 @@ import 'package:oidc_default_store/oidc_default_store.dart';
 import 'package:solid_task/config/app_config.dart';
 import 'package:solid_task/ext/solid/pod/profile/web_id_profile_loader.dart';
 import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
+import 'package:solid_auth/solid_auth.dart' as solid_auth;
 
 final _log = Logger("solid_authentication_oidc");
 
@@ -81,7 +82,9 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
 
     await _manager!.init();
     final oidcUser = await _manager!.loginAuthorizationCodeFlow();
-
+    _log.info('Claims: ${oidcUser?.aggregatedClaims}');
+    _log.info('Attributes: ${oidcUser?.attributes}');
+    _log.info('User Info: ${oidcUser?.userInfo}');
     if (oidcUser == null) {
       throw Exception('OIDC authentication failed: no user returned');
     }
@@ -100,6 +103,7 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
       throw Exception('No access token available for DPoP generation');
     }
 
+    //solid_auth.genDpopToken(endPointUrl, rsaKeyPair, publicKeyJwk, httpMethod)
     // Get the access token from the current user
     final accessToken = _manager!.currentUser!.token.accessToken!;
 
