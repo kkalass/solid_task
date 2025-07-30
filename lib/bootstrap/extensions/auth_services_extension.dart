@@ -10,7 +10,7 @@ import 'package:solid_task/ext/solid_flutter/auth/integration/jwt_decoder_wrappe
 import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
 import 'package:solid_task/ext/solid_flutter/auth/solid_auth_service_impl.dart';
 import 'package:solid_task/ext/solid_flutter/auth/solid_provider_service_impl.dart';
-import 'package:solid_task/services/auth/solid_auth_wrapper_impl.dart';
+import 'package:solid_task/services/auth/solid_authentication_solid_auth.dart';
 
 /// Extension for ServiceLocatorBuilder to handle Auth services
 extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
