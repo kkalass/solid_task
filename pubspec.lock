@@ -674,7 +674,7 @@ packages:
     source: hosted
     version: "0.7.0+5"
   oidc_core:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: oidc_core
       sha256: bde0b0bfa2a4721b72ee1eab6c76891ee68aee31cdd0d97f8a108e5abfaf2a96

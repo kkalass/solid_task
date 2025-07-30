@@ -48,3 +48,11 @@ This is necessary because:
 * Users can enter any Solid Pod provider URL
 * The app needs to fetch favicons from these URLs
 * The app needs to communicate with the Pod for authentication and data synchronization
+
+## Building a solid flutter app from scratch
+
+### Setup oidc
+
+There are a few steps you have to perform in order to support 
+oidc on the different platforms - you need to go through
+https://bdaya-dev.github.io/oidc/oidc-getting-started/
