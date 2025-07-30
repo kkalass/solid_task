@@ -39,7 +39,7 @@ dependencies:
   solid_auth: ^0.1.22
   url_launcher: ^6.2.5
   http: ^1.2.0
-  flutter_secure_storage: ^10.0.0-beta.4
+  flutter_secure_storage: '>=9.0.0 <11.0.0'
   logging: ^1.2.0
 
   # Local storage
@@ -63,6 +63,8 @@ dependencies:
   rdf_vocabularies_schema: ^0.4.1
   rdf_vocabularies_core: ^0.4.1
   rdf_mapper_annotations: ^0.10.0 
+  oidc: ^0.12.1+2
+  oidc_default_store: ^0.4.0+3
 
 dev_dependencies:
   flutter_test:
