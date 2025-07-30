@@ -56,3 +56,22 @@ This is necessary because:
 There are a few steps you have to perform in order to support 
 oidc on the different platforms - you need to go through
 https://bdaya-dev.github.io/oidc/oidc-getting-started/
+
+
+### Deployment Requirements
+
+#### Web Deployment
+
+> **!!!** It is **very important** that the server has **HTTP Strict Forward Secrecy** enabled and sends the correct headers **!!!**
+
+The headers should look like
+```
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+```
+
+#### Linux Deployment/Packaging
+
+There are requirements for dependencies during packaging by flutter_secure_storage - e.g. check https://pub.dev/packages/flutter_secure_storage#configure-linux-version/ for details. 
