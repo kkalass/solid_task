@@ -18,8 +18,6 @@
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
 		<string>$(FLUTTER_BUILD_NAME)</string>
-		<key>CFBundleVersion</key>
-		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>
@@ -27,10 +25,12 @@
 				<string>Editor</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
-					<string>de.kalass.solid_task</string>
+					<string>de.kalass.solidtask</string>
 				</array>
 			</dict>
 		</array>
+		<key>CFBundleVersion</key>
+		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSMinimumSystemVersion</key>
 		<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 		<key>NSHumanReadableCopyright</key>

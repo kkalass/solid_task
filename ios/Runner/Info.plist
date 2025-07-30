@@ -29,7 +29,7 @@
 				<string>Editor</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
-					<string>de.kalass.solid_task</string>
+					<string>de.kalass.solidtask</string>
 				</array>
 			</dict>
 		</array>

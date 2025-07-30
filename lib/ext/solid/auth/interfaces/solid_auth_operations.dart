@@ -1,4 +1,5 @@
 import 'package:solid_task/ext/solid/auth/models/auth_result.dart';
+import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
 
 /// Interface defining operations for SOLID authentication
 abstract class SolidAuthOperations<C> {
@@ -27,6 +28,6 @@ abstract class SolidAuthOperations<C> {
   ///
   /// [url] is the target resource URL
   /// [method] is the HTTP method to use (GET, PUT, etc.)
-  /// Returns a DPoP token as a string
-  String generateDpopToken(String url, String method);
+  /// Returns a DPoP
+  DPoP generateDpopToken(String url, String method);
 }

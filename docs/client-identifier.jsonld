@@ -1,0 +1,32 @@
+{
+  "@context": "https://www.w3.org/ns/solid/oidc-context.jsonld",
+  "client_id": "https://kkalass.github.io/solid_task/client-identifier.jsonld",
+  "client_name": "Solid Task App",
+  "client_uri": "https://github.com/kkalass/solid_task",
+  "logo_uri": "https://github.com/kkalass/solid_task/raw/main/assets/icon/icon.png",
+  "policy_uri": "https://github.com/kkalass/solid_task/blob/main/PRIVACY.md",
+  "tos_uri": "https://github.com/kkalass/solid_task/blob/main/TERMS.md",
+  "redirect_uris": [
+    "https://kkalass.github.io/solid_task/redirect.html",
+    "de.kalass.solidtask://redirect"
+  ],
+  "post_logout_redirect_uris": [
+    "https://kkalass.github.io/solid_task/redirect.html",
+    "de.kalass.solidtask://logout"
+  ],
+  "grant_types": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "response_types": [
+    "code"
+  ],
+  "scope": "openid offline_access webid",
+  "token_endpoint_auth_method": "none",
+  "application_type": "native",
+  "contacts": [
+    "habbatical@gmail.com"
+  ],
+  "software_id": "de.kalass.solidtask",
+  "software_version": "1.0.0"
+}

@@ -9,6 +9,9 @@
 
 import 'package:rdf_mapper/rdf_mapper.dart';
 
+import 'package:solid_task/ext/solid/pod/profile/web_id_profile.dart' as wip;
+import 'package:solid_task/ext/solid/pod/profile/web_id_profile.rdf_mapper.g.dart'
+    as wiprmg;
 import 'package:solid_task/models/item.dart' as item;
 import 'package:solid_task/models/item.rdf_mapper.g.dart' as irmg;
 
@@ -27,6 +30,7 @@ RdfMapper initRdfMapper({
   }
   var registry = rdfMapper.registry;
 
+  registry.registerMapper<wip.WebIdProfile>(wiprmg.WebIdProfileMapper());
   registry.registerMapper<item.Item>(
       irmg.ItemMapper(storageRootProvider: storageRootProvider));
 

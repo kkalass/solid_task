@@ -35,7 +35,7 @@ void main() {
     late SolidAuthServiceImpl authService;
     late MockFlutterSecureStorage mockSecureStorage;
     late MockJwtDecoderWrapper mockJwtDecoder;
-    late MockSolidAuthWrapper mockSolidAuth;
+    late MockSolidAuthenticationBackend mockSolidAuth;
 
     setUp(() async {
       mockHttpClient = MockClient();
@@ -43,7 +43,7 @@ void main() {
       mockSolidProviderService = MockSolidProviderService();
       mockSecureStorage = MockFlutterSecureStorage();
       mockJwtDecoder = MockJwtDecoderWrapper();
-      mockSolidAuth = MockSolidAuthWrapper();
+      mockSolidAuth = MockSolidAuthenticationBackend();
       mockContextLogger = MockContextLogger();
 
       when(mockLogger.createLogger(any)).thenReturn(mockContextLogger);
@@ -53,7 +53,6 @@ void main() {
         client: mockHttpClient,
         providerService: mockSolidProviderService,
         secureStorage: mockSecureStorage,
-        jwtDecoder: mockJwtDecoder,
         solidAuth: mockSolidAuth,
       );
 
@@ -150,21 +149,8 @@ void main() {
           any,
         ),
       ).thenAnswer(
-        (_) async => {
-          'accessToken': 'mock-access-token',
-          'refreshToken': 'mock-refresh-token',
-          'idToken': 'mock-id-token',
-          'logoutUrl': 'https://mock-issuer.com/logout',
-          'rsaInfo': {
-            'rsa': 'mock-rsa-key-pair',
-            'pubKeyJwk': {
-              'kty': 'RSA',
-              'e': 'AQAB',
-              'n': 'mock-n',
-              'alg': 'RS256',
-            },
-          },
-        },
+        (_) async =>
+            AuthResponse(webId: 'https://mock-user.example/profile/card#me'),
       );
 
       // Mock profile fetching with valid Turtle
@@ -199,7 +185,6 @@ void main() {
         'https://mock-user.example/profile/card#me',
       );
       expect(result.userIdentity?.podUrl, 'https://mock-pod.example/storage/');
-      expect(result.token?.accessToken, 'mock-access-token');
 
       // Verify secure storage calls
       verify(
@@ -233,7 +218,7 @@ void main() {
     test('logout clears session data', () async {
       // Setup
       when(mockSecureStorage.deleteAll()).thenAnswer((_) async {});
-      when(mockSolidAuth.logout(any)).thenAnswer((_) async => true);
+      when(mockSolidAuth.logout()).thenAnswer((_) async => true);
 
       // Mock the authentication response
       when(
@@ -243,21 +228,8 @@ void main() {
           any,
         ),
       ).thenAnswer(
-        (_) async => {
-          'accessToken': 'mock-access-token',
-          'refreshToken': 'mock-refresh-token',
-          'idToken': 'mock-id-token',
-          'logoutUrl': 'https://mock-issuer.com/logout',
-          'rsaInfo': {
-            'rsa': 'mock-rsa-key-pair',
-            'pubKeyJwk': {
-              'kty': 'RSA',
-              'e': 'AQAB',
-              'n': 'mock-n',
-              'alg': 'RS256',
-            },
-          },
-        },
+        (_) async =>
+            AuthResponse(webId: 'https://mock-user.example/profile/card#me'),
       );
 
       // Mock storage write operations (needed for authenticate)
@@ -306,11 +278,10 @@ void main() {
 
       // Verify
       verify(mockSecureStorage.deleteAll()).called(1);
-      verify(mockSolidAuth.logout(any)).called(1);
+      verify(mockSolidAuth.logout()).called(1);
       expect(authService.isAuthenticated, isFalse);
       expect(authService.currentUser?.webId, isNull);
       expect(authService.currentUser?.podUrl, isNull);
-      expect(authService.authToken?.accessToken, isNull);
     });
   });
 
@@ -322,7 +293,7 @@ void main() {
       final MockContextLogger mockContextLogger = MockContextLogger();
       final mockClient = MockClient();
       final mockJwtDecoder = MockJwtDecoderWrapper();
-      final mockSolidAuth = MockSolidAuthWrapper();
+      final mockSolidAuth = MockSolidAuthenticationBackend();
       final mockProviderService = MockSolidProviderService();
 
       when(mockLogger.createLogger(any)).thenReturn(mockContextLogger);
@@ -353,7 +324,6 @@ void main() {
       final authService = await SolidAuthServiceImpl.create(
         client: mockClient,
         secureStorage: mockSecureStorage,
-        jwtDecoder: mockJwtDecoder,
         solidAuth: mockSolidAuth,
         providerService: mockProviderService,
       );

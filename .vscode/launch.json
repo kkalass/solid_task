@@ -1,0 +1,40 @@
+{
+  // Verwendet IntelliSense zum Ermitteln möglicher Attribute.
+  // Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
+  // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter Web (Port 3815)",
+      "type": "dart",
+      "request": "launch",
+      "args": [
+        "-d",
+        "chrome",
+        "--web-port=3815",
+        "--dart-define=WEB_PORT=3815"
+      ]
+    },
+    {
+      "name": "MacOS",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "-d",
+        "macos"
+      ]
+    },
+    {
+      "name": "solid_task (profile mode)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "solid_task (release mode)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release"
+    }
+  ]
+}

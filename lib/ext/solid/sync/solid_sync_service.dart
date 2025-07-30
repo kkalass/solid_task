@@ -115,20 +115,16 @@ class SolidSyncService implements SyncService {
           );
 
           // Generate DPoP token for the request
-          final dPopToken = _solidAuthOperations.generateDpopToken(
-            fileUrl,
-            'PUT',
-          );
+          final dpop = _solidAuthOperations.generateDpopToken(fileUrl, 'PUT');
 
           // Send data to pod
           final response = await _client.put(
             Uri.parse(fileUrl),
             headers: {
               'Accept': '*/*',
-              'Authorization': 'DPoP ${_solidAuthState.authToken?.accessToken}',
               'Connection': 'keep-alive',
               'Content-Type': 'text/turtle',
-              'DPoP': dPopToken,
+              ...dpop.httpHeaders(),
             },
             body: turtle,
           );
@@ -196,9 +192,8 @@ class SolidSyncService implements SyncService {
             Uri.parse(fileUrl),
             headers: {
               'Accept': 'text/turtle',
-              'Authorization': 'DPoP ${_solidAuthState.authToken?.accessToken}',
               'Connection': 'keep-alive',
-              'DPoP': dPopToken,
+              ...dPopToken.httpHeaders(),
             },
           );
 
@@ -324,9 +319,8 @@ class SolidSyncService implements SyncService {
       final response = await _client.put(
         Uri.parse(containerUrl),
         headers: {
-          'Authorization': 'DPoP ${_solidAuthState.authToken?.accessToken}',
           'Content-Type': 'text/turtle',
-          'DPoP': dPopToken,
+          ...dPopToken.httpHeaders(),
           'Link': '<http://www.w3.org/ns/ldp#Container>; rel="type"',
         },
         body: '',
@@ -363,10 +357,7 @@ class SolidSyncService implements SyncService {
       // Check if container exists
       final response = await _client.head(
         Uri.parse(containerUrl),
-        headers: {
-          'Authorization': 'DPoP ${_solidAuthState.authToken?.accessToken}',
-          'DPoP': dPopToken,
-        },
+        headers: {...dPopToken.httpHeaders()},
       );
 
       if (response.statusCode == 404) {
@@ -400,11 +391,7 @@ class SolidSyncService implements SyncService {
       // Get container listing
       final response = await _client.get(
         Uri.parse(containerUrl),
-        headers: {
-          'Accept': 'text/turtle',
-          'Authorization': 'DPoP ${_solidAuthState.authToken?.accessToken}',
-          'DPoP': dPopToken,
-        },
+        headers: {'Accept': 'text/turtle', ...dPopToken.httpHeaders()},
       );
 
       if (response.statusCode != 200) {

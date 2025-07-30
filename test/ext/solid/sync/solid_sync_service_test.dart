@@ -12,6 +12,7 @@ import 'package:solid_task/ext/solid/pod/storage/pod_storage_configuration.dart'
 import 'package:solid_task/ext/solid/pod/storage/static_storage_configuration_provider.dart';
 import 'package:solid_task/ext/solid/sync/solid_sync_service.dart';
 import 'package:solid_task/ext/solid/sync/rdf_repository.dart';
+import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
 
 import 'solid_sync_service_test.mocks.dart';
 
@@ -55,17 +56,12 @@ void main() {
         webId: 'https://user.example.org/profile/card#me',
         podUrl: 'https://storage.example.org/',
       );
-      final authToken = AuthToken(
-        accessToken: 'mock-access-token',
-        expiresAt: DateTime.now().add(const Duration(hours: 1)),
-      );
 
       when(mockAuthState.isAuthenticated).thenReturn(true);
       when(mockAuthState.currentUser).thenReturn(userInfo);
-      when(mockAuthState.authToken).thenReturn(authToken);
-      when(
-        mockAuthOperations.generateDpopToken(any, any),
-      ).thenReturn('mock-dpop-token');
+      when(mockAuthOperations.generateDpopToken(any, any)).thenReturn(
+        DPoP(dpopToken: 'mock-dpop-token', accessToken: 'mock-access-token'),
+      );
     }
 
     test('isConnected should return authState.isAuthenticated', () {

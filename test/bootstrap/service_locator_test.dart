@@ -53,7 +53,7 @@ void main() {
     late MockSyncService mockSyncService;
     late MockSyncManager mockSyncManager;
     late MockFlutterSecureStorage mockSecureStorage;
-    late MockSolidAuthWrapper mockSolidAuth;
+    late MockSolidAuthenticationBackend mockSolidAuth;
     late MockContextLogger mockContextLogger;
     late MockTempDirPathProvider mockPathProvider;
 
@@ -82,7 +82,7 @@ void main() {
       mockSyncService = MockSyncService();
       mockSyncManager = MockSyncManager();
       mockSecureStorage = MockFlutterSecureStorage();
-      mockSolidAuth = MockSolidAuthWrapper();
+      mockSolidAuth = MockSolidAuthenticationBackend();
       mockContextLogger = MockContextLogger();
 
       // Configure default mock behavior
@@ -212,7 +212,7 @@ void main() {
       });
 
       // Configure SolidAuth mock to simulate successful token restoration
-      mockSolidAuth = MockSolidAuthWrapper();
+      mockSolidAuth = MockSolidAuthenticationBackend();
 
       // Initialize with our mocked services
       await initServiceLocator(

@@ -1,16 +1,17 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
+import 'package:rdf_mapper/rdf_mapper.dart';
 import 'package:solid_task/bootstrap/service_locator_builder.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_provider_service.dart';
-import 'package:solid_task/ext/solid_flutter/auth/integration/jwt_decoder_wrapper.dart';
+import 'package:solid_task/ext/solid/pod/profile/web_id_profile_loader.dart';
 import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
 import 'package:solid_task/ext/solid_flutter/auth/solid_auth_service_impl.dart';
 import 'package:solid_task/ext/solid_flutter/auth/solid_provider_service_impl.dart';
-import 'package:solid_task/services/auth/solid_authentication_solid_auth.dart';
+import 'package:solid_task/services/auth/solid_authentication_oidc.dart';
 
 /// Extension for ServiceLocatorBuilder to handle Auth services
 extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
@@ -73,10 +74,18 @@ extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
             : providerServiceFactory(sl);
       });
 
+      sl.registerLazySingleton<WebIdProfileLoader>(
+        () => WebIdProfileLoader(client: sl<http.Client>()),
+      );
+
       // SolidAuth wrapper with configurable implementation
       sl.registerLazySingleton<SolidAuthenticationBackend>(() {
         final factory = config._solidAuthFactory;
-        return factory == null ? SolidAuthWrapperImpl() : factory(sl);
+        return factory == null
+            ? /*SolidAuthWrapperImpl(jwtDecoder: sl<JwtDecoderWrapper>())*/ SolidAuthenticationOidc(
+                webIdProfileLoader: sl<WebIdProfileLoader>(),
+              )
+            : factory(sl);
       });
 
       // Auth service - use async registration since creation is asynchronous
@@ -91,7 +100,6 @@ extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
             providerService: sl<SolidProviderService>(),
             secureStorage: sl<FlutterSecureStorage>(),
             solidAuth: sl<SolidAuthenticationBackend>(),
-            jwtDecoder: sl<JwtDecoderWrapper>(),
           );
         });
 
