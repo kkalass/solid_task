@@ -6,7 +6,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_provider_service.dart';
 import 'package:solid_task/ext/solid_flutter/auth/integration/jwt_decoder_wrapper.dart';
-import 'package:solid_task/ext/solid_flutter/auth/integration/solid_auth_wrapper.dart';
+import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
 import 'package:solid_task/ext/solid_flutter/auth/solid_auth_service_impl.dart';
 import 'package:solid_task/services/logger_service.dart';
 
@@ -16,7 +16,7 @@ import 'package:solid_task/services/logger_service.dart';
   MockSpec<ContextLogger>(),
   MockSpec<FlutterSecureStorage>(),
   MockSpec<JwtDecoderWrapper>(),
-  MockSpec<SolidAuthWrapper>(),
+  MockSpec<SolidAuthenticationBackend>(),
   MockSpec<SolidProviderService>(),
 ])
 import 'solid_auth_service_test.mocks.dart';

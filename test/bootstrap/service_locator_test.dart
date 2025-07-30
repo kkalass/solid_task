@@ -13,7 +13,7 @@ import 'package:solid_task/ext/solid/auth/interfaces/solid_provider_service.dart
 import 'package:solid_task/ext/solid/sync/sync_manager.dart';
 import 'package:solid_task/ext/solid/sync/sync_service.dart';
 import 'package:solid_task/ext/solid_flutter/auth/integration/jwt_decoder_wrapper.dart';
-import 'package:solid_task/ext/solid_flutter/auth/integration/solid_auth_wrapper.dart';
+import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/storage/local_storage_service.dart';
@@ -30,7 +30,7 @@ import '../mocks/mock_temp_dir_path_provider.dart';
   MockSpec<ItemRepository>(),
   MockSpec<SyncService>(),
   MockSpec<SyncManager>(),
-  MockSpec<SolidAuthWrapper>(),
+  MockSpec<SolidAuthenticationBackend>(),
   MockSpec<FlutterSecureStorage>(),
   MockSpec<ContextLogger>(),
   MockSpec<JwtDecoderWrapper>(),
@@ -151,7 +151,7 @@ void main() {
         expect(sl<LocalStorageService>(), same(mockStorage));
         expect(sl<SolidProviderService>(), same(mockSolidProviderService));
         expect(sl<FlutterSecureStorage>(), same(mockSecureStorage));
-        expect(sl<SolidAuthWrapper>(), same(mockSolidAuth));
+        expect(sl<SolidAuthenticationBackend>(), same(mockSolidAuth));
 
         expect(sl<SolidAuthState>(), same(mockSolidAuthState));
         expect(sl<SolidAuthOperations>(), same(mockSolidAuthOperations));
@@ -181,7 +181,7 @@ void main() {
 
       // Verify only specified services are replaced
       expect(sl<FlutterSecureStorage>(), same(mockSecureStorage));
-      expect(sl<SolidAuthWrapper>(), same(mockSolidAuth));
+      expect(sl<SolidAuthenticationBackend>(), same(mockSolidAuth));
 
       // Other services use default implementations
       expect(sl<LoggerService>(), isNot(same(mockLogger)));

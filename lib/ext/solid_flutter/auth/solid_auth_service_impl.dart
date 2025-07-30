@@ -15,7 +15,7 @@ import 'package:solid_task/ext/solid/auth/models/user_identity.dart';
 import 'package:solid_task/ext/solid/pod/profile/default_solid_profile_parser.dart';
 import 'package:solid_task/ext/solid/pod/profile/solid_profile_parser.dart';
 import 'package:solid_task/ext/solid_flutter/auth/integration/jwt_decoder_wrapper.dart';
-import 'package:solid_task/ext/solid_flutter/auth/integration/solid_auth_wrapper.dart';
+import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
 
 final _log = Logger("solid_flutter");
 
@@ -28,7 +28,7 @@ class SolidAuthServiceImpl
   final http.Client _client;
   final FlutterSecureStorage _secureStorage;
   final JwtDecoderWrapper _jwtDecoder;
-  final SolidAuthWrapper _solidAuth;
+  final SolidAuthenticationBackend _authBackend;
   final SolidProfileParser _profileParser;
 
   // Auth state
@@ -90,12 +90,12 @@ class SolidAuthServiceImpl
     required http.Client client,
     FlutterSecureStorage? secureStorage,
     required JwtDecoderWrapper jwtDecoder,
-    required SolidAuthWrapper solidAuth,
+    required SolidAuthenticationBackend authBackend,
     SolidProfileParser? profileParser,
   }) : _client = client,
        _secureStorage = secureStorage ?? const FlutterSecureStorage(),
        _jwtDecoder = jwtDecoder,
-       _solidAuth = solidAuth,
+       _authBackend = authBackend,
        _profileParser = profileParser ?? DefaultSolidProfileParser() {
     _initializationFuture = _initialize();
   }
@@ -115,7 +115,7 @@ class SolidAuthServiceImpl
     required http.Client client,
     required SolidProviderService providerService,
     required JwtDecoderWrapper jwtDecoder,
-    required SolidAuthWrapper solidAuth,
+    required SolidAuthenticationBackend solidAuth,
     FlutterSecureStorage? secureStorage,
     SolidProfileParser? profileParser,
   }) async {
@@ -123,7 +123,7 @@ class SolidAuthServiceImpl
       client: client,
       secureStorage: secureStorage,
       jwtDecoder: jwtDecoder,
-      solidAuth: solidAuth,
+      authBackend: solidAuth,
       profileParser: profileParser,
     );
 
@@ -218,7 +218,7 @@ class SolidAuthServiceImpl
 
   @override
   Future<String> getIssuer(String input) async {
-    return _solidAuth.getIssuer(input.trim());
+    return _authBackend.getIssuer(input.trim());
   }
 
   @override
@@ -229,7 +229,7 @@ class SolidAuthServiceImpl
     try {
       final List<String> scopes = ['openid', 'profile', 'offline_access'];
 
-      final authData = await _solidAuth.authenticate(
+      final authData = await _authBackend.authenticate(
         Uri.parse(issuerUri),
         scopes,
         context,
@@ -237,10 +237,9 @@ class SolidAuthServiceImpl
 
       _accessToken = authData['accessToken'];
       _decodedToken = _jwtDecoder.decode(_accessToken!);
-      _currentWebId =
-          _decodedToken!.containsKey('webid')
-              ? _decodedToken!['webid']
-              : _decodedToken!['sub'];
+      _currentWebId = _decodedToken!.containsKey('webid')
+          ? _decodedToken!['webid']
+          : _decodedToken!['sub'];
       _authData = Map<String, dynamic>.from(authData);
 
       // Get pod URL from WebID
@@ -288,7 +287,7 @@ class SolidAuthServiceImpl
   Future<void> logout() async {
     try {
       if (_authData != null && _authData!.containsKey('logoutUrl')) {
-        await _solidAuth.logout(_authData!['logoutUrl']);
+        await _authBackend.logout(_authData!['logoutUrl']);
       }
     } catch (e, stackTrace) {
       _log.severe('Error during logout', e, stackTrace);
@@ -334,7 +333,7 @@ class SolidAuthServiceImpl
       var rsaKeyPair = rsaInfo['rsa'];
       var publicKeyJwk = rsaInfo['pubKeyJwk'];
 
-      return _solidAuth.genDpopToken(url, rsaKeyPair, publicKeyJwk, method);
+      return _authBackend.genDpopToken(url, rsaKeyPair, publicKeyJwk, method);
     } catch (e, stackTrace) {
       _log.severe('Error generating DPoP token', e, stackTrace);
       throw Exception('Failed to generate DPoP token: $e');

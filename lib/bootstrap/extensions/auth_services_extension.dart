@@ -7,7 +7,7 @@ import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_provider_service.dart';
 import 'package:solid_task/ext/solid_flutter/auth/integration/jwt_decoder_wrapper.dart';
-import 'package:solid_task/ext/solid_flutter/auth/integration/solid_auth_wrapper.dart';
+import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
 import 'package:solid_task/ext/solid_flutter/auth/solid_auth_service_impl.dart';
 import 'package:solid_task/ext/solid_flutter/auth/solid_provider_service_impl.dart';
 import 'package:solid_task/services/auth/solid_auth_wrapper_impl.dart';
@@ -27,7 +27,7 @@ extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
 
   /// Sets the SolidAuth implementation
   ServiceLocatorBuilder withSolidAuthFactory(
-    SolidAuthWrapper Function(GetIt) factory,
+    SolidAuthenticationBackend Function(GetIt) factory,
   ) {
     _configs[this]!._solidAuthFactory = factory;
     return this;
@@ -74,7 +74,7 @@ extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
       });
 
       // SolidAuth wrapper with configurable implementation
-      sl.registerLazySingleton<SolidAuthWrapper>(() {
+      sl.registerLazySingleton<SolidAuthenticationBackend>(() {
         final factory = config._solidAuthFactory;
         return factory == null ? SolidAuthWrapperImpl() : factory(sl);
       });
@@ -90,7 +90,7 @@ extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
             client: sl<http.Client>(),
             providerService: sl<SolidProviderService>(),
             secureStorage: sl<FlutterSecureStorage>(),
-            solidAuth: sl<SolidAuthWrapper>(),
+            solidAuth: sl<SolidAuthenticationBackend>(),
             jwtDecoder: sl<JwtDecoderWrapper>(),
           );
         });
@@ -145,7 +145,7 @@ extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
 /// Private class to hold service configurations
 class _AuthConfig {
   SolidProviderService Function(GetIt)? _providerServiceFactory;
-  SolidAuthWrapper Function(GetIt)? _solidAuthFactory;
+  SolidAuthenticationBackend Function(GetIt)? _solidAuthFactory;
   SolidAuthState Function(GetIt)? _authStateFactory;
   AuthStateChangeProvider Function(GetIt)? _authStateChangeProviderFactory;
   SolidAuthOperations Function(GetIt)? _authOperationsFactory;

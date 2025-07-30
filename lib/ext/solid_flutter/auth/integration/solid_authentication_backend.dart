@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 /// Wrapper for the static methods of the solid_auth package to improve testability.
-abstract interface class SolidAuthWrapper {
+abstract interface class SolidAuthenticationBackend {
   /// Gets the OIDC issuer URI from a user input.
   Future<String> getIssuer(String input);
 
