@@ -1,14 +1,19 @@
 {
   "providers": [
     {
-      "name": "Inrupt",
-      "url": "https://inrupt.net",
-      "icon": "inrupt"
-    },
-    {
       "name": "Solid Community",
       "url": "https://solidcommunity.net",
       "icon": "solid"
+    },
+    {
+      "name": "Solid Community AU",
+      "url": "https://pods.solidcommunity.au/",
+      "icon": "solid"
+    },
+    {
+      "name": "Inrupt",
+      "url": "https://inrupt.net",
+      "icon": "inrupt"
     }
   ],
   "config": {
