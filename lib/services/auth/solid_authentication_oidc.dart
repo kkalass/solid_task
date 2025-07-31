@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:logging/logging.dart';
@@ -10,6 +12,27 @@ import 'package:solid_auth/solid_auth.dart' as solid_auth;
 
 final _log = Logger("solid_authentication_oidc");
 
+class MyHook<TRequest, TResponse> extends OidcHook<TRequest, TResponse> {
+  MyHook({super.modifyRequest, super.modifyExecution, super.modifyResponse});
+  /*
+   * Tough luck: The execute method is implemented as an extension method
+   * by OidcHookExtensions in oidc_core library. It eventually calls
+   * itself recursively. I think that the intention was, that OidcHook
+   * is supposed to have an execute method like this one, so I implemented it here.
+   * 
+   * But anyways, extension methods are bound statically during compile time,
+   * so this implementation will never be called.
+   */
+  Future<TResponse> execute({
+    required TRequest request,
+    required OidcHookExecution<TRequest, TResponse> defaultExecution,
+  }) async {
+    var modifiedRequest = await modifyRequest(request);
+    var response = await modifyExecution(modifiedRequest, defaultExecution);
+    return await modifyResponse(response);
+  }
+}
+
 class SolidAuthenticationOidc implements SolidAuthenticationBackend {
   OidcUserManager? _manager;
   final WebIdProfileLoader _webIdProfileLoader;
@@ -19,12 +42,6 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
 
   SolidAuthenticationOidc({required WebIdProfileLoader webIdProfileLoader})
     : _webIdProfileLoader = webIdProfileLoader;
-
-  /// Generate RSA key pair for DPoP token generation using solid_auth
-  Future<void> _generateDpopKeyPair() async {
-    final rsaInfo = await solid_auth.genRsaKeyPair();
-    _rsaInfo = Map<String, dynamic>.from(rsaInfo);
-  }
 
   ({Uri frontChannelLogoutUri, Uri redirectUri, Uri postLogoutRedirectUri})
   _computeUris() {
@@ -73,6 +90,11 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
       clientId: AppConfig.clientId,
     );
 
+    // Generate RSA key pair for DPoP token generation
+    final rsaInfo = await solid_auth.genRsaKeyPair();
+    _rsaInfo = Map<String, dynamic>.from(rsaInfo);
+    _log.info('DPoP RSA key pair generated');
+
     _log.info('Using Public Client Identifier: ${AppConfig.clientId}');
 
     _manager = OidcUserManager.lazy(
@@ -86,6 +108,33 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
         frontChannelLogoutUri: frontChannelLogoutUri,
         redirectUri: redirectUri,
         postLogoutRedirectUri: postLogoutRedirectUri,
+        hooks: OidcUserManagerHooks(
+          token: MyHook(
+            modifyRequest: (request) {
+              print(
+                '== OIDC Request ${request.tokenEndpoint}: ${JsonEncoder.withIndent('  ').convert(request.request.toMap())}',
+              );
+
+              ///Generate DPoP token using the RSA private key
+              DPoP dPopToken = genDpopToken(
+                request.tokenEndpoint.toString(),
+                "POST",
+              );
+              if (request.headers != null) {
+                for (var e in dPopToken.httpHeaders().entries) {
+                  request.headers![e.key] = e.value;
+                }
+                _log.info(
+                  'Request headers after DPoP token: ${request.headers}',
+                );
+              } else {
+                _log.warning('message.headers is null, cannot add DPoP token');
+              }
+
+              return Future.value(request);
+            },
+          ),
+        ),
       ),
     );
 
@@ -100,13 +149,11 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
 
     _log.info('OIDC User authenticated: ${oidcUser.uid ?? 'unknown'}');
 
-    // Generate RSA key pair for DPoP token generation
-    await _generateDpopKeyPair();
-    _log.info('DPoP RSA key pair generated');
-
     // Extract WebID from the OIDC token using the Solid-OIDC spec methods
     final webId = _extractWebIdFromOidcUser(oidcUser);
 
+    // FIXME: extra security check: retrieve the profile and ensure that the
+    // issuer really is allowed by this webID
     return AuthResponse(webId: webId);
   }
 
