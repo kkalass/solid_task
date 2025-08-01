@@ -6,12 +6,11 @@ import 'package:rdf_core/rdf_core.dart';
 import 'package:rdf_mapper/rdf_mapper.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
-import 'package:solid_task/ext/solid/auth/models/auth_token.dart';
 import 'package:solid_task/ext/solid/auth/models/user_identity.dart';
 import 'package:solid_task/ext/solid/pod/storage/pod_storage_configuration.dart';
 import 'package:solid_task/ext/solid/pod/storage/static_storage_configuration_provider.dart';
-import 'package:solid_task/ext/solid/sync/solid_sync_service.dart';
 import 'package:solid_task/ext/solid/sync/rdf_repository.dart';
+import 'package:solid_task/ext/solid/sync/solid_sync_service.dart';
 import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
 
 import 'solid_sync_service_test.mocks.dart';

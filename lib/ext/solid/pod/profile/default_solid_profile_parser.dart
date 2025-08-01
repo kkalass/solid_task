@@ -13,16 +13,7 @@ class DefaultSolidProfileParser implements SolidProfileParser {
   static const solid = Namespace("http://www.w3.org/ns/solid/terms#");
   static const pim = Namespace("http://www.w3.org/ns/pim/space#");
   static const ldp = Namespace("http://www.w3.org/ns/ldp#");
-
-  /// Common predicates used to identify storage locations in Solid profiles
-  static final _storagePredicates = [
-    pim('storage'),
-    solid('storage'),
-    ldp('contains'),
-    solid('oidcIssuer'),
-    solid('account'),
-    solid('storageLocation'),
-  ];
+  static const _knownWebIdSuffixes = ['/profile/card#me'];
 
   /// Creates a new ProfileParser with the required dependencies
   DefaultSolidProfileParser({RdfCore? rdfCore})
@@ -31,12 +22,11 @@ class DefaultSolidProfileParser implements SolidProfileParser {
   /// Find storage URLs in the parsed graph
   List<String> _findStorageUrls(RdfGraph graph) {
     try {
-      final storageTriples = graph.findTriples(
-        predicate: IriTerm('http://www.w3.org/ns/solid/terms#storage'),
-      );
-      final spaceStorageTriples = graph.findTriples(
-        predicate: IriTerm('http://www.w3.org/ns/pim/space#storage'),
-      );
+      // Note: this storage predicate actually is not part of the Solid spec,
+      // it is a workaround for buggy implementations.
+      final storageTriples = graph.findTriples(predicate: solid('storage'));
+      // This is the correct location.
+      final spaceStorageTriples = graph.findTriples(predicate: pim('storage'));
 
       final urls = <String>[];
       for (final triple in [...storageTriples, ...spaceStorageTriples]) {
@@ -60,7 +50,7 @@ class DefaultSolidProfileParser implements SolidProfileParser {
         // If the storage points to a blank node, look for location triples
         final locationTriples = graph.findTriples(
           subject: blankNodeTerm,
-          predicate: IriTerm('http://www.w3.org/ns/solid/terms#location'),
+          predicate: solid('location'),
         );
         for (final locationTriple in locationTriples) {
           _addIri(locationTriple, urls, graph);
@@ -97,23 +87,16 @@ class DefaultSolidProfileParser implements SolidProfileParser {
           _log.info('Found storage URL: ${storageUrls.first}');
           return storageUrls.first;
         }
-
-        // If no direct storage predicates were found, try other predicates
-        for (final predicate in _storagePredicates) {
-          final triples = graph.findTriples(predicate: predicate);
-          if (triples.isNotEmpty) {
-            final storageUrls = <String>[];
-            for (final triple in triples) {
-              _addIri(triple, storageUrls, graph);
-            }
-            final storageUrl = storageUrls[0];
+        for (final ending in _knownWebIdSuffixes) {
+          if (webId.endsWith(ending)) {
+            final storageUrl =
+                "${webId.substring(0, webId.length - ending.length)}/";
             _log.info(
-              'Found storage URL with alternative predicate: $storageUrl',
+              'Did not find predicate ${pim('storage')}. Using root of WebID as storage URL: $storageUrl',
             );
             return storageUrl;
           }
         }
-
         _log.warning('No storage URL found in profile document');
         return null;
       } catch (e, stackTrace) {

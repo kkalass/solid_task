@@ -12,27 +12,6 @@ import 'package:solid_auth/solid_auth.dart' as solid_auth;
 
 final _log = Logger("solid_authentication_oidc");
 
-class MyHook<TRequest, TResponse> extends OidcHook<TRequest, TResponse> {
-  MyHook({super.modifyRequest, super.modifyExecution, super.modifyResponse});
-  /*
-   * Tough luck: The execute method is implemented as an extension method
-   * by OidcHookExtensions in oidc_core library. It eventually calls
-   * itself recursively. I think that the intention was, that OidcHook
-   * is supposed to have an execute method like this one, so I implemented it here.
-   * 
-   * But anyways, extension methods are bound statically during compile time,
-   * so this implementation will never be called.
-   */
-  Future<TResponse> execute({
-    required TRequest request,
-    required OidcHookExecution<TRequest, TResponse> defaultExecution,
-  }) async {
-    var modifiedRequest = await modifyRequest(request);
-    var response = await modifyExecution(modifiedRequest, defaultExecution);
-    return await modifyResponse(response);
-  }
-}
-
 class SolidAuthenticationOidc implements SolidAuthenticationBackend {
   OidcUserManager? _manager;
   final WebIdProfileLoader _webIdProfileLoader;
@@ -109,21 +88,19 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
         redirectUri: redirectUri,
         postLogoutRedirectUri: postLogoutRedirectUri,
         hooks: OidcUserManagerHooks(
-          token: MyHook(
+          token: OidcHook(
             modifyRequest: (request) {
               print(
                 '== OIDC Request ${request.tokenEndpoint}: ${JsonEncoder.withIndent('  ').convert(request.request.toMap())}',
               );
 
               ///Generate DPoP token using the RSA private key
-              DPoP dPopToken = genDpopToken(
+              String dPopToken = _genDpopToken(
                 request.tokenEndpoint.toString(),
                 "POST",
               );
               if (request.headers != null) {
-                for (var e in dPopToken.httpHeaders().entries) {
-                  request.headers![e.key] = e.value;
-                }
+                request.headers!['DPoP'] = dPopToken;
                 _log.info(
                   'Request headers after DPoP token: ${request.headers}',
                 );
@@ -157,28 +134,24 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
     return AuthResponse(webId: webId);
   }
 
-  @override
-  DPoP genDpopToken(String url, String method) {
-    if (_manager?.currentUser?.token.accessToken == null) {
-      throw Exception('No access token available for DPoP generation');
-    }
-
-    // Generate DPoP key pair if not already created
+  String _genDpopToken(String url, String method) {
     if (_rsaInfo == null) {
-      // We need to generate the key pair synchronously, but solid_auth.genRsaKeyPair() is async
-      // This is a limitation - we should generate keys during authentication
       throw Exception('RSA key pair not generated. Call authenticate first.');
     }
 
     final rsaKeyPair = _rsaInfo!['rsa'];
     final publicKeyJwk = _rsaInfo!['pubKeyJwk'];
 
-    final dpopToken = solid_auth.genDpopToken(
-      url,
-      rsaKeyPair,
-      publicKeyJwk,
-      method,
-    );
+    return solid_auth.genDpopToken(url, rsaKeyPair, publicKeyJwk, method);
+  }
+
+  @override
+  DPoP genDpopToken(String url, String method) {
+    if (_manager?.currentUser?.token.accessToken == null) {
+      throw Exception('No access token available for DPoP generation');
+    }
+
+    final dpopToken = _genDpopToken(url, method);
 
     // Get the access token from the current user
     final accessToken = _manager!.currentUser!.token.accessToken!;
@@ -191,13 +164,9 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
     try {
       final profile = await _webIdProfileLoader.load(input);
       return profile.issuers.first;
-    } catch (e, stackTrace) {
+    } catch (e) {
       // apparently not a WebID, return the input as is - its probably the issuer URL
-      _log.info(
-        'Input is not a WebID, returning as issuer URI: $input',
-        e,
-        stackTrace,
-      );
+      _log.info('Input is not a WebID, returning as issuer URI: $input');
       return input;
     }
   }
