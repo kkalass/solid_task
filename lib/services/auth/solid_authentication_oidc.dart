@@ -66,21 +66,21 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
         frontChannelLogoutUri: frontChannelLogoutUri,
         redirectUri: redirectUri,
         postLogoutRedirectUri: postLogoutRedirectUri,
-        getIssuer: (webIdOrIssuer) async {
+        getIssuers: (webIdOrIssuer) async {
           // Use the WebIdProfileLoader to resolve the issuer URI
           if (_webIdProfileLoader != null) {
             try {
-              final webIdProfile = await _webIdProfileLoader.load(
+              final issuerUris = (await _webIdProfileLoader.load(
                 webIdOrIssuer,
-              );
-              return Uri.parse(
-                webIdProfile.issuers.firstOrNull ?? webIdOrIssuer,
-              );
+              )).issuers.map((issuer) => Uri.parse(issuer)).toList();
+              return issuerUris.isEmpty
+                  ? [Uri.parse(webIdOrIssuer)]
+                  : issuerUris;
             } catch (e) {
               _log.fine('Failed to load WebID profile for $webIdOrIssuer: $e');
             }
           }
-          return Uri.parse(webIdOrIssuer);
+          return [Uri.parse(webIdOrIssuer)];
         },
       ),
     );

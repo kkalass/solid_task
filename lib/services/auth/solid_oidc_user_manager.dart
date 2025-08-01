@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:oidc/oidc.dart';
@@ -7,12 +8,12 @@ import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authenticati
 
 final _log = Logger("solid_authentication_oidc");
 
-Future<Uri> _getIssuerDefault(String webIdOrIssuer) async {
+Future<List<Uri>> _getIssuersDefault(String webIdOrIssuer) async {
   try {
-    return Uri.parse(await solid_auth.getIssuer(webIdOrIssuer));
+    return [Uri.parse(await solid_auth.getIssuer(webIdOrIssuer))];
   } catch (e) {
     // If loading the profile fails, return the input as is
-    return Uri.parse(webIdOrIssuer);
+    return [Uri.parse(webIdOrIssuer)];
   }
 }
 
@@ -45,7 +46,7 @@ class SolidOidcUserManagerSettings {
     this.hooks,
     this.extraRevocationParameters,
     this.extraRevocationHeaders,
-    this.getIssuer = _getIssuerDefault,
+    this.getIssuers = _getIssuersDefault,
   });
 
   /// The default scopes
@@ -136,7 +137,7 @@ class SolidOidcUserManagerSettings {
   final Duration? Function(OidcTokenResponse tokenResponse)? getExpiresIn;
 
   /// pass this function to control how a webIdOrIssuer is resoled to the issuer URI.
-  final Future<Uri> Function(String webIdOrIssuer) getIssuer;
+  final Future<List<Uri>> Function(String webIdOrIssuer) getIssuers;
 
   /// pass this function to control how an `id_token` is fetched from a
   /// token response.
@@ -153,6 +154,7 @@ class SolidOidcUserManagerSettings {
 }
 
 class SolidOidcUserManager {
+  Uri? _issuerUri;
   OidcUserManager? _manager;
 
   /// The WebID or issuer URL.
@@ -173,6 +175,9 @@ class SolidOidcUserManager {
   // DPoP key pair management - using solid_auth generated keys
   Map<String, dynamic>? _rsaInfo;
 
+  // Storage keys for persisting SOLID-specific data
+  static const String _rsaInfoKey = 'solid_rsa_info';
+
   SolidOidcUserManager({
     required String webIdOrIssuer,
     required this.store,
@@ -190,19 +195,28 @@ class SolidOidcUserManager {
     if (_manager != null) {
       await logout();
     }
-    final issuerUri = await _settings.getIssuer(_webIdOrIssuer);
 
-    Uri wellKnownUri = OidcUtils.getOpenIdConfigWellKnownUri(issuerUri);
+    // Try to restore persisted RSA info first
+    await _loadPersistedRsaInfo();
+
+    final issuerUris = await _settings.getIssuers(_webIdOrIssuer);
+    _issuerUri = issuerUris.first;
+    Uri wellKnownUri = OidcUtils.getOpenIdConfigWellKnownUri(_issuerUri!);
 
     // Use static client ID pointing to our Public Client Identifier Document
     final clientCredentials = OidcClientAuthentication.none(
       clientId: AppConfig.clientId,
     );
 
-    // Generate RSA key pair for DPoP token generation
-    final rsaInfo = await solid_auth.genRsaKeyPair();
-    _rsaInfo = Map<String, dynamic>.from(rsaInfo);
-    _log.info('DPoP RSA key pair generated');
+    // Generate RSA key pair for DPoP token generation if not already available
+    if (_rsaInfo == null) {
+      final rsaInfo = await solid_auth.genRsaKeyPair();
+      _rsaInfo = Map<String, dynamic>.from(rsaInfo);
+      await _persistRsaInfo();
+      _log.info('DPoP RSA key pair generated and persisted');
+    } else {
+      _log.info('DPoP RSA key pair restored from storage');
+    }
 
     _log.info('Using Public Client Identifier: ${AppConfig.clientId}');
     final hooks = _settings.hooks ?? OidcUserManagerHooks();
@@ -289,8 +303,12 @@ class SolidOidcUserManager {
     // Extract WebID from the OIDC token using the Solid-OIDC spec methods
     final webId = _extractWebIdFromOidcUser(oidcUser);
 
-    // FIXME: extra security check: retrieve the profile and ensure that the
+    // extra security check: retrieve the profile and ensure that the
     // issuer really is allowed by this webID
+    final issuerUris = await _settings.getIssuers(webId);
+    if (!issuerUris.contains(_issuerUri)) {
+      throw Exception('No valid issuer found for WebID: $webId');
+    }
     return (oidcUser: oidcUser, webId: webId);
   }
 
@@ -322,8 +340,54 @@ class SolidOidcUserManager {
     await _manager?.logout();
     await _manager?.dispose();
     _manager = null;
-    _rsaInfo = null; // Clear RSA key pair info
+    _issuerUri = null;
+
+    // Clear persisted RSA key pair info
+    _rsaInfo = null;
+    await _clearPersistedRsaInfo();
+
     return true;
+  }
+
+  /// Persists the RSA key pair info to the store for session continuity
+  Future<void> _persistRsaInfo() async {
+    if (_rsaInfo != null) {
+      await store.set(
+        OidcStoreNamespace.secureTokens,
+        key: _rsaInfoKey,
+        value: jsonEncode(_rsaInfo),
+        managerId: _id,
+      );
+    }
+  }
+
+  /// Loads the RSA key pair info from the store
+  Future<void> _loadPersistedRsaInfo() async {
+    try {
+      final rsaInfoStr = await store.get(
+        OidcStoreNamespace.secureTokens,
+        key: _rsaInfoKey,
+        managerId: _id,
+      );
+      if (rsaInfoStr != null) {
+        _rsaInfo = Map<String, dynamic>.from(jsonDecode(rsaInfoStr));
+      }
+    } catch (e) {
+      _log.warning('Failed to load persisted RSA info: $e');
+    }
+  }
+
+  /// Clears the persisted RSA key pair info
+  Future<void> _clearPersistedRsaInfo() async {
+    try {
+      await store.remove(
+        OidcStoreNamespace.secureTokens,
+        key: _rsaInfoKey,
+        managerId: _id,
+      );
+    } catch (e) {
+      _log.warning('Failed to clear persisted RSA info: $e');
+    }
   }
 
   /// Extracts the WebID URI from the OIDC user according to the Solid-OIDC specification.
