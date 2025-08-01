@@ -14,7 +14,7 @@ import 'package:solid_task/ext/solid_flutter/auth/solid_provider_service_impl.da
 import 'package:solid_task/services/auth/solid_authentication_oidc.dart';
 import 'package:solid_task/services/auth/solid_authentication_solid_auth.dart';
 
-final _useOidc = false;
+final _useOidc = true;
 
 /// Extension for ServiceLocatorBuilder to handle Auth services
 extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {

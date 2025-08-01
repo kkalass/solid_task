@@ -1,15 +1,12 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:logging/logging.dart';
 import 'package:oidc/oidc.dart';
 import 'package:oidc_default_store/oidc_default_store.dart';
+import 'package:solid_auth/solid_auth.dart' as solid_auth;
 import 'package:solid_task/config/app_config.dart';
 import 'package:solid_task/ext/solid/pod/profile/web_id_profile_loader.dart';
 import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
-import 'package:solid_auth/solid_auth.dart' as solid_auth;
-import 'package:http/http.dart' as http;
 
 final _log = Logger("solid_authentication_oidc");
 
@@ -96,82 +93,10 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
                 request.tokenEndpoint.toString(),
                 "POST",
               );
-              if (request.headers != null) {
-                request.headers!['DPoP'] = dPopToken;
-              } else {
-                _log.warning('message.headers is null, cannot add DPoP token');
-              }
+
+              request.headers!['DPoP'] = dPopToken;
 
               return Future.value(request);
-            },
-            modifyExecution: (request, defaultExecution) async {
-              var credentials = request.credentials;
-              var tokenEndpoint = request.tokenEndpoint;
-              var headers = request.headers;
-              Map<String, dynamic>? extraBodyFields;
-              print(
-                '== OIDC Request $tokenEndpoint: ${JsonEncoder.withIndent('  ').convert(request.request.toMap())}',
-              );
-              print(
-                '== OIDC Request credentials Location: ${credentials?.location}',
-              );
-              print(
-                '== OIDC Request credentials Client Assertion: ${credentials?.clientAssertion}',
-              );
-              print(
-                '== OIDC Request credentials Client Assertion Type: ${credentials?.clientAssertionType}',
-              );
-              print(
-                '== OIDC Request credentials ClientId: ${credentials?.clientId}',
-              );
-              print(
-                '== OIDC Request credentials ClientSecret: ${credentials?.clientSecret}',
-              );
-
-              print(
-                '== OIDC Request credentials Auth Header: ${credentials?.getAuthorizationHeader()}',
-              );
-              print(
-                '== OIDC Request credentials Body Parameters: ${credentials?.getBodyParameters()}',
-              );
-
-              print('== OIDC Request headers: $headers');
-              print('== OIDC Request options: ${request.options}');
-              final authHeader = credentials?.getAuthorizationHeader();
-              final authBodyParams = credentials?.getBodyParameters();
-              final req = _prepareRequest(
-                method: OidcConstants_RequestMethod.post,
-                uri: tokenEndpoint,
-                headers: {
-                  if (authHeader != null) 'Authorization': authHeader,
-                  ...?headers,
-                },
-                contentType: 'application/x-www-form-urlencoded',
-                bodyFields: {
-                  ...request.request.toMap(),
-                  if (authHeader == null) ...?authBodyParams,
-                  ...?extraBodyFields,
-                },
-              );
-              print('== OIDC Request prepared url: ${req.url}');
-              print('== OIDC Request prepared headers: ${req.headers}');
-              print('== OIDC Request prepared body: ${req.body}');
-              print('== OIDC Request prepared: $req');
-              final resp = await OidcInternalUtilities.sendWithClient(
-                client: null, // Use default client
-                request: req,
-              );
-              final response = _handleResponse(
-                mapper: OidcTokenResponse.fromJson,
-                response: resp,
-                request: req,
-              );
-              print('== accessToken: ${response.accessToken}');
-              print('== idToken: ${response.idToken}');
-              print('== scope: ${response.scope}');
-              print('== tokenType: ${response.tokenType}');
-              print('== src: ${response.src}');
-              return response;
             },
           ),
         ),
@@ -195,78 +120,6 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
     // FIXME: extra security check: retrieve the profile and ensure that the
     // issuer really is allowed by this webID
     return AuthResponse(webId: webId);
-  }
-
-  static T _handleResponse<T>({
-    required T Function(Map<String, dynamic> response) mapper,
-    required http.Request request,
-    required http.Response response,
-  }) {
-    final body = _handleResponseRaw(request: request, response: response);
-    return mapper(body);
-  }
-
-  static Map<String, dynamic> _handleResponseRaw({
-    required http.Request request,
-    required http.Response response,
-  }) {
-    try {
-      final body =
-          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-      if (body.containsKey(OidcConstants_AuthParameters.error)) {
-        final resp = OidcErrorResponse.fromJson(body);
-        throw OidcException.serverError(
-          errorResponse: resp,
-          rawRequest: request,
-          rawResponse: response,
-        );
-      }
-      if (!(response.statusCode >= 200 && response.statusCode < 400)) {
-        throw OidcException(
-          'Failed to handle the response from endpoint (status code ${response.statusCode}): ${request.url}',
-          rawRequest: request,
-          rawResponse: response,
-        );
-      }
-      return body;
-    } on OidcException {
-      rethrow;
-    } catch (e, st) {
-      throw OidcException(
-        'Failed to handle the response from endpoint: ${request.url}',
-        internalException: e,
-        internalStackTrace: st,
-        rawRequest: request,
-        rawResponse: response,
-      );
-    }
-  }
-
-  static http.Request _prepareRequest({
-    required String method,
-    required Uri uri,
-    required Map<String, String>? headers,
-    String? contentType,
-    Map<String, dynamic>? bodyFields,
-  }) {
-    final req = http.Request(method, uri);
-    if (headers != null) {
-      req.headers.addAll(headers);
-    }
-    if (contentType != null) {
-      req.headers['Content-Type'] = contentType;
-    }
-    if (bodyFields != null) {
-      req.bodyFields = (bodyFields.map<String, String?>(
-        (key, value) => MapEntry(
-          key,
-          value is List<String>
-              ? OidcInternalUtilities.joinSpaceDelimitedList(value)
-              : value?.toString(),
-        ),
-      )..removeWhere((key, value) => value is! String)).cast<String, String>();
-    }
-    return req;
   }
 
   String _genDpopToken(String url, String method) {
