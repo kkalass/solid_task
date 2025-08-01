@@ -111,7 +111,7 @@ class SolidSyncService implements SyncService {
 
           final turtle = codec.encode(
             RdfGraph(triples: triplesOfFile),
-            baseUri: config.appStorageRoot,
+            baseUri: fileUrl.toString(),
           );
 
           // Generate DPoP token for the request

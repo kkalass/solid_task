@@ -111,7 +111,7 @@ class VectorClockEntryMapper
     final clientId = resource.clientId;
     final storageRoot = _storageRootProvider();
     final taskId = _taskIdProvider();
-    return '${storageRoot}/solidtask/task/${taskId}/vectorclock/${clientId}.ttl';
+    return '${storageRoot}/solidtask/task/${taskId}.ttl#vclck-${clientId}';
   }
 }
 

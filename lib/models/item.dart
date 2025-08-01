@@ -9,9 +9,7 @@ part 'item.g.dart';
 
 @RdfGlobalResource(
   SolidTaskVectorClockEntry.classIri,
-  IriStrategy(
-    '{+storageRoot}/solidtask/task/{taskId}/vectorclock/{clientId}.ttl',
-  ),
+  IriStrategy('{+storageRoot}/solidtask/task/{taskId}.ttl#vclck-{clientId}'),
   registerGlobally: false,
 )
 class VectorClockEntry {

@@ -30,6 +30,7 @@ import 'package:solid_task/ext/solid_flutter/auth/integration/jwt_decoder_wrappe
 import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart'
     as _i5;
 import 'package:solid_task/models/item.dart' as _i6;
+import 'package:solid_task/services/client_id_service.dart' as _i24;
 import 'package:solid_task/services/logger_service.dart' as _i2;
 import 'package:solid_task/services/repository/item_repository.dart' as _i19;
 import 'package:solid_task/services/storage/local_storage_service.dart' as _i14;
@@ -1894,4 +1895,55 @@ class MockJwtDecoderWrapper extends _i1.Mock implements _i23.JwtDecoderWrapper {
           ),
         ),
       ) as DateTime);
+}
+
+/// A class which mocks [ClientIdService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockClientIdService extends _i1.Mock implements _i24.ClientIdService {
+  @override
+  _i10.Future<String> getClientId() => (super.noSuchMethod(
+        Invocation.method(
+          #getClientId,
+          [],
+        ),
+        returnValue: _i10.Future<String>.value(_i12.dummyValue<String>(
+          this,
+          Invocation.method(
+            #getClientId,
+            [],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i10.Future<String>.value(_i12.dummyValue<String>(
+          this,
+          Invocation.method(
+            #getClientId,
+            [],
+          ),
+        )),
+      ) as _i10.Future<String>);
+
+  @override
+  _i10.Future<String> regenerateClientId() => (super.noSuchMethod(
+        Invocation.method(
+          #regenerateClientId,
+          [],
+        ),
+        returnValue: _i10.Future<String>.value(_i12.dummyValue<String>(
+          this,
+          Invocation.method(
+            #regenerateClientId,
+            [],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i10.Future<String>.value(_i12.dummyValue<String>(
+          this,
+          Invocation.method(
+            #regenerateClientId,
+            [],
+          ),
+        )),
+      ) as _i10.Future<String>);
 }
