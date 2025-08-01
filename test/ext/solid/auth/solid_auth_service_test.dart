@@ -88,18 +88,6 @@ void main() {
       verify(mockSolidProviderService.loadProviders()).called(1);
     });
 
-    test('getIssuer returns issuer URI', () async {
-      // Mock the solid_auth.getIssuer method
-      when(
-        mockSolidAuth.getIssuer('https://example.com'),
-      ).thenAnswer((_) async => 'https://mock-issuer.com');
-
-      final issuer = await authService.getIssuer('https://example.com');
-
-      expect(issuer, 'https://mock-issuer.com');
-      verify(mockSolidAuth.getIssuer('https://example.com')).called(1);
-    });
-
     test('getPodUrl extracts pod URL from profile', () async {
       // Setup with valid Turtle syntax
       const validTurtle = '''
@@ -143,11 +131,7 @@ void main() {
       ).thenAnswer((_) async {});
 
       when(
-        mockSolidAuth.authenticate(
-          Uri.parse('https://mock-issuer.com'),
-          any,
-          any,
-        ),
+        mockSolidAuth.authenticate('https://mock-issuer.com', any, any),
       ).thenAnswer(
         (_) async =>
             AuthResponse(webId: 'https://mock-user.example/profile/card#me'),
@@ -222,11 +206,7 @@ void main() {
 
       // Mock the authentication response
       when(
-        mockSolidAuth.authenticate(
-          Uri.parse('https://mock-issuer.com'),
-          any,
-          any,
-        ),
+        mockSolidAuth.authenticate('https://mock-issuer.com', any, any),
       ).thenAnswer(
         (_) async =>
             AuthResponse(webId: 'https://mock-user.example/profile/card#me'),

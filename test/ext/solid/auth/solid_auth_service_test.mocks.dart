@@ -1080,31 +1080,8 @@ class MockJwtDecoderWrapper extends _i1.Mock implements _i11.JwtDecoderWrapper {
 class MockSolidAuthenticationBackend extends _i1.Mock
     implements _i5.SolidAuthenticationBackend {
   @override
-  _i6.Future<String> getIssuer(String? input) => (super.noSuchMethod(
-        Invocation.method(
-          #getIssuer,
-          [input],
-        ),
-        returnValue: _i6.Future<String>.value(_i8.dummyValue<String>(
-          this,
-          Invocation.method(
-            #getIssuer,
-            [input],
-          ),
-        )),
-        returnValueForMissingStub:
-            _i6.Future<String>.value(_i8.dummyValue<String>(
-          this,
-          Invocation.method(
-            #getIssuer,
-            [input],
-          ),
-        )),
-      ) as _i6.Future<String>);
-
-  @override
   _i6.Future<_i5.AuthResponse> authenticate(
-    Uri? issuerUri,
+    String? webIdOrIssuerUri,
     List<String>? scopes,
     _i12.BuildContext? context,
   ) =>
@@ -1112,7 +1089,7 @@ class MockSolidAuthenticationBackend extends _i1.Mock
         Invocation.method(
           #authenticate,
           [
-            issuerUri,
+            webIdOrIssuerUri,
             scopes,
             context,
           ],
@@ -1122,7 +1099,7 @@ class MockSolidAuthenticationBackend extends _i1.Mock
           Invocation.method(
             #authenticate,
             [
-              issuerUri,
+              webIdOrIssuerUri,
               scopes,
               context,
             ],
@@ -1134,7 +1111,7 @@ class MockSolidAuthenticationBackend extends _i1.Mock
           Invocation.method(
             #authenticate,
             [
-              issuerUri,
+              webIdOrIssuerUri,
               scopes,
               context,
             ],

@@ -11,20 +11,22 @@ class SolidAuthWrapperImpl implements SolidAuthenticationBackend {
   SolidAuthWrapperImpl({required JwtDecoderWrapper jwtDecoder})
     : _jwtDecoder = jwtDecoder;
 
-  /// Gets the OIDC issuer URI from a user input.
-  @override
-  Future<String> getIssuer(String input) async {
-    return solid_auth.getIssuer(input);
-  }
-
   /// Authenticates the user with the OIDC provider.
   @override
   Future<AuthResponse> authenticate(
-    Uri issuerUri,
+    String webIdOrIssuerUri,
     List<String> scopes,
     BuildContext context,
   ) async {
-    final authData = await solid_auth.authenticate(issuerUri, scopes, context);
+    final issuerUri = await solid_auth.getIssuer(webIdOrIssuerUri);
+    if (!context.mounted) {
+      throw Exception('Context is no longer mounted');
+    }
+    final authData = await solid_auth.authenticate(
+      Uri.parse(issuerUri),
+      scopes,
+      context,
+    );
     _authData = Map.unmodifiable(Map<String, dynamic>.from(authData));
 
     final accessToken = authData['accessToken']!;

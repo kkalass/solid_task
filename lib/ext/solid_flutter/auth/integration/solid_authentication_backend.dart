@@ -20,12 +20,9 @@ class DPoP {
 
 /// Wrapper for the static methods of the solid_auth package to improve testability.
 abstract interface class SolidAuthenticationBackend {
-  /// Gets the OIDC issuer URI from a user input.
-  Future<String> getIssuer(String input);
-
   /// Authenticates the user with the OIDC provider.
   Future<AuthResponse> authenticate(
-    Uri issuerUri,
+    String webIdOrIssuerUri,
     List<String> scopes,
     BuildContext context,
   );

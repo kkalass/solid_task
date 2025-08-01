@@ -803,38 +803,15 @@ class MockSolidProviderService extends _i1.Mock
 class MockSolidAuthOperations<C> extends _i1.Mock
     implements _i16.SolidAuthOperations<C> {
   @override
-  _i10.Future<String> getIssuer(String? input) => (super.noSuchMethod(
-        Invocation.method(
-          #getIssuer,
-          [input],
-        ),
-        returnValue: _i10.Future<String>.value(_i12.dummyValue<String>(
-          this,
-          Invocation.method(
-            #getIssuer,
-            [input],
-          ),
-        )),
-        returnValueForMissingStub:
-            _i10.Future<String>.value(_i12.dummyValue<String>(
-          this,
-          Invocation.method(
-            #getIssuer,
-            [input],
-          ),
-        )),
-      ) as _i10.Future<String>);
-
-  @override
   _i10.Future<_i4.AuthResult> authenticate(
-    String? issuerUri,
+    String? webIdOrIssuerUri,
     C? context,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
           #authenticate,
           [
-            issuerUri,
+            webIdOrIssuerUri,
             context,
           ],
         ),
@@ -843,7 +820,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
           Invocation.method(
             #authenticate,
             [
-              issuerUri,
+              webIdOrIssuerUri,
               context,
             ],
           ),
@@ -854,7 +831,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
           Invocation.method(
             #authenticate,
             [
-              issuerUri,
+              webIdOrIssuerUri,
               context,
             ],
           ),
@@ -1350,31 +1327,8 @@ class MockSyncManager extends _i1.Mock implements _i20.SyncManager {
 class MockSolidAuthenticationBackend extends _i1.Mock
     implements _i5.SolidAuthenticationBackend {
   @override
-  _i10.Future<String> getIssuer(String? input) => (super.noSuchMethod(
-        Invocation.method(
-          #getIssuer,
-          [input],
-        ),
-        returnValue: _i10.Future<String>.value(_i12.dummyValue<String>(
-          this,
-          Invocation.method(
-            #getIssuer,
-            [input],
-          ),
-        )),
-        returnValueForMissingStub:
-            _i10.Future<String>.value(_i12.dummyValue<String>(
-          this,
-          Invocation.method(
-            #getIssuer,
-            [input],
-          ),
-        )),
-      ) as _i10.Future<String>);
-
-  @override
   _i10.Future<_i5.AuthResponse> authenticate(
-    Uri? issuerUri,
+    String? webIdOrIssuerUri,
     List<String>? scopes,
     _i21.BuildContext? context,
   ) =>
@@ -1382,7 +1336,7 @@ class MockSolidAuthenticationBackend extends _i1.Mock
         Invocation.method(
           #authenticate,
           [
-            issuerUri,
+            webIdOrIssuerUri,
             scopes,
             context,
           ],
@@ -1392,7 +1346,7 @@ class MockSolidAuthenticationBackend extends _i1.Mock
           Invocation.method(
             #authenticate,
             [
-              issuerUri,
+              webIdOrIssuerUri,
               scopes,
               context,
             ],
@@ -1404,7 +1358,7 @@ class MockSolidAuthenticationBackend extends _i1.Mock
           Invocation.method(
             #authenticate,
             [
-              issuerUri,
+              webIdOrIssuerUri,
               scopes,
               context,
             ],

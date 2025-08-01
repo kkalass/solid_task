@@ -438,38 +438,15 @@ class MockSolidAuthState extends _i1.Mock implements _i10.SolidAuthState {
 class MockSolidAuthOperations<C> extends _i1.Mock
     implements _i11.SolidAuthOperations<C> {
   @override
-  _i5.Future<String> getIssuer(String? input) => (super.noSuchMethod(
-        Invocation.method(
-          #getIssuer,
-          [input],
-        ),
-        returnValue: _i5.Future<String>.value(_i7.dummyValue<String>(
-          this,
-          Invocation.method(
-            #getIssuer,
-            [input],
-          ),
-        )),
-        returnValueForMissingStub:
-            _i5.Future<String>.value(_i7.dummyValue<String>(
-          this,
-          Invocation.method(
-            #getIssuer,
-            [input],
-          ),
-        )),
-      ) as _i5.Future<String>);
-
-  @override
   _i5.Future<_i3.AuthResult> authenticate(
-    String? issuerUri,
+    String? webIdOrIssuerUri,
     C? context,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
           #authenticate,
           [
-            issuerUri,
+            webIdOrIssuerUri,
             context,
           ],
         ),
@@ -478,7 +455,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
           Invocation.method(
             #authenticate,
             [
-              issuerUri,
+              webIdOrIssuerUri,
               context,
             ],
           ),
@@ -489,7 +466,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
           Invocation.method(
             #authenticate,
             [
-              issuerUri,
+              webIdOrIssuerUri,
               context,
             ],
           ),

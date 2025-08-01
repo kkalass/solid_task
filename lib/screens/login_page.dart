@@ -46,11 +46,9 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      String issuerUri = await _authOperations.getIssuer(input.trim());
-
       if (!mounted) return;
 
-      final result = await _authOperations.authenticate(issuerUri, context);
+      final result = await _authOperations.authenticate(input.trim(), context);
 
       if (!mounted) return;
 

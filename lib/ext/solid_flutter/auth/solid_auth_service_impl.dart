@@ -192,13 +192,8 @@ class SolidAuthServiceImpl
   }
 
   @override
-  Future<String> getIssuer(String input) async {
-    return _authBackend.getIssuer(input.trim());
-  }
-
-  @override
   Future<AuthResult> authenticate(
-    String issuerUri,
+    String webIdOrIssuerUri,
     BuildContext context,
   ) async {
     try {
@@ -206,7 +201,7 @@ class SolidAuthServiceImpl
       final List<String> scopes = ['openid', 'offline_access', 'webid'];
 
       final authData = await _authBackend.authenticate(
-        Uri.parse(issuerUri),
+        webIdOrIssuerUri,
         scopes,
         context,
       );

@@ -7,60 +7,196 @@ import 'package:solid_auth/solid_auth.dart' as solid_auth;
 import 'package:solid_task/config/app_config.dart';
 import 'package:solid_task/ext/solid/pod/profile/web_id_profile_loader.dart';
 import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
+import 'package:http/http.dart' as http;
 
 final _log = Logger("solid_authentication_oidc");
 
-class SolidAuthenticationOidc implements SolidAuthenticationBackend {
+Future<Uri> _getIssuerDefault(String webIdOrIssuer) async {
+  try {
+    return Uri.parse(await solid_auth.getIssuer(webIdOrIssuer));
+  } catch (e) {
+    // If loading the profile fails, return the input as is
+    return Uri.parse(webIdOrIssuer);
+  }
+}
+
+class SolidOidcUserManagerSettings {
+  ///
+  const SolidOidcUserManagerSettings({
+    required this.redirectUri,
+    this.uiLocales,
+    this.extraTokenHeaders,
+    this.extraScopes = defaultScopes,
+    this.prompt = const [],
+    this.display,
+    this.acrValues,
+    this.maxAge,
+    this.extraAuthenticationParameters,
+    this.expiryTolerance = const Duration(minutes: 1),
+    this.extraTokenParameters,
+    this.postLogoutRedirectUri,
+    this.options,
+    this.frontChannelLogoutUri,
+    this.userInfoSettings = const OidcUserInfoSettings(),
+    this.frontChannelRequestListeningOptions =
+        const OidcFrontChannelRequestListeningOptions(),
+    this.refreshBefore = defaultRefreshBefore,
+    this.strictJwtVerification = false,
+    this.getExpiresIn,
+    this.sessionManagementSettings = const OidcSessionManagementSettings(),
+    this.getIdToken,
+    this.supportOfflineAuth = false,
+    this.hooks,
+    this.extraRevocationParameters,
+    this.extraRevocationHeaders,
+    this.getIssuer = _getIssuerDefault,
+  });
+
+  /// The default scopes
+  static const defaultScopes = ['openid', 'webid', 'offline_access'];
+
+  /// Settings to control using the user_info endpoint.
+  final OidcUserInfoSettings userInfoSettings;
+
+  /// whether JWTs are strictly verified.
+  ///
+  /// If set to true, the library will throw an exception if a JWT is invalid.
+  final bool strictJwtVerification;
+
+  /// Whether to support offline authentication or not.
+  ///
+  /// When this option is enabled, expired tokens will NOT be removed if the
+  /// server can't be contacted
+  ///
+  /// This parameter is disabled by default due to security concerns.
+  final bool supportOfflineAuth;
+
+  /// see [OidcAuthorizeRequest.redirectUri].
+  final Uri redirectUri;
+
+  /// see [OidcEndSessionRequest.postLogoutRedirectUri].
+  final Uri? postLogoutRedirectUri;
+
+  /// the uri of the front channel logout flow.
+  /// this Uri MUST be registered with the OP first.
+  /// the OP will call this Uri when it wants to logout the user.
+  final Uri? frontChannelLogoutUri;
+
+  /// The options to use when listening to platform channels.
+  ///
+  /// [frontChannelLogoutUri] must be set for this to work.
+  final OidcFrontChannelRequestListeningOptions
+  frontChannelRequestListeningOptions;
+
+  /// see [OidcAuthorizeRequest.scope].
+  final List<String> extraScopes;
+
+  /// see [OidcAuthorizeRequest.prompt].
+  final List<String> prompt;
+
+  /// see [OidcAuthorizeRequest.display].
+  final String? display;
+
+  /// see [OidcAuthorizeRequest.uiLocales].
+  final List<String>? uiLocales;
+
+  /// see [OidcAuthorizeRequest.acrValues].
+  final List<String>? acrValues;
+
+  /// see [OidcAuthorizeRequest.maxAge]
+  final Duration? maxAge;
+
+  /// see [OidcAuthorizeRequest.extra]
+  final Map<String, dynamic>? extraAuthenticationParameters;
+
+  /// see [OidcTokenRequest.extra]
+  final Map<String, String>? extraTokenHeaders;
+
+  /// see [OidcTokenRequest.extra]
+  final Map<String, dynamic>? extraTokenParameters;
+
+  /// see [OidcRevocationRequest.extra]
+  final Map<String, dynamic>? extraRevocationParameters;
+
+  /// Extra headers to send with the revocation request.
+  final Map<String, String>? extraRevocationHeaders;
+
+  /// see [OidcIdTokenVerificationOptions.expiryTolerance].
+  final Duration expiryTolerance;
+
+  /// Settings related to the session management spec.
+  final OidcSessionManagementSettings sessionManagementSettings;
+
+  /// How early the token gets refreshed.
+  ///
+  /// for example:
+  ///
+  /// - if `Duration.zero` is returned, the token gets refreshed once it's expired.
+  /// - (default) if `Duration(minutes: 1)` is returned, it will refresh the token 1 minute before it expires.
+  /// - if `null` is returned, automatic refresh is disabled.
+  final OidcRefreshBeforeCallback? refreshBefore;
+
+  /// overrides a token's expires_in value.
+  final Duration? Function(OidcTokenResponse tokenResponse)? getExpiresIn;
+
+  /// pass this function to control how a webIdOrIssuer is resoled to the issuer URI.
+  final Future<Uri> Function(String webIdOrIssuer) getIssuer;
+
+  /// pass this function to control how an `id_token` is fetched from a
+  /// token response.
+  ///
+  /// This can be used to trick the user manager into using a JWT `access_token`
+  /// as an `id_token` for example.
+  final Future<String?> Function(OidcToken token)? getIdToken;
+
+  /// platform-specific options.
+  final OidcPlatformSpecificOptions? options;
+
+  /// Customized hooks to modify the user manager behavior.
+  final OidcUserManagerHooks? hooks;
+}
+
+class SolidOidcUserManager {
   OidcUserManager? _manager;
-  final WebIdProfileLoader _webIdProfileLoader;
+
+  /// The WebID or issuer URL.
+  final String _webIdOrIssuer;
+
+  /// The store responsible for setting/getting cached values.
+  final OidcStore store;
+
+  final String? _id;
+
+  /// The http client to use when sending requests
+  final http.Client? _httpClient;
+
+  /// The id_token verification options.
+  final JsonWebKeyStore? _keyStore;
+  final SolidOidcUserManagerSettings _settings;
 
   // DPoP key pair management - using solid_auth generated keys
   Map<String, dynamic>? _rsaInfo;
 
-  SolidAuthenticationOidc({required WebIdProfileLoader webIdProfileLoader})
-    : _webIdProfileLoader = webIdProfileLoader;
+  SolidOidcUserManager({
+    required String webIdOrIssuer,
+    required this.store,
+    required SolidOidcUserManagerSettings settings,
+    String? id,
+    http.Client? httpClient,
+    JsonWebKeyStore? keyStore,
+  }) : _settings = settings,
+       _webIdOrIssuer = webIdOrIssuer,
+       _id = id,
+       _keyStore = keyStore,
+       _httpClient = httpClient;
 
-  ({Uri frontChannelLogoutUri, Uri redirectUri, Uri postLogoutRedirectUri})
-  _computeUris() {
-    if (kIsWeb) {
-      // Web platform uses HTML redirect page
-      final htmlPageLink = AppConfig.getWebRedirectUrl();
-
-      return (
-        redirectUri: htmlPageLink,
-        postLogoutRedirectUri: htmlPageLink,
-        frontChannelLogoutUri: htmlPageLink.replace(
-          queryParameters: {
-            ...htmlPageLink.queryParameters,
-            'requestType': 'front-channel-logout',
-          },
-        ),
-      );
-    }
-    return (
-      redirectUri: Uri.parse('${AppConfig.urlScheme}://redirect'),
-      postLogoutRedirectUri: Uri.parse('${AppConfig.urlScheme}://logout'),
-      frontChannelLogoutUri: Uri.parse('${AppConfig.urlScheme}://logout'),
-    );
-  }
-
-  @override
-  Future<AuthResponse> authenticate(
-    Uri issuerUri,
-    List<String> scopes,
-    BuildContext context,
-  ) async {
+  Future<void> init() async {
     if (_manager != null) {
       await logout();
     }
+    final issuerUri = await _settings.getIssuer(_webIdOrIssuer);
 
     Uri wellKnownUri = OidcUtils.getOpenIdConfigWellKnownUri(issuerUri);
-
-    final (
-      frontChannelLogoutUri: frontChannelLogoutUri,
-      redirectUri: redirectUri,
-      postLogoutRedirectUri: postLogoutRedirectUri,
-    ) = _computeUris();
 
     // Use static client ID pointing to our Public Client Identifier Document
     final clientCredentials = OidcClientAuthentication.none(
@@ -73,53 +209,93 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
     _log.info('DPoP RSA key pair generated');
 
     _log.info('Using Public Client Identifier: ${AppConfig.clientId}');
+    final hooks = _settings.hooks ?? OidcUserManagerHooks();
+    final dpopHookTokenHook = OidcHook<OidcTokenHookRequest, OidcTokenResponse>(
+      modifyRequest: (request) {
+        ///Generate DPoP token using the RSA private key
+        String dPopToken = _genDpopToken(
+          request.tokenEndpoint.toString(),
+          "POST",
+        );
 
+        request.headers!['DPoP'] = dPopToken;
+
+        return Future.value(request);
+      },
+    );
+    hooks.token = OidcHookGroup(
+      hooks: [if (hooks.token != null) hooks.token!, dpopHookTokenHook],
+      executionHook:
+          (hooks.token
+              is OidcExecutionHookMixin<
+                OidcTokenHookRequest,
+                OidcTokenResponse
+              >)
+          ? hooks.token
+                as OidcExecutionHookMixin<
+                  OidcTokenHookRequest,
+                  OidcTokenResponse
+                >
+          : dpopHookTokenHook,
+    );
     _manager = OidcUserManager.lazy(
       discoveryDocumentUri: wellKnownUri,
       clientCredentials: clientCredentials,
-      store: OidcDefaultStore(),
+      store: store,
       settings: OidcUserManagerSettings(
-        // FIXME: enable strict jwt verification?
-        //strictJwtVerification: true,
-        scope: {'openid', ...scopes, 'webid'}.toList(),
-        frontChannelLogoutUri: frontChannelLogoutUri,
-        redirectUri: redirectUri,
-        postLogoutRedirectUri: postLogoutRedirectUri,
-        hooks: OidcUserManagerHooks(
-          token: OidcHook(
-            modifyRequest: (request) {
-              ///Generate DPoP token using the RSA private key
-              String dPopToken = _genDpopToken(
-                request.tokenEndpoint.toString(),
-                "POST",
-              );
-
-              request.headers!['DPoP'] = dPopToken;
-
-              return Future.value(request);
-            },
-          ),
-        ),
+        strictJwtVerification: _settings.strictJwtVerification,
+        scope: {
+          // we are more aggressive with our scopes - those scopes simply
+          // are needed for solid-oidc.
+          ...SolidOidcUserManagerSettings.defaultScopes,
+          ..._settings.extraScopes,
+        }.toList(),
+        frontChannelLogoutUri: _settings.frontChannelLogoutUri,
+        redirectUri: _settings.redirectUri,
+        postLogoutRedirectUri: _settings.postLogoutRedirectUri,
+        hooks: hooks,
+        acrValues: _settings.acrValues,
+        display: _settings.display,
+        expiryTolerance: _settings.expiryTolerance,
+        extraAuthenticationParameters: _settings.extraAuthenticationParameters,
+        extraTokenHeaders: _settings.extraTokenHeaders,
+        extraTokenParameters: _settings.extraTokenParameters,
+        uiLocales: _settings.uiLocales,
+        prompt: _settings.prompt,
+        maxAge: _settings.maxAge,
+        extraRevocationHeaders: _settings.extraRevocationHeaders,
+        extraRevocationParameters: _settings.extraRevocationParameters,
+        options: _settings.options,
+        frontChannelRequestListeningOptions:
+            _settings.frontChannelRequestListeningOptions,
+        refreshBefore: _settings.refreshBefore,
+        getExpiresIn: _settings.getExpiresIn,
+        sessionManagementSettings: _settings.sessionManagementSettings,
+        getIdToken: _settings.getIdToken,
+        supportOfflineAuth: _settings.supportOfflineAuth,
+        userInfoSettings: _settings.userInfoSettings,
       ),
+      keyStore: _keyStore,
+      id: _id,
+      httpClient: _httpClient,
     );
 
     await _manager!.init();
+  }
+
+  Future<({OidcUser oidcUser, String webId})?>
+  loginAuthorizationCodeFlow() async {
     final oidcUser = await _manager!.loginAuthorizationCodeFlow();
-    _log.info('Claims: ${oidcUser?.aggregatedClaims}');
-    _log.info('Attributes: ${oidcUser?.attributes}');
-    _log.info('User Info: ${oidcUser?.userInfo}');
     if (oidcUser == null) {
       throw Exception('OIDC authentication failed: no user returned');
     }
-
-    _log.info('OIDC User authenticated: ${oidcUser.uid ?? 'unknown'}');
 
     // Extract WebID from the OIDC token using the Solid-OIDC spec methods
     final webId = _extractWebIdFromOidcUser(oidcUser);
 
     // FIXME: extra security check: retrieve the profile and ensure that the
     // issuer really is allowed by this webID
-    return AuthResponse(webId: webId);
+    return (oidcUser: oidcUser, webId: webId);
   }
 
   String _genDpopToken(String url, String method) {
@@ -133,7 +309,6 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
     return solid_auth.genDpopToken(url, rsaKeyPair, publicKeyJwk, method);
   }
 
-  @override
   DPoP genDpopToken(String url, String method) {
     if (_manager?.currentUser?.token.accessToken == null) {
       throw Exception('No access token available for DPoP generation');
@@ -147,19 +322,6 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
     return DPoP(dpopToken: dpopToken, accessToken: accessToken);
   }
 
-  @override
-  Future<String> getIssuer(String input) async {
-    try {
-      final profile = await _webIdProfileLoader.load(input);
-      return profile.issuers.first;
-    } catch (e) {
-      // apparently not a WebID, return the input as is - its probably the issuer URL
-      _log.info('Input is not a WebID, returning as issuer URI: $input');
-      return input;
-    }
-  }
-
-  @override
   Future<bool> logout() async {
     await _manager?.logout();
     await _manager?.dispose();
@@ -217,5 +379,112 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
     } catch (e) {
       return false;
     }
+  }
+}
+
+class SolidAuthenticationOidc implements SolidAuthenticationBackend {
+  SolidOidcUserManager? _manager;
+  final WebIdProfileLoader? _webIdProfileLoader;
+
+  SolidAuthenticationOidc({WebIdProfileLoader? webIdProfileLoader})
+    : _webIdProfileLoader = webIdProfileLoader;
+
+  ({Uri frontChannelLogoutUri, Uri redirectUri, Uri postLogoutRedirectUri})
+  _computeUris() {
+    if (kIsWeb) {
+      // Web platform uses HTML redirect page
+      final htmlPageLink = AppConfig.getWebRedirectUrl();
+
+      return (
+        redirectUri: htmlPageLink,
+        postLogoutRedirectUri: htmlPageLink,
+        frontChannelLogoutUri: htmlPageLink.replace(
+          queryParameters: {
+            ...htmlPageLink.queryParameters,
+            'requestType': 'front-channel-logout',
+          },
+        ),
+      );
+    }
+    return (
+      redirectUri: Uri.parse('${AppConfig.urlScheme}://redirect'),
+      postLogoutRedirectUri: Uri.parse('${AppConfig.urlScheme}://logout'),
+      frontChannelLogoutUri: Uri.parse('${AppConfig.urlScheme}://logout'),
+    );
+  }
+
+  @override
+  Future<AuthResponse> authenticate(
+    String webIdOrIssuerUri,
+    List<String> scopes,
+    BuildContext context,
+  ) async {
+    if (_manager != null) {
+      await logout();
+    }
+
+    final (
+      frontChannelLogoutUri: frontChannelLogoutUri,
+      redirectUri: redirectUri,
+      postLogoutRedirectUri: postLogoutRedirectUri,
+    ) = _computeUris();
+
+    _manager = SolidOidcUserManager(
+      webIdOrIssuer: webIdOrIssuerUri,
+      store: OidcDefaultStore(),
+      settings: SolidOidcUserManagerSettings(
+        // FIXME enable strict jwt verification?
+        //strictJwtVerification: true,
+        extraScopes: scopes,
+        frontChannelLogoutUri: frontChannelLogoutUri,
+        redirectUri: redirectUri,
+        postLogoutRedirectUri: postLogoutRedirectUri,
+        getIssuer: (webIdOrIssuer) async {
+          // Use the WebIdProfileLoader to resolve the issuer URI
+          if (_webIdProfileLoader != null) {
+            try {
+              final webIdProfile = await _webIdProfileLoader.load(
+                webIdOrIssuer,
+              );
+              return Uri.parse(
+                webIdProfile.issuers.firstOrNull ?? webIdOrIssuer,
+              );
+            } catch (e) {
+              _log.fine('Failed to load WebID profile for $webIdOrIssuer: $e');
+            }
+          }
+          return Uri.parse(webIdOrIssuer);
+        },
+      ),
+    );
+
+    await _manager!.init();
+    final authResult = await _manager!.loginAuthorizationCodeFlow();
+    switch (authResult) {
+      case (oidcUser: var oidcUser, webId: var webId):
+        //_log.info('Claims: ${oidcUser.aggregatedClaims}');
+        //_log.info('Attributes: ${oidcUser.attributes}');
+        //_log.info('User Info: ${oidcUser.userInfo}');
+
+        _log.info(
+          'OIDC User authenticated: ${oidcUser.uid ?? 'unknown'} for webId: $webId',
+        );
+
+        return AuthResponse(webId: webId);
+      case null:
+        throw Exception('OIDC authentication failed: no user returned');
+    }
+  }
+
+  @override
+  DPoP genDpopToken(String url, String method) {
+    return _manager!.genDpopToken(url, method);
+  }
+
+  @override
+  Future<bool> logout() async {
+    final r = await _manager?.logout();
+    _manager = null;
+    return r ?? true;
   }
 }

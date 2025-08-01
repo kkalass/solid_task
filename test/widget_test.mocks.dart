@@ -4,14 +4,14 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i10;
-import 'dart:convert' as _i14;
+import 'dart:convert' as _i13;
 import 'dart:typed_data' as _i15;
 
 import 'package:http/http.dart' as _i7;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i11;
+import 'package:mockito/src/dummies.dart' as _i14;
 import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart'
-    as _i12;
+    as _i11;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
     as _i9;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart'
@@ -22,7 +22,7 @@ import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authenticati
     as _i3;
 import 'package:solid_task/models/item.dart' as _i4;
 import 'package:solid_task/services/logger_service.dart' as _i6;
-import 'package:solid_task/services/repository/item_repository.dart' as _i13;
+import 'package:solid_task/services/repository/item_repository.dart' as _i12;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -134,30 +134,15 @@ class MockSolidAuthOperations<C> extends _i1.Mock
   }
 
   @override
-  _i10.Future<String> getIssuer(String? input) => (super.noSuchMethod(
-        Invocation.method(
-          #getIssuer,
-          [input],
-        ),
-        returnValue: _i10.Future<String>.value(_i11.dummyValue<String>(
-          this,
-          Invocation.method(
-            #getIssuer,
-            [input],
-          ),
-        )),
-      ) as _i10.Future<String>);
-
-  @override
   _i10.Future<_i2.AuthResult> authenticate(
-    String? issuerUri,
+    String? webIdOrIssuerUri,
     C? context,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
           #authenticate,
           [
-            issuerUri,
+            webIdOrIssuerUri,
             context,
           ],
         ),
@@ -166,7 +151,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
           Invocation.method(
             #authenticate,
             [
-              issuerUri,
+              webIdOrIssuerUri,
               context,
             ],
           ),
@@ -222,7 +207,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockAuthStateChangeProvider extends _i1.Mock
-    implements _i12.AuthStateChangeProvider {
+    implements _i11.AuthStateChangeProvider {
   MockAuthStateChangeProvider() {
     _i1.throwOnMissingStub(this);
   }
@@ -237,7 +222,7 @@ class MockAuthStateChangeProvider extends _i1.Mock
 /// A class which mocks [ItemRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockItemRepository extends _i1.Mock implements _i13.ItemRepository {
+class MockItemRepository extends _i1.Mock implements _i12.ItemRepository {
   MockItemRepository() {
     _i1.throwOnMissingStub(this);
   }
@@ -747,7 +732,7 @@ class MockClient extends _i1.Mock implements _i7.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i14.Encoding? encoding,
+    _i13.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -778,7 +763,7 @@ class MockClient extends _i1.Mock implements _i7.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i14.Encoding? encoding,
+    _i13.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -809,7 +794,7 @@ class MockClient extends _i1.Mock implements _i7.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i14.Encoding? encoding,
+    _i13.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -840,7 +825,7 @@ class MockClient extends _i1.Mock implements _i7.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i14.Encoding? encoding,
+    _i13.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -877,7 +862,7 @@ class MockClient extends _i1.Mock implements _i7.Client {
           [url],
           {#headers: headers},
         ),
-        returnValue: _i10.Future<String>.value(_i11.dummyValue<String>(
+        returnValue: _i10.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #read,

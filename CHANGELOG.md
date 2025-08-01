@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New Client ID service for unique device identification in CRDT operations
 - Support for configurable authentication backends (OIDC/solid-auth)
 - Dedicated Solid profile parser for improved RDF handling
+- Documentation templates for SOLID authentication persistence and OIDC user management
+
+### Changed
+- Authentication interface simplified: `authenticate` method now directly accepts WebID or issuer URI
+- Removed separate `getIssuer` method from authentication interfaces for cleaner API
 
 ### Fixed
 - Authentication backend selection now works correctly based on configuration
