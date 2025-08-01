@@ -439,7 +439,7 @@ class SolidOidcUserManager {
         _rsaInfo = _RsaInfo(
           pubKey: data['pubKey'] as String,
           privKey: data['privKey'] as String,
-          pubKeyJwk: data['pubKeyJwk'] as String,
+          pubKeyJwk: data['pubKeyJwk'],
         );
       }
     } catch (e) {
