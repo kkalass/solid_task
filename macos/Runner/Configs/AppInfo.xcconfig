@@ -8,7 +8,7 @@
 PRODUCT_NAME = solid_task
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.myCrossPlatformApp
+PRODUCT_BUNDLE_IDENTIFIER = de.kalass.solidtask
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2025 com.example. All rights reserved.
