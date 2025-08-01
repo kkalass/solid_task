@@ -1,5 +1,5 @@
+import 'package:solid_auth/solid_auth.dart';
 import 'package:solid_task/ext/solid/auth/models/auth_result.dart';
-import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
 
 /// Interface defining operations for SOLID authentication
 abstract class SolidAuthOperations<C> {

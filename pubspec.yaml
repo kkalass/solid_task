@@ -36,7 +36,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   
   # Solid authentication
-  solid_auth: ^0.1.22
+  solid_auth:
+    git:
+      url: https://github.com/kkalass/solid_auth.git
+      ref: feat/migrate-to-bdaya-oidc-security-fix
+
   url_launcher: ^6.2.5
   http: ^1.2.0
   flutter_secure_storage: '>=9.0.0 <11.0.0'

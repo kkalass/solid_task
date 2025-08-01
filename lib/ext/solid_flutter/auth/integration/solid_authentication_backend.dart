@@ -1,21 +1,10 @@
 import 'package:flutter/widgets.dart';
+import 'package:solid_auth/solid_auth.dart';
 
 class AuthResponse {
   final String webId;
 
   AuthResponse({required this.webId});
-}
-
-class DPoP {
-  final String dpopToken;
-  final String accessToken;
-
-  DPoP({required this.dpopToken, required this.accessToken});
-
-  Map<String, String> httpHeaders() => {
-    'Authorization': 'DPoP $accessToken',
-    'DPoP': dpopToken,
-  };
 }
 
 /// Wrapper for the static methods of the solid_auth package to improve testability.

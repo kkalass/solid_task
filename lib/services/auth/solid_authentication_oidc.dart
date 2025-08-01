@@ -1,13 +1,14 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:logging/logging.dart';
 import 'package:oidc/oidc.dart';
 import 'package:oidc_default_store/oidc_default_store.dart';
+import 'package:solid_auth/solid_auth.dart';
 import 'package:solid_task/config/app_config.dart';
 import 'package:solid_task/ext/solid/pod/profile/web_id_profile_loader.dart';
 import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart';
-import 'package:solid_task/services/auth/solid_oidc_user_manager.dart';
 
 final _log = Logger("solid_authentication_oidc");
 
@@ -149,7 +150,8 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
       throw Exception('OIDC authentication failed: no user returned');
     }
 
-    final (oidcUser: oidcUser, webId: webId) = authResult;
+    final oidcUser = authResult.user;
+    final webId = authResult.webId;
 
     // Persist authentication parameters for session restoration
     await _persistAuthParameters(webIdOrIssuerUri, scopes);
@@ -172,6 +174,7 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
     ) = _computeUris();
 
     var manager = SolidOidcUserManager(
+      clientId: AppConfig.oidcClientId,
       webIdOrIssuer: webIdOrIssuerUri,
       store: _store,
       settings: SolidOidcUserManagerSettings(

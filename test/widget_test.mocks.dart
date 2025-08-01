@@ -10,6 +10,7 @@ import 'dart:typed_data' as _i16;
 import 'package:http/http.dart' as _i7;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i14;
+import 'package:solid_auth/solid_auth.dart' as _i3;
 import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart'
     as _i11;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
@@ -18,8 +19,6 @@ import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart'
     as _i8;
 import 'package:solid_task/ext/solid/auth/models/auth_result.dart' as _i2;
 import 'package:solid_task/ext/solid/sync/sync_service.dart' as _i5;
-import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart'
-    as _i3;
 import 'package:solid_task/models/item.dart' as _i4;
 import 'package:solid_task/services/client_id_service.dart' as _i13;
 import 'package:solid_task/services/logger_service.dart' as _i6;

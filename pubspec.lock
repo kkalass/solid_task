@@ -206,22 +206,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.6"
-  crypto_keys:
-    dependency: transitive
-    description:
-      name: crypto_keys
-      sha256: acc19abf34623d990a0e8aec69463d74a824c31f137128f42e2810befc509ad0
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.0+1"
   crypto_keys_plus:
     dependency: transitive
     description:
       name: crypto_keys_plus
-      sha256: fbebe8a45c68cd3c8b1ad3145172cfa276a30d9bbe9a4bf4cc03efc32b9b7a00
+      sha256: a64dc8b3555e730aa183067fbb666efd9996bc2d0cfda4517c77607d9e2adf91
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "0.5.0"
   csslib:
     dependency: transitive
     description:
@@ -408,10 +400,10 @@ packages:
     dependency: "direct main"
     description:
       name: get_it
-      sha256: f126a3e286b7f5b578bf436d5592968706c4c1de28a228b870ce375d9f743103
+      sha256: e87cd1d108e472a0580348a543a0c49ed3d70c8a5c809c6d418583e595d0a389
       url: "https://pub.dev"
     source: hosted
-    version: "8.0.3"
+    version: "8.1.0"
   glob:
     dependency: transitive
     description:
@@ -505,22 +497,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
-  jose:
-    dependency: transitive
-    description:
-      name: jose
-      sha256: "7955ec5d131960104e81fbf151abacb9d835c16c9e793ed394b2809f28b2198d"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.4"
   jose_plus:
     dependency: transitive
     description:
       name: jose_plus
-      sha256: "9b8af3a752ddd4257f66caa8f7b4d121a7d8b64755007bb2bcd033f599c4637c"
+      sha256: c262694c2f8e74825a70d0b7339c24a285fd8856f9b35b0848aa23fa1d26e724
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.6"
+    version: "0.4.7"
   js:
     dependency: transitive
     description:
@@ -773,22 +757,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.1+14"
-  openidconnect_platform_interface:
-    dependency: transitive
-    description:
-      name: openidconnect_platform_interface
-      sha256: "923907ebf22a9d9ddc4f5df9a13853788c030a0e87deb2e343474a7ab628f0c9"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.17"
-  openidconnect_web:
-    dependency: transitive
-    description:
-      name: openidconnect_web
-      sha256: "0100bbc472724212d135c12ccdd170563ca62a80cb45efbf777a96984bddaed6"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.26"
   package_config:
     dependency: transitive
     description:
@@ -873,10 +841,10 @@ packages:
     dependency: transitive
     description:
       name: pointycastle
-      sha256: "4be0097fcf3fd3e8449e53730c631200ebc7b88016acecab2b0da2f0149222fe"
+      sha256: "92aa3841d083cc4b0f4709b5c74fd6409a3e6ba833ffc7dc6a8fee096366acf5"
       url: "https://pub.dev"
     source: hosted
-    version: "3.9.1"
+    version: "4.0.0"
   pool:
     dependency: transitive
     description:
@@ -909,14 +877,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
-  quiver:
-    dependency: transitive
-    description:
-      name: quiver
-      sha256: ea0b925899e64ecdfbf9c7becb60d5b50e706ade44a85b2363be2a22d88117d2
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.2.2"
   rdf_core:
     dependency: "direct main"
     description:
@@ -1077,10 +1037,11 @@ packages:
   solid_auth:
     dependency: "direct main"
     description:
-      name: solid_auth
-      sha256: "6013c2f68ceb7802c24a30c1ba7c5b463d9d2df2981484344c0c3403cf9dfb27"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: "feat/migrate-to-bdaya-oidc-security-fix"
+      resolved-ref: "8e2c3583e571bb44bd81feba146af83767e29521"
+      url: "https://github.com/kkalass/solid_auth.git"
+    source: git
     version: "0.1.27"
   source_gen:
     dependency: transitive
@@ -1394,22 +1355,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.0.3"
-  x509:
-    dependency: transitive
-    description:
-      name: x509
-      sha256: cbd1a63846884afd273cda247b0365284c8d85a365ca98e110413f93d105b935
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.4+3"
   x509_plus:
     dependency: transitive
     description:
       name: x509_plus
-      sha256: "8b91d07aead69d2644f53cbd1fa1df4413e0874f2622d9a612eb44a43bc80639"
+      sha256: f9f5caade6077c9a605125428d0bf79c002afa35a475d400849adb1a25ebeee6
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.2"
+    version: "0.3.3"
   xdg_directories:
     dependency: transitive
     description:

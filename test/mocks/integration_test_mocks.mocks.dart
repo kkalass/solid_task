@@ -6,6 +6,7 @@
 import 'dart:async' as _i7;
 
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:solid_auth/solid_auth.dart' as _i3;
 import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart'
     as _i8;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
@@ -14,8 +15,6 @@ import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart'
     as _i5;
 import 'package:solid_task/ext/solid/auth/models/auth_result.dart' as _i2;
 import 'package:solid_task/ext/solid/sync/sync_service.dart' as _i4;
-import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart'
-    as _i3;
 import 'package:solid_task/services/logger_service.dart' as _i9;
 
 // ignore_for_file: type=lint

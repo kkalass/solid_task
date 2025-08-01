@@ -15,7 +15,7 @@ class AppConfig {
   static const String urlScheme = 'de.kalass.solidtask';
 
   // Static client ID pointing to our Public Client Identifier Document
-  static const String clientId =
+  static const String oidcClientId =
       'https://kkalass.github.io/solid_task/client-identifier.jsonld';
 
   /// Gets the appropriate web redirect URL based on environment
