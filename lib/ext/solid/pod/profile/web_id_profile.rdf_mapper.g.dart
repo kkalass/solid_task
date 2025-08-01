@@ -21,8 +21,15 @@ import 'package:rdf_vocabularies_core/solid.dart';
 /// This mapper handles serialization and deserialization between Dart objects
 /// and RDF triples for resources of type wip.WebIdProfile.
 class WebIdProfileMapper implements GlobalResourceMapper<wip.WebIdProfile> {
+  final IriTermMapper<String> _issuersMapper;
+  final IriTermMapper<String> _storageMapper;
+
   /// Constructor
-  const WebIdProfileMapper();
+  const WebIdProfileMapper(
+      {IriTermMapper<String> issuersMapper = const IriFullMapper(),
+      IriTermMapper<String> storageMapper = const IriFullMapper()})
+      : _issuersMapper = issuersMapper,
+        _storageMapper = storageMapper;
 
   @override
   IriTerm? get typeIri => FoafPerson.classIri;
@@ -35,11 +42,13 @@ class WebIdProfileMapper implements GlobalResourceMapper<wip.WebIdProfile> {
     final iri = subject.iri;
     final Iterable<String> issuers =
         reader.requireCollection<Iterable<String>, String>(
-            Solid.oidcIssuer, UnorderedItemsMapper.new);
+            Solid.oidcIssuer, UnorderedItemsMapper.new,
+            itemDeserializer: _issuersMapper);
     final Iterable<String> storage = reader.requireCollection<Iterable<String>,
             String>(
         const IriTerm.prevalidated('http://www.w3.org/ns/pim/space#storage'),
-        UnorderedItemsMapper.new);
+        UnorderedItemsMapper.new,
+        itemDeserializer: _storageMapper);
     final String? name = reader.optional(FoafPerson.name);
 
     // Get unmapped triples as the last reader operation for lossless mapping
@@ -60,12 +69,14 @@ class WebIdProfileMapper implements GlobalResourceMapper<wip.WebIdProfile> {
     return context
         .resourceBuilder(subject)
         .addCollection<Iterable<String>, String>(
-            Solid.oidcIssuer, resource.issuers, UnorderedItemsMapper.new)
+            Solid.oidcIssuer, resource.issuers, UnorderedItemsMapper.new,
+            itemSerializer: _issuersMapper)
         .addCollection<Iterable<String>, String>(
             const IriTerm.prevalidated(
                 'http://www.w3.org/ns/pim/space#storage'),
             resource.storage,
-            UnorderedItemsMapper.new)
+            UnorderedItemsMapper.new,
+            itemSerializer: _storageMapper)
         .when(resource.name != null,
             (b) => b.addValue(FoafPerson.name, resource.name))
         .addUnmapped(resource.other)

@@ -1327,6 +1327,16 @@ class MockSyncManager extends _i1.Mock implements _i20.SyncManager {
 class MockSolidAuthenticationBackend extends _i1.Mock
     implements _i5.SolidAuthenticationBackend {
   @override
+  _i10.Future<bool> initialize() => (super.noSuchMethod(
+        Invocation.method(
+          #initialize,
+          [],
+        ),
+        returnValue: _i10.Future<bool>.value(false),
+        returnValueForMissingStub: _i10.Future<bool>.value(false),
+      ) as _i10.Future<bool>);
+
+  @override
   _i10.Future<_i5.AuthResponse> authenticate(
     String? webIdOrIssuerUri,
     List<String>? scopes,

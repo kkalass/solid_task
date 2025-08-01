@@ -26,6 +26,7 @@ class WebIdProfileLoader {
       return _rdfMapper.decodeObject<WebIdProfile>(
         response.body,
         documentUrl: webId,
+        completeness: CompletenessMode.infoOnly,
       );
     }
     throw Exception(

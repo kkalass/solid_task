@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:fast_rsa/fast_rsa.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:oidc/oidc.dart';
@@ -15,6 +16,18 @@ Future<List<Uri>> _getIssuersDefault(String webIdOrIssuer) async {
     // If loading the profile fails, return the input as is
     return [Uri.parse(webIdOrIssuer)];
   }
+}
+
+class _RsaInfo {
+  final String pubKey;
+  final String privKey;
+  final dynamic pubKeyJwk;
+
+  _RsaInfo({
+    required this.pubKey,
+    required this.privKey,
+    required this.pubKeyJwk,
+  });
 }
 
 class SolidOidcUserManagerSettings {
@@ -173,7 +186,9 @@ class SolidOidcUserManager {
   final SolidOidcUserManagerSettings _settings;
 
   // DPoP key pair management - using solid_auth generated keys
-  Map<String, dynamic>? _rsaInfo;
+  _RsaInfo? _rsaInfo;
+
+  String? _currentWebId;
 
   // Storage keys for persisting SOLID-specific data
   static const String _rsaInfoKey = 'solid_rsa_info';
@@ -190,6 +205,10 @@ class SolidOidcUserManager {
        _id = id,
        _keyStore = keyStore,
        _httpClient = httpClient;
+
+  /// The current authenticated user, if any
+  OidcUser? get currentUser => _manager?.currentUser;
+  String? get currentWebId => _currentWebId;
 
   Future<void> init() async {
     if (_manager != null) {
@@ -211,7 +230,12 @@ class SolidOidcUserManager {
     // Generate RSA key pair for DPoP token generation if not already available
     if (_rsaInfo == null) {
       final rsaInfo = await solid_auth.genRsaKeyPair();
-      _rsaInfo = Map<String, dynamic>.from(rsaInfo);
+      final rsa = rsaInfo['rsa'] as KeyPair;
+      _rsaInfo = _RsaInfo(
+        pubKey: rsa.publicKey,
+        privKey: rsa.privateKey,
+        pubKeyJwk: rsaInfo['pubKeyJwk'],
+      );
       await _persistRsaInfo();
       _log.info('DPoP RSA key pair generated and persisted');
     } else {
@@ -291,6 +315,16 @@ class SolidOidcUserManager {
     );
 
     await _manager!.init();
+    if (_manager!.currentUser != null) {
+      _log.info(
+        'SolidOidcUserManager initialized with existing user: ${_manager!.currentUser!.claims.subject}',
+      );
+      // Extract WebID from the OIDC token using the Solid-OIDC spec methods
+      String webId = await _extractAndValidateWebId(_manager!.currentUser!);
+      _currentWebId = webId;
+    } else {
+      _log.info('SolidOidcUserManager initialized without existing user');
+    }
   }
 
   Future<({OidcUser oidcUser, String webId})?>
@@ -301,15 +335,40 @@ class SolidOidcUserManager {
     }
 
     // Extract WebID from the OIDC token using the Solid-OIDC spec methods
+    String webId = await _extractAndValidateWebId(oidcUser);
+    _currentWebId = webId;
+    return (oidcUser: oidcUser, webId: webId);
+  }
+
+  Future<String> _extractAndValidateWebId(OidcUser oidcUser) async {
+    // Extract WebID from the OIDC token using the Solid-OIDC spec methods
     final webId = _extractWebIdFromOidcUser(oidcUser);
 
     // extra security check: retrieve the profile and ensure that the
     // issuer really is allowed by this webID
-    final issuerUris = await _settings.getIssuers(webId);
-    if (!issuerUris.contains(_issuerUri)) {
-      throw Exception('No valid issuer found for WebID: $webId');
+    final issuerUris = (await _settings.getIssuers(
+      webId,
+    )).map(_normalizeUri).toSet();
+    final normalizedIssuerUri = _normalizeUri(_issuerUri!);
+    if (!issuerUris.contains(normalizedIssuerUri)) {
+      throw Exception(
+        'No valid issuer found for WebID: $webId . Expected: $normalizedIssuerUri but got: $issuerUris',
+      );
     }
-    return (oidcUser: oidcUser, webId: webId);
+    return webId;
+  }
+
+  /// Normalizes a URI by removing trailing slashes and converting to lowercase for comparison.
+  Uri _normalizeUri(Uri uri) {
+    final pathWithoutTrailingSlash = uri.path.endsWith('/')
+        ? uri.path.substring(0, uri.path.length - 1)
+        : uri.path;
+
+    return uri.replace(
+      scheme: uri.scheme.toLowerCase(),
+      host: uri.host.toLowerCase(),
+      path: pathWithoutTrailingSlash,
+    );
   }
 
   String _genDpopToken(String url, String method) {
@@ -317,8 +376,8 @@ class SolidOidcUserManager {
       throw Exception('RSA key pair not generated. Call authenticate first.');
     }
 
-    final rsaKeyPair = _rsaInfo!['rsa'];
-    final publicKeyJwk = _rsaInfo!['pubKeyJwk'];
+    final rsaKeyPair = KeyPair(_rsaInfo!.pubKey, _rsaInfo!.privKey);
+    final publicKeyJwk = _rsaInfo!.pubKeyJwk;
 
     return solid_auth.genDpopToken(url, rsaKeyPair, publicKeyJwk, method);
   }
@@ -352,10 +411,16 @@ class SolidOidcUserManager {
   /// Persists the RSA key pair info to the store for session continuity
   Future<void> _persistRsaInfo() async {
     if (_rsaInfo != null) {
+      final serializableData = {
+        'pubKey': _rsaInfo!.pubKey,
+        'privKey': _rsaInfo!.privKey,
+        'pubKeyJwk': _rsaInfo!.pubKeyJwk,
+      };
+
       await store.set(
         OidcStoreNamespace.secureTokens,
         key: _rsaInfoKey,
-        value: jsonEncode(_rsaInfo),
+        value: jsonEncode(serializableData),
         managerId: _id,
       );
     }
@@ -370,7 +435,12 @@ class SolidOidcUserManager {
         managerId: _id,
       );
       if (rsaInfoStr != null) {
-        _rsaInfo = Map<String, dynamic>.from(jsonDecode(rsaInfoStr));
+        final data = Map<String, dynamic>.from(jsonDecode(rsaInfoStr));
+        _rsaInfo = _RsaInfo(
+          pubKey: data['pubKey'] as String,
+          privKey: data['privKey'] as String,
+          pubKeyJwk: data['pubKeyJwk'] as String,
+        );
       }
     } catch (e) {
       _log.warning('Failed to load persisted RSA info: $e');

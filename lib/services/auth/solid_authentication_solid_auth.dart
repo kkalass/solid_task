@@ -7,9 +7,20 @@ import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authenticati
 class SolidAuthWrapperImpl implements SolidAuthenticationBackend {
   final JwtDecoderWrapper _jwtDecoder;
   Map<String, dynamic>? _authData;
+  String? _currentWebId;
 
   SolidAuthWrapperImpl({required JwtDecoderWrapper jwtDecoder})
     : _jwtDecoder = jwtDecoder;
+
+  @override
+  Future<bool> initialize() async {
+    // The solid_auth package doesn't have built-in persistence
+    // This implementation doesn't support session restoration
+    return false;
+  }
+
+  @override
+  String? get currentWebId => _currentWebId;
 
   /// Authenticates the user with the OIDC provider.
   @override
@@ -35,6 +46,7 @@ class SolidAuthWrapperImpl implements SolidAuthenticationBackend {
         ? decodedToken['webid']
         : decodedToken['sub'];
 
+    _currentWebId = webId;
     return Future.value(AuthResponse(webId: webId));
   }
 
@@ -45,6 +57,7 @@ class SolidAuthWrapperImpl implements SolidAuthenticationBackend {
       await solid_auth.logout(_authData!['logoutUrl']);
     }
     _authData = null;
+    _currentWebId = null;
     return true;
   }
 

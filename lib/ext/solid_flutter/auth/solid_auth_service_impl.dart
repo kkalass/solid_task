@@ -74,6 +74,27 @@ class SolidAuthServiceImpl
   // Async initialization
   Future<void> _initialize() async {
     try {
+      // Initialize the authentication backend and check for existing session
+      final hasExistingSession = await _authBackend.initialize();
+
+      if (hasExistingSession) {
+        // Restore session data from the backend
+        _currentWebId = _authBackend.currentWebId;
+
+        if (_currentWebId != null) {
+          // Get pod URL from WebID (this was previously stored in secure storage)
+          _podUrl = await _secureStorage.read(key: _podUrlKey);
+          if (_podUrl == null) {
+            // If pod URL not cached, resolve it
+            _podUrl = await resolvePodUrl(_currentWebId!);
+            await _secureStorage.write(key: _podUrlKey, value: _podUrl);
+          }
+
+          _log.info('Session restored from backend: $_currentWebId');
+        }
+      }
+
+      // Also try to restore any additional session data from secure storage
       await _tryRestoreSession();
       _notifyAuthStateChange();
     } catch (e, stackTrace) {
@@ -197,7 +218,6 @@ class SolidAuthServiceImpl
     BuildContext context,
   ) async {
     try {
-      // Include webid scope for Solid-OIDC authentication
       final List<String> scopes = ['openid', 'offline_access', 'webid'];
 
       final authData = await _authBackend.authenticate(

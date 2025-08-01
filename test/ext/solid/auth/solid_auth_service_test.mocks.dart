@@ -1080,6 +1080,16 @@ class MockJwtDecoderWrapper extends _i1.Mock implements _i11.JwtDecoderWrapper {
 class MockSolidAuthenticationBackend extends _i1.Mock
     implements _i5.SolidAuthenticationBackend {
   @override
+  _i6.Future<bool> initialize() => (super.noSuchMethod(
+        Invocation.method(
+          #initialize,
+          [],
+        ),
+        returnValue: _i6.Future<bool>.value(false),
+        returnValueForMissingStub: _i6.Future<bool>.value(false),
+      ) as _i6.Future<bool>);
+
+  @override
   _i6.Future<_i5.AuthResponse> authenticate(
     String? webIdOrIssuerUri,
     List<String>? scopes,
