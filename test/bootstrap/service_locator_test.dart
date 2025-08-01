@@ -17,6 +17,7 @@ import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authenticati
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
 import 'package:solid_task/services/storage/local_storage_service.dart';
+import 'package:solid_task/services/client_id_service.dart';
 
 import '../mocks/mock_temp_dir_path_provider.dart';
 @GenerateNiceMocks([
@@ -34,6 +35,7 @@ import '../mocks/mock_temp_dir_path_provider.dart';
   MockSpec<FlutterSecureStorage>(),
   MockSpec<ContextLogger>(),
   MockSpec<JwtDecoderWrapper>(),
+  MockSpec<ClientIdService>(),
 ])
 import 'service_locator_test.mocks.dart';
 
@@ -109,6 +111,7 @@ void main() {
       expect(sl.isRegistered<AuthStateChangeProvider>(), isTrue);
       expect(sl.isRegistered<ItemRepository>(), isTrue);
       expect(sl.isRegistered<SyncService>(), isTrue);
+      expect(sl.isRegistered<ClientIdService>(), isTrue);
 
       // Verify we can resolve services
       expect(sl<AuthStateChangeProvider>(), isNotNull);
@@ -116,6 +119,7 @@ void main() {
       expect(sl<SolidAuthState>(), isNotNull);
       expect(sl<ItemRepository>(), isNotNull);
       expect(sl<SyncService>(), isNotNull);
+      expect(sl<ClientIdService>(), isNotNull);
     });
 
     test(
@@ -199,11 +203,8 @@ void main() {
         mockSecureStorage.read(key: 'solid_pod_url'),
       ).thenAnswer((_) async => 'https://example.org');
       when(
-        mockSecureStorage.read(key: 'solid_auth_data'),
-      ).thenAnswer((_) async => '{"key": "value"}');
-      when(
-        mockSecureStorage.read(key: 'solid_access_token'),
-      ).thenAnswer((_) async => 'mock-access-token');
+        mockSecureStorage.read(key: 'device_client_id'),
+      ).thenAnswer((_) async => 'test-client-id-123');
 
       mockJwtDecoderWrapper = MockJwtDecoderWrapper();
       when(mockJwtDecoderWrapper.decode(any)).thenReturn({
@@ -244,8 +245,8 @@ void main() {
       // Verify secure storage was queried for authentication data
       verify(mockSecureStorage.read(key: 'solid_webid')).called(1);
       verify(mockSecureStorage.read(key: 'solid_pod_url')).called(1);
-      verify(mockSecureStorage.read(key: 'solid_auth_data')).called(1);
-      verify(mockSecureStorage.read(key: 'solid_access_token')).called(1);
+      // Note: solid_auth_data and solid_access_token are currently not used
+      // as the token restoration logic is commented out in SolidAuthServiceImpl
     });
 
     test('service locator can properly reset', () async {

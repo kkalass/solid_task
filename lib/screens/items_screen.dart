@@ -8,6 +8,7 @@ import '../bootstrap/service_locator.dart';
 import '../core/utils/date_formatter.dart';
 import '../models/item.dart';
 import '../screens/login_page.dart';
+import '../services/client_id_service.dart';
 
 import '../services/repository/item_repository.dart';
 import '../ext/solid/sync/sync_manager.dart';
@@ -25,6 +26,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
   final _authOperations = sl<SolidAuthOperations>();
   final _repository = sl<ItemRepository>();
   final _syncManager = sl<SyncManager>();
+  final _clientIdService = sl<ClientIdService>();
 
   bool get _isConnectedToSolid => _authState.isAuthenticated;
 
@@ -71,16 +73,15 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
   Future<void> _addItem(String text) async {
     if (text.isEmpty) return;
-    // FIXME KK - the local fallback seems wrong to me. Actually, this is probably connected to correct implementation of CRDT. I believe, that we should have a device specific identifier here - neither local nor webId seem to be correct.
-    await _repository.createItem(
-      text,
-      _authState.currentUser?.webId ?? 'local',
-    );
+    // Use the device-specific client ID for CRDT synchronization
+    final clientId = await _clientIdService.getClientId();
+    await _repository.createItem(text, clientId);
     _textController.clear();
   }
 
   Future<void> _deleteItem(String id) async {
-    await _repository.deleteItem(id, _authState.currentUser?.webId ?? 'local');
+    final clientId = await _clientIdService.getClientId();
+    await _repository.deleteItem(id, clientId);
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:solid_task/bootstrap/extensions/auth_services_extension.dart';
+import 'package:solid_task/bootstrap/extensions/client_id_services_extension.dart';
 import 'package:solid_task/bootstrap/extensions/core_services_extension.dart';
 import 'package:solid_task/bootstrap/extensions/repository_services_extension.dart';
 import 'package:solid_task/bootstrap/extensions/storage_services_extension.dart';
@@ -9,6 +10,7 @@ import 'package:solid_task/bootstrap/service_locator_builder.dart';
 import 'package:solid_task/bootstrap/extensions/rdf_mapping_service_locator_extension.dart';
 
 export 'package:solid_task/bootstrap/extensions/auth_services_extension.dart';
+export 'package:solid_task/bootstrap/extensions/client_id_services_extension.dart';
 export 'package:solid_task/bootstrap/extensions/core_services_extension.dart';
 export 'package:solid_task/bootstrap/extensions/repository_services_extension.dart';
 export 'package:solid_task/bootstrap/extensions/storage_services_extension.dart';
@@ -30,6 +32,9 @@ Future<void> initServiceLocator({
   // !!! START ACTIVATE EXTENSIONS
   // First register the most basic services (synchronous registrations)
   builder.registerCoreServices(sl);
+
+  // Register client ID service early - depends on secure storage from core services
+  builder.registerClientIdServices(sl);
 
   // Then register storage - depends on logger from core services
   builder.registerStorageServices(sl);

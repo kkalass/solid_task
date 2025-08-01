@@ -102,11 +102,11 @@ class SolidSyncService implements SyncService {
       for (final entry in triplesByStorageIri.entries) {
         try {
           final fileIri = entry.key;
-          final fileUrl = fileIri.iri;
+          final fileUrl = Uri.parse(fileIri.iri);
           final triplesOfFile = entry.value;
 
           final codec = _rdfCore.codec(
-            contentType: getContentTypeForFile(fileUrl),
+            contentType: getContentTypeForFile(fileUrl.toString()),
           );
 
           final turtle = codec.encode(
@@ -115,26 +115,29 @@ class SolidSyncService implements SyncService {
           );
 
           // Generate DPoP token for the request
-          final dpop = _solidAuthOperations.generateDpopToken(fileUrl, 'PUT');
-
+          final dpop = _solidAuthOperations.generateDpopToken(
+            fileUrl.toString(),
+            'PUT',
+          );
+          final headers = {
+            'Accept': '*/*',
+            'Connection': 'keep-alive',
+            'Content-Type': 'text/turtle',
+            ...dpop.httpHeaders(),
+          };
           // Send data to pod
           final response = await _client.put(
-            Uri.parse(fileUrl),
-            headers: {
-              'Accept': '*/*',
-              'Connection': 'keep-alive',
-              'Content-Type': 'text/turtle',
-              ...dpop.httpHeaders(),
-            },
+            fileUrl,
+            headers: headers,
             body: turtle,
           );
 
-          if (response.statusCode != 200 && response.statusCode != 201) {
-            _log.warning(
-              'Failed to sync file $fileUrl to pod: ${response.statusCode} - ${response.body}',
-            );
-          } else {
+          if (response.statusCode >= 200 && response.statusCode < 300) {
             uploadedCount++;
+          } else {
+            _log.warning(
+              'Failed to sync file $fileUrl to pod with headers $headers  : ${response.statusCode} - ${response.body} - ${response.headers}',
+            );
           }
         } catch (e, stackTrace) {
           _log.severe(
