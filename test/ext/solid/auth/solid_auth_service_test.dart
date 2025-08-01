@@ -170,24 +170,12 @@ void main() {
       );
       expect(result.userIdentity?.podUrl, 'https://mock-pod.example/storage/');
 
-      // Verify secure storage calls
+      // Verify secure storage calls - only webid and pod_url are stored now
       verify(
         mockSecureStorage.write(key: 'solid_webid', value: anyNamed("value")),
       ).called(1);
       verify(
         mockSecureStorage.write(key: 'solid_pod_url', value: anyNamed("value")),
-      ).called(1);
-      verify(
-        mockSecureStorage.write(
-          key: 'solid_access_token',
-          value: anyNamed("value"),
-        ),
-      ).called(1);
-      verify(
-        mockSecureStorage.write(
-          key: 'solid_auth_data',
-          value: anyNamed("value"),
-        ),
       ).called(1);
     });
 
@@ -311,12 +299,9 @@ void main() {
       // Wait for the _tryRestoreSession to complete
       //await authService.restoreSessionForTest();
 
-      // Verify the service initialized correctly
+      // Verify the service initialized correctly - only webid and pod_url are read now
       verify(mockSecureStorage.read(key: 'solid_webid')).called(1);
       verify(mockSecureStorage.read(key: 'solid_pod_url')).called(1);
-      verify(mockSecureStorage.read(key: 'solid_access_token')).called(1);
-      verify(mockSecureStorage.read(key: 'solid_auth_data')).called(1);
-      verify(mockJwtDecoder.decode('mock-token')).called(1);
 
       expect(authService.isAuthenticated, isTrue);
       expect(

@@ -21,6 +21,7 @@ import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/services/repository/item_repository.dart';
+import 'package:solid_task/services/client_id_service.dart';
 import 'package:solid_task/ext/solid/sync/sync_service.dart';
 
 import 'mocks/mock_temp_dir_path_provider.dart';
@@ -33,6 +34,7 @@ import 'mocks/mock_temp_dir_path_provider.dart';
   SyncService,
   LoggerService,
   ContextLogger,
+  ClientIdService,
   http.Client,
 ])
 import 'widget_test.mocks.dart';
@@ -45,6 +47,7 @@ void main() {
   late MockSyncService mockSyncService;
   late MockLoggerService mockLoggerService;
   late MockContextLogger mockContextLogger;
+  late MockClientIdService mockClientIdService;
   late MockTempDirPathProvider mockPathProvider;
   late MockClient mockHttpClient;
   late Widget capturedWidget;
@@ -72,6 +75,7 @@ void main() {
     mockSyncService = MockSyncService();
     mockLoggerService = MockLoggerService();
     mockContextLogger = MockContextLogger();
+    mockClientIdService = MockClientIdService();
     mockHttpClient = MockClient();
 
     behaviorSubject = BehaviorSubject<List<Item>>.seeded([]);
@@ -89,6 +93,11 @@ void main() {
     when(
       mockSyncService.fullSync(),
     ).thenAnswer((_) async => SyncResult(success: true));
+
+    // Mock ClientIdService to return a test client ID
+    when(
+      mockClientIdService.getClientId(),
+    ).thenAnswer((_) async => 'test-client-id');
 
     // Capture error logs for debugging
     when(mockLoggerService.error(any, any, any)).thenAnswer((invocation) {
@@ -111,7 +120,8 @@ void main() {
               (_) => mockAuthStateChangeProvider,
             )
             .withItemRepositoryFactory((_) => mockItemRepository)
-            .withSyncServiceFactory((_) => mockSyncService);
+            .withSyncServiceFactory((_) => mockSyncService)
+            .withClientIdServiceFactory((_) => mockClientIdService);
       },
     );
   });

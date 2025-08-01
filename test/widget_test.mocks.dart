@@ -4,8 +4,8 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i10;
-import 'dart:convert' as _i13;
-import 'dart:typed_data' as _i15;
+import 'dart:convert' as _i15;
+import 'dart:typed_data' as _i16;
 
 import 'package:http/http.dart' as _i7;
 import 'package:mockito/mockito.dart' as _i1;
@@ -21,6 +21,7 @@ import 'package:solid_task/ext/solid/sync/sync_service.dart' as _i5;
 import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart'
     as _i3;
 import 'package:solid_task/models/item.dart' as _i4;
+import 'package:solid_task/services/client_id_service.dart' as _i13;
 import 'package:solid_task/services/logger_service.dart' as _i6;
 import 'package:solid_task/services/repository/item_repository.dart' as _i12;
 
@@ -677,6 +678,45 @@ class MockContextLogger extends _i1.Mock implements _i6.ContextLogger {
       );
 }
 
+/// A class which mocks [ClientIdService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockClientIdService extends _i1.Mock implements _i13.ClientIdService {
+  MockClientIdService() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i10.Future<String> getClientId() => (super.noSuchMethod(
+        Invocation.method(
+          #getClientId,
+          [],
+        ),
+        returnValue: _i10.Future<String>.value(_i14.dummyValue<String>(
+          this,
+          Invocation.method(
+            #getClientId,
+            [],
+          ),
+        )),
+      ) as _i10.Future<String>);
+
+  @override
+  _i10.Future<String> regenerateClientId() => (super.noSuchMethod(
+        Invocation.method(
+          #regenerateClientId,
+          [],
+        ),
+        returnValue: _i10.Future<String>.value(_i14.dummyValue<String>(
+          this,
+          Invocation.method(
+            #regenerateClientId,
+            [],
+          ),
+        )),
+      ) as _i10.Future<String>);
+}
+
 /// A class which mocks [Client].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -732,7 +772,7 @@ class MockClient extends _i1.Mock implements _i7.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i13.Encoding? encoding,
+    _i15.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -763,7 +803,7 @@ class MockClient extends _i1.Mock implements _i7.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i13.Encoding? encoding,
+    _i15.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -794,7 +834,7 @@ class MockClient extends _i1.Mock implements _i7.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i13.Encoding? encoding,
+    _i15.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -825,7 +865,7 @@ class MockClient extends _i1.Mock implements _i7.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i13.Encoding? encoding,
+    _i15.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -873,7 +913,7 @@ class MockClient extends _i1.Mock implements _i7.Client {
       ) as _i10.Future<String>);
 
   @override
-  _i10.Future<_i15.Uint8List> readBytes(
+  _i10.Future<_i16.Uint8List> readBytes(
     Uri? url, {
     Map<String, String>? headers,
   }) =>
@@ -883,8 +923,8 @@ class MockClient extends _i1.Mock implements _i7.Client {
           [url],
           {#headers: headers},
         ),
-        returnValue: _i10.Future<_i15.Uint8List>.value(_i15.Uint8List(0)),
-      ) as _i10.Future<_i15.Uint8List>);
+        returnValue: _i10.Future<_i16.Uint8List>.value(_i16.Uint8List(0)),
+      ) as _i10.Future<_i16.Uint8List>);
 
   @override
   _i10.Future<_i7.StreamedResponse> send(_i7.BaseRequest? request) =>
