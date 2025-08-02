@@ -210,10 +210,10 @@ packages:
     dependency: transitive
     description:
       name: crypto_keys_plus
-      sha256: a64dc8b3555e730aa183067fbb666efd9996bc2d0cfda4517c77607d9e2adf91
+      sha256: fbebe8a45c68cd3c8b1ad3145172cfa276a30d9bbe9a4bf4cc03efc32b9b7a00
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.0"
+    version: "0.4.0"
   csslib:
     dependency: transitive
     description:
@@ -501,10 +501,10 @@ packages:
     dependency: transitive
     description:
       name: jose_plus
-      sha256: c262694c2f8e74825a70d0b7339c24a285fd8856f9b35b0848aa23fa1d26e724
+      sha256: "9b8af3a752ddd4257f66caa8f7b4d121a7d8b64755007bb2bcd033f599c4637c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.7"
+    version: "0.4.6"
   js:
     dependency: transitive
     description:
@@ -841,10 +841,10 @@ packages:
     dependency: transitive
     description:
       name: pointycastle
-      sha256: "92aa3841d083cc4b0f4709b5c74fd6409a3e6ba833ffc7dc6a8fee096366acf5"
+      sha256: "4be0097fcf3fd3e8449e53730c631200ebc7b88016acecab2b0da2f0149222fe"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.0"
+    version: "3.9.1"
   pool:
     dependency: transitive
     description:
@@ -1039,10 +1039,10 @@ packages:
     description:
       path: "."
       ref: "feat/migrate-to-bdaya-oidc-security-fix"
-      resolved-ref: "8e2c3583e571bb44bd81feba146af83767e29521"
+      resolved-ref: "123ac8e3a668d728da08f553e406e84b373f2343"
       url: "https://github.com/kkalass/solid_auth.git"
     source: git
-    version: "0.1.27"
+    version: "0.2.0-dev.1"
   source_gen:
     dependency: transitive
     description:
@@ -1359,10 +1359,10 @@ packages:
     dependency: transitive
     description:
       name: x509_plus
-      sha256: f9f5caade6077c9a605125428d0bf79c002afa35a475d400849adb1a25ebeee6
+      sha256: "8b91d07aead69d2644f53cbd1fa1df4413e0874f2622d9a612eb44a43bc80639"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.3"
+    version: "0.3.2"
   xdg_directories:
     dependency: transitive
     description:
