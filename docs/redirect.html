@@ -28,6 +28,7 @@
         function handleRedirect() {
             // For supported browsers: https://caniuse.com/broadcastchannel
             var bc = new BroadcastChannel(redirectBroadcastChannel);
+            console.log('sending broadcast message ' + window.location.toString() + ' to channel ' + redirectBroadcastChannel);
             bc.postMessage(window.location.toString());
             bc.close();
             //The rest of this function handles same page redirects
