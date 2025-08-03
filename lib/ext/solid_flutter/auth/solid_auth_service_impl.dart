@@ -24,6 +24,9 @@ class SolidAuthServiceImpl
   final FlutterSecureStorage _secureStorage;
   final SolidAuthenticationBackend _authBackend;
   final SolidProfileParser _profileParser;
+  late final ValueNotifier<bool> _authStateChanges;
+  late final Future<void> Function() _stateChangeCallback;
+  bool _skipStateChangeCallback = false;
 
   // Auth state
   String? _podUrl;
@@ -44,8 +47,7 @@ class SolidAuthServiceImpl
   }
 
   @override
-  ValueListenable<bool> get authStateChanges =>
-      _authBackend.isAuthenticatedNotifier;
+  ValueListenable<bool> get authStateChanges => _authStateChanges;
 
   // Private constructor with dependency injection
   SolidAuthServiceImpl._({
@@ -58,6 +60,29 @@ class SolidAuthServiceImpl
        _authBackend = authBackend,
        _profileParser = profileParser ?? DefaultSolidProfileParser() {
     _initializationFuture = _initialize();
+    _authStateChanges = ValueNotifier(
+      authBackend.isAuthenticatedNotifier.value,
+    );
+    _stateChangeCallback = () async {
+      if (_skipStateChangeCallback) return;
+      final currentWebId = _authBackend.currentWebId;
+      if (currentWebId != null) {
+        await _resolveAndStorePodUrl(currentWebId);
+      } else {
+        _podUrl = null;
+        await _secureStorage.delete(key: _podUrlKey);
+      }
+      _authStateChanges.value = authBackend.isAuthenticatedNotifier.value;
+    };
+    authBackend.isAuthenticatedNotifier.addListener(_stateChangeCallback);
+  }
+
+  Future<void> _resolveAndStorePodUrl(String currentWebId) async {
+    _podUrl = await resolvePodUrl(currentWebId);
+    if (_podUrl == null) {
+      throw Exception('Failed to resolve pod URL for WebID: $currentWebId');
+    }
+    await _secureStorage.write(key: _podUrlKey, value: _podUrl);
   }
 
   // Async initialization
@@ -75,8 +100,7 @@ class SolidAuthServiceImpl
           _podUrl = await _secureStorage.read(key: _podUrlKey);
           if (_podUrl == null) {
             // If pod URL not cached, resolve it
-            _podUrl = await resolvePodUrl(currentWebId);
-            await _secureStorage.write(key: _podUrlKey, value: _podUrl);
+            await _resolveAndStorePodUrl(currentWebId);
           }
 
           _log.info('Session restored from backend: $currentWebId');
@@ -124,17 +148,27 @@ class SolidAuthServiceImpl
     try {
       final List<String> scopes = ['openid', 'offline_access', 'webid'];
 
+      _podUrl = null;
+
+      // we need to skip the state change callback during authentication
+      // and then explicitly call it after authentication so that we can wait
+      // for the pod URL resolution to complete before returning
+      _skipStateChangeCallback = true;
       final authData = await _authBackend.authenticate(
         webIdOrIssuerUri,
         scopes,
         context,
       );
+      _skipStateChangeCallback = false;
+      await _stateChangeCallback();
 
       final webId = authData.webId;
 
-      // Get pod URL from WebID
-      _podUrl = await resolvePodUrl(webId);
-      await _secureStorage.write(key: _podUrlKey, value: _podUrl);
+      // The Listener should already have been triggered by the authentication backend
+      // and set the _podUrl based on the current WebID.
+      if (_podUrl == null) {
+        throw Exception('Failed to resolve pod URL for WebID: $webId');
+      }
 
       _log.info('Authentication successful: $webId');
 
@@ -191,5 +225,6 @@ class SolidAuthServiceImpl
   /// Disposes resources when the service is no longer needed
   Future<void> dispose() async {
     await _authBackend.dispose();
+    _authBackend.isAuthenticatedNotifier.removeListener(_stateChangeCallback);
   }
 }
