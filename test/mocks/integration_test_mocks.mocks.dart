@@ -3,19 +3,20 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i7;
+import 'dart:async' as _i8;
 
+import 'package:flutter/foundation.dart' as _i4;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:solid_auth/solid_auth.dart' as _i3;
 import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart'
-    as _i8;
+    as _i9;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
-    as _i6;
+    as _i7;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart'
-    as _i5;
+    as _i6;
 import 'package:solid_task/ext/solid/auth/models/auth_result.dart' as _i2;
-import 'package:solid_task/ext/solid/sync/sync_service.dart' as _i4;
-import 'package:solid_task/services/logger_service.dart' as _i9;
+import 'package:solid_task/ext/solid/sync/sync_service.dart' as _i5;
+import 'package:solid_task/services/logger_service.dart' as _i10;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -51,8 +52,19 @@ class _FakeDPoP_1 extends _i1.SmartFake implements _i3.DPoP {
         );
 }
 
-class _FakeSyncResult_2 extends _i1.SmartFake implements _i4.SyncResult {
-  _FakeSyncResult_2(
+class _FakeValueListenable_2<T> extends _i1.SmartFake
+    implements _i4.ValueListenable<T> {
+  _FakeValueListenable_2(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeSyncResult_3 extends _i1.SmartFake implements _i5.SyncResult {
+  _FakeSyncResult_3(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -64,7 +76,7 @@ class _FakeSyncResult_2 extends _i1.SmartFake implements _i4.SyncResult {
 /// A class which mocks [SolidAuthState].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSolidAuthState extends _i1.Mock implements _i5.SolidAuthState {
+class MockSolidAuthState extends _i1.Mock implements _i6.SolidAuthState {
   MockSolidAuthState() {
     _i1.throwOnMissingStub(this);
   }
@@ -80,13 +92,13 @@ class MockSolidAuthState extends _i1.Mock implements _i5.SolidAuthState {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockSolidAuthOperations<C> extends _i1.Mock
-    implements _i6.SolidAuthOperations<C> {
+    implements _i7.SolidAuthOperations<C> {
   MockSolidAuthOperations() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i7.Future<_i2.AuthResult> authenticate(
+  _i8.Future<_i2.AuthResult> authenticate(
     String? webIdOrIssuerUri,
     C? context,
   ) =>
@@ -98,7 +110,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
             context,
           ],
         ),
-        returnValue: _i7.Future<_i2.AuthResult>.value(_FakeAuthResult_0(
+        returnValue: _i8.Future<_i2.AuthResult>.value(_FakeAuthResult_0(
           this,
           Invocation.method(
             #authenticate,
@@ -108,26 +120,26 @@ class MockSolidAuthOperations<C> extends _i1.Mock
             ],
           ),
         )),
-      ) as _i7.Future<_i2.AuthResult>);
+      ) as _i8.Future<_i2.AuthResult>);
 
   @override
-  _i7.Future<void> logout() => (super.noSuchMethod(
+  _i8.Future<void> logout() => (super.noSuchMethod(
         Invocation.method(
           #logout,
           [],
         ),
-        returnValue: _i7.Future<void>.value(),
-        returnValueForMissingStub: _i7.Future<void>.value(),
-      ) as _i7.Future<void>);
+        returnValue: _i8.Future<void>.value(),
+        returnValueForMissingStub: _i8.Future<void>.value(),
+      ) as _i8.Future<void>);
 
   @override
-  _i7.Future<String?> resolvePodUrl(String? webId) => (super.noSuchMethod(
+  _i8.Future<String?> resolvePodUrl(String? webId) => (super.noSuchMethod(
         Invocation.method(
           #resolvePodUrl,
           [webId],
         ),
-        returnValue: _i7.Future<String?>.value(),
-      ) as _i7.Future<String?>);
+        returnValue: _i8.Future<String?>.value(),
+      ) as _i8.Future<String?>);
 
   @override
   _i3.DPoP generateDpopToken(
@@ -159,22 +171,25 @@ class MockSolidAuthOperations<C> extends _i1.Mock
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockAuthStateChangeProvider extends _i1.Mock
-    implements _i8.AuthStateChangeProvider {
+    implements _i9.AuthStateChangeProvider {
   MockAuthStateChangeProvider() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i7.Stream<bool> get authStateChanges => (super.noSuchMethod(
+  _i4.ValueListenable<bool> get authStateChanges => (super.noSuchMethod(
         Invocation.getter(#authStateChanges),
-        returnValue: _i7.Stream<bool>.empty(),
-      ) as _i7.Stream<bool>);
+        returnValue: _FakeValueListenable_2<bool>(
+          this,
+          Invocation.getter(#authStateChanges),
+        ),
+      ) as _i4.ValueListenable<bool>);
 }
 
 /// A class which mocks [SyncService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSyncService extends _i1.Mock implements _i4.SyncService {
+class MockSyncService extends _i1.Mock implements _i5.SyncService {
   MockSyncService() {
     _i1.throwOnMissingStub(this);
   }
@@ -186,49 +201,49 @@ class MockSyncService extends _i1.Mock implements _i4.SyncService {
       ) as bool);
 
   @override
-  _i7.Future<_i4.SyncResult> syncToRemote() => (super.noSuchMethod(
+  _i8.Future<_i5.SyncResult> syncToRemote() => (super.noSuchMethod(
         Invocation.method(
           #syncToRemote,
           [],
         ),
-        returnValue: _i7.Future<_i4.SyncResult>.value(_FakeSyncResult_2(
+        returnValue: _i8.Future<_i5.SyncResult>.value(_FakeSyncResult_3(
           this,
           Invocation.method(
             #syncToRemote,
             [],
           ),
         )),
-      ) as _i7.Future<_i4.SyncResult>);
+      ) as _i8.Future<_i5.SyncResult>);
 
   @override
-  _i7.Future<_i4.SyncResult> syncFromRemote() => (super.noSuchMethod(
+  _i8.Future<_i5.SyncResult> syncFromRemote() => (super.noSuchMethod(
         Invocation.method(
           #syncFromRemote,
           [],
         ),
-        returnValue: _i7.Future<_i4.SyncResult>.value(_FakeSyncResult_2(
+        returnValue: _i8.Future<_i5.SyncResult>.value(_FakeSyncResult_3(
           this,
           Invocation.method(
             #syncFromRemote,
             [],
           ),
         )),
-      ) as _i7.Future<_i4.SyncResult>);
+      ) as _i8.Future<_i5.SyncResult>);
 
   @override
-  _i7.Future<_i4.SyncResult> fullSync() => (super.noSuchMethod(
+  _i8.Future<_i5.SyncResult> fullSync() => (super.noSuchMethod(
         Invocation.method(
           #fullSync,
           [],
         ),
-        returnValue: _i7.Future<_i4.SyncResult>.value(_FakeSyncResult_2(
+        returnValue: _i8.Future<_i5.SyncResult>.value(_FakeSyncResult_3(
           this,
           Invocation.method(
             #fullSync,
             [],
           ),
         )),
-      ) as _i7.Future<_i4.SyncResult>);
+      ) as _i8.Future<_i5.SyncResult>);
 
   @override
   void startPeriodicSync(Duration? interval) => super.noSuchMethod(
@@ -261,7 +276,7 @@ class MockSyncService extends _i1.Mock implements _i4.SyncService {
 /// A class which mocks [ContextLogger].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockContextLogger extends _i1.Mock implements _i9.ContextLogger {
+class MockContextLogger extends _i1.Mock implements _i10.ContextLogger {
   MockContextLogger() {
     _i1.throwOnMissingStub(this);
   }

@@ -29,13 +29,21 @@ extension StorageServiceLocatorBuilderExtension on ServiceLocatorBuilder {
       final config = _configs[this]!;
 
       // Register storage service
-      sl.registerSingletonAsync<LocalStorageService>(() async {
-        final storageServiceFactory = config._storageServiceFactory;
-        if (storageServiceFactory != null) {
-          return storageServiceFactory(sl);
-        }
-        return HiveStorageService.create(loggerService: sl<LoggerService>());
-      });
+      sl.registerSingletonAsync<LocalStorageService>(
+        () async {
+          final storageServiceFactory = config._storageServiceFactory;
+          if (storageServiceFactory != null) {
+            return storageServiceFactory(sl);
+          }
+          return HiveStorageService.create(loggerService: sl<LoggerService>());
+        },
+        dispose: (storage) async {
+          // HiveStorageService has a close() method instead of dispose()
+          if (storage is HiveStorageService) {
+            await storage.close();
+          }
+        },
+      );
 
       // Wait for storage to be ready
       await sl.isReady<LocalStorageService>();

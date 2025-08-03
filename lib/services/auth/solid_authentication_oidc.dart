@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:logging/logging.dart';
 import 'package:oidc/oidc.dart';
@@ -48,6 +49,10 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
   String? get currentWebId => _solidAuth.currentWebId;
 
   @override
+  ValueListenable<bool> get isAuthenticatedNotifier =>
+      _solidAuth.isAuthenticatedNotifier;
+
+  @override
   Future<bool> initialize() async {
     return await _solidAuth.init();
   }
@@ -72,6 +77,12 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
 
   @override
   Future<bool> logout() {
-    return _solidAuth.logout();
+    _solidAuth.logout();
+    return Future.value(true);
+  }
+
+  @override
+  Future<void> dispose() async {
+    await _solidAuth.dispose();
   }
 }

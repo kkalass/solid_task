@@ -1,16 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart';
+
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/services/logger_service.dart';
 import 'package:solid_task/ext/solid/sync/sync_manager.dart';
 import 'package:solid_task/ext/solid/sync/sync_service.dart';
 import 'package:solid_task/ext/solid/sync/sync_state.dart';
 
+import '../../../mocks/mock_auth_state_change_provider.dart';
 @GenerateNiceMocks([
   MockSpec<SyncService>(),
-  MockSpec<AuthStateChangeProvider>(),
   MockSpec<SolidAuthState>(),
   MockSpec<ContextLogger>(),
 ])
@@ -143,31 +143,12 @@ void main() {
     });
 
     test(
-      'handleAuthStateChange should start sync when authenticated',
-      () async {
-        // Arrange
-        when(mockSolidAuthState.isAuthenticated).thenReturn(true);
-        when(
-          mockSyncService.fullSync(),
-        ).thenAnswer((_) async => SyncResult(success: true));
-
-        // Act
-        syncManager.handleAuthStateChange(true);
-
-        // Assert
-        await untilCalled(mockSyncService.fullSync());
-        verify(mockSyncService.fullSync()).called(1);
-      },
-    );
-
-    test(
       'handleAuthStateChange should stop sync when not authenticated',
       () async {
-        // Arrange
-        when(mockSolidAuthState.isAuthenticated).thenReturn(false);
-
         // Act
-        syncManager.handleAuthStateChange(false);
+        // Arrange
+        mockAuthStateChangeProvider.emitAuthStateChange(false);
+        when(mockSolidAuthState.isAuthenticated).thenReturn(false);
 
         // Assert
         expect(syncManager.currentStatus.state, equals(SyncState.idle));

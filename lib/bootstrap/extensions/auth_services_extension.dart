@@ -103,7 +103,7 @@ extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
             secureStorage: sl<FlutterSecureStorage>(),
             solidAuth: sl<SolidAuthenticationBackend>(),
           );
-        });
+        }, dispose: (authService) => authService.dispose());
 
         await sl.isReady<SolidAuthServiceImpl>();
 

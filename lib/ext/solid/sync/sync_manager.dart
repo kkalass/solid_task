@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:logging/logging.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
-
 import 'package:solid_task/ext/solid/sync/sync_service.dart';
 import 'package:solid_task/ext/solid/sync/sync_state.dart';
 import 'package:solid_task/ext/solid/sync/sync_status.dart';
@@ -18,7 +17,7 @@ class SyncManager {
 
   final StreamController<SyncStatus> _syncStatusController =
       StreamController<SyncStatus>.broadcast();
-  StreamSubscription? _authSubscription;
+
   Timer? _periodicSyncTimer;
   Timer? _coalescingTimer;
   bool _isDisposed = false;
@@ -64,17 +63,18 @@ class SyncManager {
   /// Setup listener for authentication state changes
   void _setupAuthListener() {
     // Clean up any existing subscription first
-    _authSubscription?.cancel();
-
-    // Subscribe to auth state changes if the service provides them
-    _authSubscription = _authStateChangeProvider.authStateChanges.listen(
+    _authStateChangeProvider.authStateChanges.removeListener(
       _onAuthStateChanged,
     );
+
+    // Subscribe to auth state changes if the service provides them
+    _authStateChangeProvider.authStateChanges.addListener(_onAuthStateChanged);
     _logger.fine('Subscribed to auth state changes');
   }
 
   /// Handles auth state changes from the auth service
-  void _onAuthStateChanged(bool isAuthenticated) {
+  void _onAuthStateChanged() {
+    final isAuthenticated = _authStateChangeProvider.authStateChanges.value;
     _logger.fine('Auth state changed: isAuthenticated=$isAuthenticated');
     if (isAuthenticated) {
       _performSyncIfAuthenticated(true);
@@ -246,17 +246,13 @@ class SyncManager {
     }
   }
 
-  /// Handle authentication state changes via manual API call
-  /// Only needed when AuthService doesn't support stream of auth state changes
-  void handleAuthStateChange(bool isAuthenticated) {
-    _onAuthStateChanged(isAuthenticated);
-  }
-
   /// Clean up resources
-  void dispose() {
+  Future<void> dispose() async {
     _isDisposed = true;
     _stopPeriodicSync();
-    _authSubscription?.cancel();
+    _authStateChangeProvider.authStateChanges.removeListener(
+      _onAuthStateChanged,
+    );
     _coalescingTimer?.cancel();
     _syncStatusController.close();
     _logger.fine('SyncManager disposed');

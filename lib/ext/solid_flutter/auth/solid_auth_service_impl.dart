@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -29,35 +30,26 @@ class SolidAuthServiceImpl
   final SolidProfileParser _profileParser;
 
   // Auth state
-  String? _currentWebId;
   String? _podUrl;
 
-  // Authentication state stream controller
-  final StreamController<bool> _authStateController =
-      StreamController<bool>.broadcast();
-
   // Storage keys
-  static const String _webIdKey = 'solid_webid';
   static const String _podUrlKey = 'solid_pod_url';
-  /*
-  static const String _accessTokenKey = 'solid_access_token';
-  static const String _authDataKey = 'solid_auth_data';
-  */
 
   // Initialization tracking
   late final Future<void> _initializationFuture;
 
   @override
-  bool get isAuthenticated => _currentWebId != null;
+  bool get isAuthenticated => _authBackend.isAuthenticatedNotifier.value;
 
   @override
   UserIdentity? get currentUser {
     if (!isAuthenticated) return null;
-    return UserIdentity(webId: _currentWebId!, podUrl: _podUrl);
+    return UserIdentity(webId: _authBackend.currentWebId!, podUrl: _podUrl);
   }
 
   @override
-  Stream<bool> get authStateChanges => _authStateController.stream;
+  ValueListenable<bool> get authStateChanges =>
+      _authBackend.isAuthenticatedNotifier;
 
   // Private constructor with dependency injection
   SolidAuthServiceImpl._({
@@ -80,24 +72,20 @@ class SolidAuthServiceImpl
 
       if (hasExistingSession) {
         // Restore session data from the backend
-        _currentWebId = _authBackend.currentWebId;
+        final currentWebId = _authBackend.currentWebId;
 
-        if (_currentWebId != null) {
+        if (currentWebId != null) {
           // Get pod URL from WebID (this was previously stored in secure storage)
           _podUrl = await _secureStorage.read(key: _podUrlKey);
           if (_podUrl == null) {
             // If pod URL not cached, resolve it
-            _podUrl = await resolvePodUrl(_currentWebId!);
+            _podUrl = await resolvePodUrl(currentWebId);
             await _secureStorage.write(key: _podUrlKey, value: _podUrl);
           }
 
-          _log.info('Session restored from backend: $_currentWebId');
+          _log.info('Session restored from backend: $currentWebId');
         }
       }
-
-      // Also try to restore any additional session data from secure storage
-      await _tryRestoreSession();
-      _notifyAuthStateChange();
     } catch (e, stackTrace) {
       _log.severe('Error during initialization', e, stackTrace);
     }
@@ -122,95 +110,14 @@ class SolidAuthServiceImpl
     return service;
   }
 
-  // Session restoration
-  Future<void> _tryRestoreSession() async {
-    try {
-      _currentWebId = await _secureStorage.read(key: _webIdKey);
-      _podUrl = await _secureStorage.read(key: _podUrlKey);
-      /*
-      _accessToken = await _secureStorage.read(key: _accessTokenKey);
-
-      final authDataStr = await _secureStorage.read(key: _authDataKey);
-      if (authDataStr != null) {
-        _authData = json.decode(authDataStr);
-      }
-      
-
-      if (_accessToken != null) {
-        try {
-          _decodedToken = _jwtDecoder.decode(_accessToken!);
-
-          // Validate token expiry
-          if (_decodedToken!.containsKey('exp')) {
-            final expiryTimestamp = _decodedToken!['exp'];
-            if (expiryTimestamp is int) {
-              final expiry = DateTime.fromMillisecondsSinceEpoch(
-                expiryTimestamp * 1000,
-              );
-              if (expiry.isBefore(DateTime.now())) {
-                _log.warning('Token has expired, clearing session');
-                await _clearSession();
-              }
-            }
-          }
-        } catch (e) {
-          _log.warning('Invalid access token, clearing session');
-          await _clearSession();
-        }
-      }
-      */
-      _log.fine('Session restored: ${isAuthenticated ? 'Yes' : 'No'}');
-    } catch (e, stackTrace) {
-      _log.severe('Error restoring session', e, stackTrace);
-      await _clearSession();
-    }
-  }
-
-  // Session storage
-  Future<void> _saveSession() async {
-    try {
-      if (_currentWebId != null) {
-        await _secureStorage.write(key: _webIdKey, value: _currentWebId);
-      }
-      if (_podUrl != null) {
-        await _secureStorage.write(key: _podUrlKey, value: _podUrl);
-      }
-      /*
-      if (_accessToken != null) {
-        await _secureStorage.write(key: _accessTokenKey, value: _accessToken);
-      }
-      if (_authData != null) {
-        await _secureStorage.write(
-          key: _authDataKey,
-          value: json.encode(_authData),
-        );
-      }
-      */
-    } catch (e, stackTrace) {
-      _log.severe('Error saving session', e, stackTrace);
-    }
-  }
-
   // Session cleanup
-  Future<void> _clearSession() async {
+  Future<void> _clearStorage() async {
     try {
-      await _secureStorage.deleteAll();
-      _currentWebId = null;
+      await _secureStorage.delete(key: _podUrlKey);
       _podUrl = null;
-      /*
-      _accessToken = null;
-      _decodedToken = null;
-      _authData = null;
-      */
-      _notifyAuthStateChange();
     } catch (e, stackTrace) {
       _log.severe('Error clearing session', e, stackTrace);
     }
-  }
-
-  // Auth state notification
-  void _notifyAuthStateChange() {
-    _authStateController.add(isAuthenticated);
   }
 
   @override
@@ -227,21 +134,16 @@ class SolidAuthServiceImpl
         context,
       );
 
-      _currentWebId = authData.webId;
+      final webId = authData.webId;
 
       // Get pod URL from WebID
-      _podUrl = await resolvePodUrl(_currentWebId!);
+      _podUrl = await resolvePodUrl(webId);
+      await _secureStorage.write(key: _podUrlKey, value: _podUrl);
 
-      // Save session
-      await _saveSession();
-
-      _log.info('Authentication successful: $_currentWebId');
+      _log.info('Authentication successful: $webId');
 
       // Create result objects using our model classes
-      final userIdentity = UserIdentity(webId: _currentWebId!, podUrl: _podUrl);
-
-      // Notify listeners about auth state change
-      _notifyAuthStateChange();
+      final userIdentity = UserIdentity(webId: webId, podUrl: _podUrl);
 
       return AuthResult(userIdentity: userIdentity);
     } catch (e, stackTrace) {
@@ -257,8 +159,7 @@ class SolidAuthServiceImpl
     } catch (e, stackTrace) {
       _log.severe('Error during logout', e, stackTrace);
     } finally {
-      await _clearSession();
-      _notifyAuthStateChange();
+      await _clearStorage();
     }
   }
 
@@ -288,21 +189,11 @@ class SolidAuthServiceImpl
   }
 
   @override
-  DPoP generateDpopToken(String url, String method) {
-    try {
-      if (!isAuthenticated) {
-        throw Exception('Not authenticated');
-      }
-
-      return _authBackend.genDpopToken(url, method);
-    } catch (e, stackTrace) {
-      _log.severe('Error generating DPoP token', e, stackTrace);
-      throw Exception('Failed to generate DPoP token: $e');
-    }
-  }
+  DPoP generateDpopToken(String url, String method) =>
+      _authBackend.genDpopToken(url, method);
 
   /// Disposes resources when the service is no longer needed
-  void dispose() {
-    _authStateController.close();
+  Future<void> dispose() async {
+    await _authBackend.dispose();
   }
 }

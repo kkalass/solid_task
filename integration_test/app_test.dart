@@ -45,22 +45,21 @@ void main() {
     // Add stub for authStateChanges
     when(
       mockAuthStateChangeProvider.authStateChanges,
-    ).thenAnswer((_) => Stream<bool>.value(false));
+    ).thenAnswer((_) => ValueNotifier<bool>(false));
     when(
       mockSyncService.fullSync(),
     ).thenAnswer((_) async => SyncResult(success: true));
 
     // Initialize service locator with real repository but mock auth/sync
     await initServiceLocator(
-      configure:
-          (builder) => builder
-              .withLoggerFactory((_) => logger)
-              .withAuthStateChangeProviderFactory(
-                (_) => mockAuthStateChangeProvider,
-              )
-              .withSolidAuthStateFactory((_) => mockSolidAuthState)
-              .withSolidAuthOperationsFactory((_) => mockSolidAuthOperations)
-              .withSyncServiceFactory((_) => mockSyncService),
+      configure: (builder) => builder
+          .withLoggerFactory((_) => logger)
+          .withAuthStateChangeProviderFactory(
+            (_) => mockAuthStateChangeProvider,
+          )
+          .withSolidAuthStateFactory((_) => mockSolidAuthState)
+          .withSolidAuthOperationsFactory((_) => mockSolidAuthOperations)
+          .withSyncServiceFactory((_) => mockSyncService),
     );
   });
 

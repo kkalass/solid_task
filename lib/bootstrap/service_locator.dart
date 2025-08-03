@@ -2,21 +2,21 @@ import 'package:get_it/get_it.dart';
 import 'package:solid_task/bootstrap/extensions/auth_services_extension.dart';
 import 'package:solid_task/bootstrap/extensions/client_id_services_extension.dart';
 import 'package:solid_task/bootstrap/extensions/core_services_extension.dart';
+import 'package:solid_task/bootstrap/extensions/rdf_mapping_service_locator_extension.dart';
 import 'package:solid_task/bootstrap/extensions/repository_services_extension.dart';
 import 'package:solid_task/bootstrap/extensions/storage_services_extension.dart';
 import 'package:solid_task/bootstrap/extensions/sync_services_extension.dart';
 import 'package:solid_task/bootstrap/extensions/syncable_repository_extension.dart';
 import 'package:solid_task/bootstrap/service_locator_builder.dart';
-import 'package:solid_task/bootstrap/extensions/rdf_mapping_service_locator_extension.dart';
 
 export 'package:solid_task/bootstrap/extensions/auth_services_extension.dart';
 export 'package:solid_task/bootstrap/extensions/client_id_services_extension.dart';
 export 'package:solid_task/bootstrap/extensions/core_services_extension.dart';
+export 'package:solid_task/bootstrap/extensions/rdf_mapping_service_locator_extension.dart';
 export 'package:solid_task/bootstrap/extensions/repository_services_extension.dart';
 export 'package:solid_task/bootstrap/extensions/storage_services_extension.dart';
 export 'package:solid_task/bootstrap/extensions/sync_services_extension.dart';
 export 'package:solid_task/bootstrap/extensions/syncable_repository_extension.dart';
-export 'package:solid_task/bootstrap/extensions/rdf_mapping_service_locator_extension.dart';
 
 /// Global ServiceLocator instance
 final sl = GetIt.instance;
@@ -63,4 +63,15 @@ Future<void> initServiceLocator({
 
   // Build and initialize the service locator
   await builder.build();
+}
+
+/// Properly dispose all services that implement disposal
+///
+/// This function should be called when the app is shutting down to ensure
+/// proper cleanup of resources like timers, streams, files, etc.
+/// GetIt will automatically handle calling dispose() on registered services.
+Future<void> disposeServiceLocator() async {
+  // GetIt's reset() method automatically calls dispose() on all registered
+  // services that were registered with a dispose callback
+  await sl.reset();
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:solid_auth/solid_auth.dart';
 
@@ -25,8 +26,12 @@ abstract interface class SolidAuthenticationBackend {
     BuildContext context,
   );
 
+  ValueListenable<bool> get isAuthenticatedNotifier;
+
   /// Logs the user out from the OIDC provider.
   Future<bool> logout();
+
+  Future<void> dispose();
 
   /// Generates a DPoP token for authentication.
   DPoP genDpopToken(String url, String method);

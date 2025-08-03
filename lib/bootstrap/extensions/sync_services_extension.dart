@@ -101,19 +101,18 @@ extension SyncServiceLocatorBuilderExtension on ServiceLocatorBuilder {
       // Register SyncManager that orchestrates synchronization
       sl.registerSingletonAsync<SyncManager>(() async {
         var syncManagerFactory = config._syncManagerFactory;
-        final syncManager =
-            syncManagerFactory != null
-                ? syncManagerFactory(sl)
-                : SyncManager(
-                  sl<SyncService>(),
-                  sl<SolidAuthState>(),
-                  sl<AuthStateChangeProvider>(),
-                );
+        final syncManager = syncManagerFactory != null
+            ? syncManagerFactory(sl)
+            : SyncManager(
+                sl<SyncService>(),
+                sl<SolidAuthState>(),
+                sl<AuthStateChangeProvider>(),
+              );
 
         // Initialize the sync manager
         await syncManager.initialize();
         return syncManager;
-      });
+      }, dispose: (syncManager) => syncManager.dispose());
 
       // Wait for SyncManager to be ready
       await sl.isReady<SyncManager>();

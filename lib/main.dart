@@ -34,8 +34,20 @@ Future<void> main({
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void dispose() {
+    // Dispose all registered services when the app widget is disposed
+    disposeServiceLocator();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

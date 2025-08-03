@@ -86,7 +86,7 @@ void main() {
     // Add stub for authStateChanges
     when(
       mockAuthStateChangeProvider.authStateChanges,
-    ).thenAnswer((_) => Stream<bool>.value(false));
+    ).thenAnswer((_) => ValueNotifier<bool>(false));
     when(
       mockItemRepository.watchActiveItems(),
     ).thenAnswer((_) => behaviorSubject.stream);

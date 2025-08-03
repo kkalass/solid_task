@@ -29,8 +29,8 @@ final class AuthBasedStorageConfigurationProvider
     _updateFromAuthState();
 
     // Listen for auth state changes and update config accordingly
-    _authStateChangeProvider.authStateChanges.listen(
-      (_) => _updateFromAuthState(),
+    _authStateChangeProvider.authStateChanges.addListener(
+      () => _updateFromAuthState(),
     );
   }
 
@@ -48,14 +48,13 @@ final class AuthBasedStorageConfigurationProvider
     final isAuthenticated = _authState.isAuthenticated;
     final podUrl = _authState.currentUser?.podUrl;
 
-    _currentConfig =
-        (isAuthenticated && podUrl != null)
-            ? PodStorageConfiguration(
-              storageRoot: podUrl,
-              appFolderRelPath: _appFolderRelPath,
-              storageStrategy: _storageStrategy,
-            )
-            : null;
+    _currentConfig = (isAuthenticated && podUrl != null)
+        ? PodStorageConfiguration(
+            storageRoot: podUrl,
+            appFolderRelPath: _appFolderRelPath,
+            storageStrategy: _storageStrategy,
+          )
+        : null;
   }
 
   /// Cleans up resources when provider is no longer needed

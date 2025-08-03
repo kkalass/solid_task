@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/ext/solid/auth/models/user_identity.dart';
 import 'package:solid_task/ext/solid/pod/storage/auth_based_storage_configuration_provider.dart';
@@ -12,23 +11,9 @@ import 'package:solid_task/ext/solid/pod/storage/strategy/default_triple_storage
 import 'package:solid_task/ext/solid/pod/storage/strategy/triple_storage_strategy.dart';
 import 'package:test/test.dart';
 
+import '../../../../mocks/mock_auth_state_change_provider.dart';
 @GenerateMocks([SolidAuthState])
 import 'pod_storage_configuration_provider_test.mocks.dart';
-
-class MockAuthStateChangeProvider implements AuthStateChangeProvider {
-  final _controller = StreamController<bool>.broadcast();
-
-  @override
-  Stream<bool> get authStateChanges => _controller.stream;
-
-  void emitAuthStateChange(bool isAuthenticated) {
-    _controller.add(isAuthenticated);
-  }
-
-  void dispose() {
-    _controller.close();
-  }
-}
 
 class MockTripleStorageStrategy implements TripleStorageStrategy {
   @override

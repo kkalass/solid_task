@@ -58,13 +58,13 @@ extension CoreServiceLocatorBuilderExtension on ServiceLocatorBuilder {
       sl.registerLazySingleton<LoggerService>(() {
         final factory = config._loggerServiceFactory;
         return factory == null ? LoggerService() : factory(sl);
-      });
+      }, dispose: (logger) => logger.dispose());
 
       // Register HTTP client
       sl.registerLazySingleton<http.Client>(() {
         final factory = config._httpClientFactory;
         return factory == null ? http.Client() : factory(sl);
-      });
+      }, dispose: (client) => client.close());
 
       // Register secure storage
       sl.registerLazySingleton<FlutterSecureStorage>(() {
