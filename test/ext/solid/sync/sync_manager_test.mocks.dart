@@ -6,10 +6,8 @@
 import 'dart:async' as _i3;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart'
-    as _i4;
 import 'package:solid_task/ext/solid/sync/sync_service.dart' as _i2;
-import 'package:solid_task/services/logger_service.dart' as _i5;
+import 'package:solid_task/services/logger_service.dart' as _i4;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -143,22 +141,10 @@ class MockSyncService extends _i1.Mock implements _i2.SyncService {
       );
 }
 
-/// A class which mocks [SolidAuthState].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockSolidAuthState extends _i1.Mock implements _i4.SolidAuthState {
-  @override
-  bool get isAuthenticated => (super.noSuchMethod(
-        Invocation.getter(#isAuthenticated),
-        returnValue: false,
-        returnValueForMissingStub: false,
-      ) as bool);
-}
-
 /// A class which mocks [ContextLogger].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockContextLogger extends _i1.Mock implements _i5.ContextLogger {
+class MockContextLogger extends _i1.Mock implements _i4.ContextLogger {
   @override
   void debug(
     String? message, [

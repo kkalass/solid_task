@@ -1,22 +1,21 @@
 import 'package:get_it/get_it.dart';
+import 'package:http/http.dart' as http;
 import 'package:rdf_core/rdf_core.dart';
 import 'package:rdf_mapper/rdf_mapper.dart';
 import 'package:solid_task/bootstrap/service_locator_builder.dart';
-import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
-import 'package:solid_task/services/logger_service.dart';
-import 'package:solid_task/services/repository/item_repository.dart';
-import 'package:solid_task/ext/solid/sync/rdf_repository.dart';
-import 'package:solid_task/services/repository/solid_item_rdf_repository_adapter.dart';
 import 'package:solid_task/ext/solid/pod/storage/auth_based_storage_configuration_provider.dart';
 import 'package:solid_task/ext/solid/pod/storage/pod_storage_configuration_provider.dart';
 import 'package:solid_task/ext/solid/pod/storage/strategy/default_triple_storage_strategy.dart';
-import 'package:solid_task/services/storage/local_storage_service.dart';
+import 'package:solid_task/ext/solid/sync/rdf_repository.dart';
 import 'package:solid_task/ext/solid/sync/solid_sync_service.dart';
 import 'package:solid_task/ext/solid/sync/sync_manager.dart';
 import 'package:solid_task/ext/solid/sync/sync_service.dart';
-import 'package:http/http.dart' as http;
+import 'package:solid_task/services/logger_service.dart';
+import 'package:solid_task/services/repository/item_repository.dart';
+import 'package:solid_task/services/repository/solid_item_rdf_repository_adapter.dart';
+import 'package:solid_task/services/storage/local_storage_service.dart';
 
 /// Extension for ServiceLocatorBuilder to handle Core services
 extension SyncServiceLocatorBuilderExtension on ServiceLocatorBuilder {
@@ -66,7 +65,6 @@ extension SyncServiceLocatorBuilderExtension on ServiceLocatorBuilder {
         } else {
           return AuthBasedStorageConfigurationProvider(
             authState: sl<SolidAuthState>(),
-            authStateChangeProvider: sl<AuthStateChangeProvider>(),
             storageStrategy: DefaultTripleStorageStrategy(),
           );
         }
@@ -103,11 +101,7 @@ extension SyncServiceLocatorBuilderExtension on ServiceLocatorBuilder {
         var syncManagerFactory = config._syncManagerFactory;
         final syncManager = syncManagerFactory != null
             ? syncManagerFactory(sl)
-            : SyncManager(
-                sl<SyncService>(),
-                sl<SolidAuthState>(),
-                sl<AuthStateChangeProvider>(),
-              );
+            : SyncManager(sl<SyncService>(), sl<SolidAuthState>());
 
         // Initialize the sync manager
         await syncManager.initialize();

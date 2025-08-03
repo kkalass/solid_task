@@ -1,8 +1,5 @@
 import 'dart:async';
 
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/ext/solid/auth/models/user_identity.dart';
 import 'package:solid_task/ext/solid/pod/storage/auth_based_storage_configuration_provider.dart';
 import 'package:solid_task/ext/solid/pod/storage/pod_storage_configuration.dart';
@@ -11,9 +8,7 @@ import 'package:solid_task/ext/solid/pod/storage/strategy/default_triple_storage
 import 'package:solid_task/ext/solid/pod/storage/strategy/triple_storage_strategy.dart';
 import 'package:test/test.dart';
 
-import '../../../../mocks/mock_auth_state_change_provider.dart';
-@GenerateMocks([SolidAuthState])
-import 'pod_storage_configuration_provider_test.mocks.dart';
+import '../../../../mocks/mock_solid_auth_state.dart';
 
 class MockTripleStorageStrategy implements TripleStorageStrategy {
   @override
@@ -23,31 +18,26 @@ class MockTripleStorageStrategy implements TripleStorageStrategy {
 void main() {
   group('AuthBasedStorageConfigurationProvider', () {
     late MockSolidAuthState authState;
-    late MockAuthStateChangeProvider authStateChangeProvider;
     late TripleStorageStrategy storageStrategy;
     late AuthBasedStorageConfigurationProvider provider;
 
     setUp(() {
       // Create mocks
       authState = MockSolidAuthState();
-      authStateChangeProvider = MockAuthStateChangeProvider();
       storageStrategy = DefaultTripleStorageStrategy();
 
       // Configure mock behaviors
-      when(authState.isAuthenticated).thenReturn(false);
-      when(authState.currentUser).thenReturn(null);
 
       // Create provider with mocked dependencies
       provider = AuthBasedStorageConfigurationProvider(
         authState: authState,
-        authStateChangeProvider: authStateChangeProvider,
         storageStrategy: storageStrategy,
         appFolderRelPath: 'testapp',
       );
     });
 
     tearDown(() {
-      authStateChangeProvider.dispose();
+      authState.dispose();
     });
 
     test('initial configuration is null when not authenticated', () {
@@ -60,9 +50,7 @@ void main() {
         webId: 'https://alice.example.org/profile#me',
         podUrl: 'https://alice.example.org/',
       );
-
-      when(authState.isAuthenticated).thenReturn(true);
-      when(authState.currentUser).thenReturn(mockUser);
+      authState.emitAuthStateChange(mockUser);
 
       // Manually trigger refresh
       await provider.refreshConfiguration();
@@ -90,12 +78,8 @@ void main() {
         podUrl: 'https://alice.example.org/',
       );
 
-      // First update the mock to return authenticated state
-      when(authState.isAuthenticated).thenReturn(true);
-      when(authState.currentUser).thenReturn(mockUser);
-
-      // Emit the auth change event
-      authStateChangeProvider.emitAuthStateChange(true);
+      // "login"
+      authState.emitAuthStateChange(mockUser);
 
       // Allow stream event to be processed
       await Future.microtask(() {});
@@ -114,17 +98,15 @@ void main() {
         webId: 'https://alice.example.org/profile#me',
         podUrl: 'https://alice.example.org/',
       );
-      when(authState.isAuthenticated).thenReturn(true);
-      when(authState.currentUser).thenReturn(mockUser);
+      authState.emitAuthStateChange(mockUser);
+
       await provider.refreshConfiguration();
 
       // Verify initial state
       expect(provider.currentConfiguration, isNotNull);
 
       // Simulate logout
-      when(authState.isAuthenticated).thenReturn(false);
-      when(authState.currentUser).thenReturn(null);
-      authStateChangeProvider.emitAuthStateChange(false);
+      authState.emitAuthStateChange(null);
 
       // Allow stream event to be processed
       await Future.microtask(() {});

@@ -18,7 +18,6 @@ void main() {
 
   late MockSolidAuthState mockSolidAuthState;
   late MockSolidAuthOperations mockSolidAuthOperations;
-  late MockAuthStateChangeProvider mockAuthStateChangeProvider;
   late MockSyncService mockSyncService;
   late LoggerService logger;
   late Widget appWidget;
@@ -36,15 +35,14 @@ void main() {
     // Configure our mocks
     mockSolidAuthState = MockSolidAuthState();
     mockSolidAuthOperations = MockSolidAuthOperations();
-    mockAuthStateChangeProvider = MockAuthStateChangeProvider();
     mockSyncService = MockSyncService();
 
     // Set up necessary stubs
     when(mockSolidAuthState.isAuthenticated).thenReturn(false);
     when(mockSolidAuthState.currentUser?.webId).thenReturn(null);
-    // Add stub for authStateChanges
+    // Add stub for authStateChanges - now part of SolidAuthState
     when(
-      mockAuthStateChangeProvider.authStateChanges,
+      mockSolidAuthState.authStateChanges,
     ).thenAnswer((_) => ValueNotifier<bool>(false));
     when(
       mockSyncService.fullSync(),
@@ -54,9 +52,6 @@ void main() {
     await initServiceLocator(
       configure: (builder) => builder
           .withLoggerFactory((_) => logger)
-          .withAuthStateChangeProviderFactory(
-            (_) => mockAuthStateChangeProvider,
-          )
           .withSolidAuthStateFactory((_) => mockSolidAuthState)
           .withSolidAuthOperationsFactory((_) => mockSolidAuthOperations)
           .withSyncServiceFactory((_) => mockSyncService),

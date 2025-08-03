@@ -5,18 +5,16 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i8;
 
-import 'package:flutter/foundation.dart' as _i4;
+import 'package:flutter/foundation.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:solid_auth/solid_auth.dart' as _i3;
-import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart'
-    as _i9;
+import 'package:solid_auth/solid_auth.dart' as _i4;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
     as _i7;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart'
     as _i6;
-import 'package:solid_task/ext/solid/auth/models/auth_result.dart' as _i2;
+import 'package:solid_task/ext/solid/auth/models/auth_result.dart' as _i3;
 import 'package:solid_task/ext/solid/sync/sync_service.dart' as _i5;
-import 'package:solid_task/services/logger_service.dart' as _i10;
+import 'package:solid_task/services/logger_service.dart' as _i9;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -32,8 +30,9 @@ import 'package:solid_task/services/logger_service.dart' as _i10;
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-class _FakeAuthResult_0 extends _i1.SmartFake implements _i2.AuthResult {
-  _FakeAuthResult_0(
+class _FakeValueListenable_0<T> extends _i1.SmartFake
+    implements _i2.ValueListenable<T> {
+  _FakeValueListenable_0(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -42,8 +41,8 @@ class _FakeAuthResult_0 extends _i1.SmartFake implements _i2.AuthResult {
         );
 }
 
-class _FakeDPoP_1 extends _i1.SmartFake implements _i3.DPoP {
-  _FakeDPoP_1(
+class _FakeAuthResult_1 extends _i1.SmartFake implements _i3.AuthResult {
+  _FakeAuthResult_1(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -52,9 +51,8 @@ class _FakeDPoP_1 extends _i1.SmartFake implements _i3.DPoP {
         );
 }
 
-class _FakeValueListenable_2<T> extends _i1.SmartFake
-    implements _i4.ValueListenable<T> {
-  _FakeValueListenable_2(
+class _FakeDPoP_2 extends _i1.SmartFake implements _i4.DPoP {
+  _FakeDPoP_2(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -86,6 +84,15 @@ class MockSolidAuthState extends _i1.Mock implements _i6.SolidAuthState {
         Invocation.getter(#isAuthenticated),
         returnValue: false,
       ) as bool);
+
+  @override
+  _i2.ValueListenable<bool> get authStateChanges => (super.noSuchMethod(
+        Invocation.getter(#authStateChanges),
+        returnValue: _FakeValueListenable_0<bool>(
+          this,
+          Invocation.getter(#authStateChanges),
+        ),
+      ) as _i2.ValueListenable<bool>);
 }
 
 /// A class which mocks [SolidAuthOperations].
@@ -98,7 +105,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
   }
 
   @override
-  _i8.Future<_i2.AuthResult> authenticate(
+  _i8.Future<_i3.AuthResult> authenticate(
     String? webIdOrIssuerUri,
     C? context,
   ) =>
@@ -110,7 +117,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
             context,
           ],
         ),
-        returnValue: _i8.Future<_i2.AuthResult>.value(_FakeAuthResult_0(
+        returnValue: _i8.Future<_i3.AuthResult>.value(_FakeAuthResult_1(
           this,
           Invocation.method(
             #authenticate,
@@ -120,7 +127,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
             ],
           ),
         )),
-      ) as _i8.Future<_i2.AuthResult>);
+      ) as _i8.Future<_i3.AuthResult>);
 
   @override
   _i8.Future<void> logout() => (super.noSuchMethod(
@@ -142,7 +149,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
       ) as _i8.Future<String?>);
 
   @override
-  _i3.DPoP generateDpopToken(
+  _i4.DPoP generateDpopToken(
     String? url,
     String? method,
   ) =>
@@ -154,7 +161,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
             method,
           ],
         ),
-        returnValue: _FakeDPoP_1(
+        returnValue: _FakeDPoP_2(
           this,
           Invocation.method(
             #generateDpopToken,
@@ -164,26 +171,7 @@ class MockSolidAuthOperations<C> extends _i1.Mock
             ],
           ),
         ),
-      ) as _i3.DPoP);
-}
-
-/// A class which mocks [AuthStateChangeProvider].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockAuthStateChangeProvider extends _i1.Mock
-    implements _i9.AuthStateChangeProvider {
-  MockAuthStateChangeProvider() {
-    _i1.throwOnMissingStub(this);
-  }
-
-  @override
-  _i4.ValueListenable<bool> get authStateChanges => (super.noSuchMethod(
-        Invocation.getter(#authStateChanges),
-        returnValue: _FakeValueListenable_2<bool>(
-          this,
-          Invocation.getter(#authStateChanges),
-        ),
-      ) as _i4.ValueListenable<bool>);
+      ) as _i4.DPoP);
 }
 
 /// A class which mocks [SyncService].
@@ -276,7 +264,7 @@ class MockSyncService extends _i1.Mock implements _i5.SyncService {
 /// A class which mocks [ContextLogger].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockContextLogger extends _i1.Mock implements _i10.ContextLogger {
+class MockContextLogger extends _i1.Mock implements _i9.ContextLogger {
   MockContextLogger() {
     _i1.throwOnMissingStub(this);
   }

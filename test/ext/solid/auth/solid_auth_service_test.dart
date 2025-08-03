@@ -36,8 +36,12 @@ void main() {
     late MockFlutterSecureStorage mockSecureStorage;
     late MockJwtDecoderWrapper mockJwtDecoder;
     late MockSolidAuthenticationBackend mockSolidAuth;
+    late ValueNotifier<bool> isAuthenticatedNotifier;
 
     setUp(() async {
+      // Create ValueNotifier for auth state
+      isAuthenticatedNotifier = ValueNotifier<bool>(false);
+
       mockHttpClient = MockClient();
       mockLogger = MockLoggerService();
       mockSolidProviderService = MockSolidProviderService();
@@ -47,6 +51,10 @@ void main() {
       mockContextLogger = MockContextLogger();
 
       when(mockLogger.createLogger(any)).thenReturn(mockContextLogger);
+      when(
+        mockSolidAuth.isAuthenticatedNotifier,
+      ).thenReturn(isAuthenticatedNotifier);
+      when(mockSolidAuth.initialize()).thenAnswer((_) async => false);
 
       // Create service with injected mocks
       authService = await SolidAuthServiceImpl.create(
@@ -64,6 +72,10 @@ void main() {
             DateTime.now().add(Duration(hours: 1)).millisecondsSinceEpoch ~/
             1000,
       });
+    });
+
+    tearDown(() {
+      isAuthenticatedNotifier.dispose();
     });
 
     test('isAuthenticated returns false when not authenticated', () {
@@ -170,26 +182,34 @@ void main() {
       );
       expect(result.userIdentity?.podUrl, 'https://mock-pod.example/storage/');
 
-      // Verify secure storage calls - only webid and pod_url are stored now
-      verify(
-        mockSecureStorage.write(key: 'solid_webid', value: anyNamed("value")),
-      ).called(1);
+      // Verify secure storage calls - only pod_url is stored now
       verify(
         mockSecureStorage.write(key: 'solid_pod_url', value: anyNamed("value")),
       ).called(1);
+      // Note: solid_webid is no longer stored as it's managed by the auth backend
     });
 
-    test('generateDpopToken throws exception when not authenticated', () async {
-      // Execute & Verify
-      expect(
-        () => authService.generateDpopToken('https://example.com', 'GET'),
-        throwsA(isA<Exception>()),
+    test('generateDpopToken delegates to auth backend', () async {
+      // Execute
+      final result = authService.generateDpopToken(
+        'https://example.com',
+        'GET',
       );
+
+      // Verify it returns a DPoP token (even if fake/mock)
+      expect(result, isNotNull);
+
+      // Verify the backend method was called
+      verify(
+        mockSolidAuth.genDpopToken('https://example.com', 'GET'),
+      ).called(1);
     });
 
     test('logout clears session data', () async {
       // Setup
-      when(mockSecureStorage.deleteAll()).thenAnswer((_) async {});
+      when(
+        mockSecureStorage.delete(key: anyNamed('key')),
+      ).thenAnswer((_) async {});
       when(mockSolidAuth.logout()).thenAnswer((_) async => true);
 
       // Mock the authentication response
@@ -233,6 +253,12 @@ void main() {
       // Verify authenticate succeeded
       expect(authResult.isSuccess, isTrue);
 
+      // Simulate that the auth backend is now authenticated after successful authenticate call
+      isAuthenticatedNotifier.value = true;
+      when(
+        mockSolidAuth.currentWebId,
+      ).thenReturn('https://mock-user.example/profile/card#me');
+
       // Verify authenticated state before logout
       expect(authService.isAuthenticated, isTrue);
       expect(authService.currentUser?.webId, isNotNull);
@@ -244,8 +270,12 @@ void main() {
       // Execute
       await authService.logout();
 
+      // Simulate that the auth backend is now logged out
+      isAuthenticatedNotifier.value = false;
+      when(mockSolidAuth.currentWebId).thenReturn(null);
+
       // Verify
-      verify(mockSecureStorage.deleteAll()).called(1);
+      verify(mockSecureStorage.delete(key: 'solid_pod_url')).called(1);
       verify(mockSolidAuth.logout()).called(1);
       expect(authService.isAuthenticated, isFalse);
       expect(authService.currentUser?.webId, isNull);
@@ -260,35 +290,25 @@ void main() {
       final mockLogger = MockLoggerService();
       final MockContextLogger mockContextLogger = MockContextLogger();
       final mockClient = MockClient();
-      final mockJwtDecoder = MockJwtDecoderWrapper();
       final mockSolidAuth = MockSolidAuthenticationBackend();
       final mockProviderService = MockSolidProviderService();
+      final isAuthenticatedNotifier = ValueNotifier<bool>(true);
 
       when(mockLogger.createLogger(any)).thenReturn(mockContextLogger);
-
-      // When secure storage read is called, return test values
       when(
-        mockSecureStorage.read(key: 'solid_webid'),
-      ).thenAnswer((_) async => 'https://test.example/profile/card#me');
+        mockSolidAuth.isAuthenticatedNotifier,
+      ).thenReturn(isAuthenticatedNotifier);
+      when(mockSolidAuth.initialize()).thenAnswer((_) async => true);
+      when(
+        mockSolidAuth.currentWebId,
+      ).thenReturn('https://test.example/profile/card#me');
+
+      // When pod_url is read, return test value
       when(
         mockSecureStorage.read(key: 'solid_pod_url'),
       ).thenAnswer((_) async => 'https://test.example/storage/');
-      when(
-        mockSecureStorage.read(key: 'solid_access_token'),
-      ).thenAnswer((_) async => 'mock-token');
-      when(
-        mockSecureStorage.read(key: 'solid_auth_data'),
-      ).thenAnswer((_) async => '{"accessToken":"mock-token"}');
 
-      when(mockJwtDecoder.decode('mock-token')).thenReturn({
-        'webid': 'https://test.example/profile/card#me',
-        'exp':
-            DateTime.now().add(Duration(hours: 1)).millisecondsSinceEpoch ~/
-            1000,
-      });
-
-      // Create service with injected mocks - this is supposed to trigger reading
-      // from the secure storage
+      // Create service with injected mocks - this should trigger session restoration
       final authService = await SolidAuthServiceImpl.create(
         client: mockClient,
         secureStorage: mockSecureStorage,
@@ -296,12 +316,9 @@ void main() {
         providerService: mockProviderService,
       );
 
-      // Wait for the _tryRestoreSession to complete
-      //await authService.restoreSessionForTest();
-
-      // Verify the service initialized correctly - only webid and pod_url are read now
-      verify(mockSecureStorage.read(key: 'solid_webid')).called(1);
+      // Verify the service initialized correctly - only pod_url is read now
       verify(mockSecureStorage.read(key: 'solid_pod_url')).called(1);
+      // Note: solid_webid is no longer read from storage, it's provided by auth backend
 
       expect(authService.isAuthenticated, isTrue);
       expect(
@@ -309,6 +326,9 @@ void main() {
         'https://test.example/profile/card#me',
       );
       expect(authService.currentUser?.podUrl, 'https://test.example/storage/');
+
+      // Clean up
+      isAuthenticatedNotifier.dispose();
     },
   );
 }

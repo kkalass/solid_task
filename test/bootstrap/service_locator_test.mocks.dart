@@ -8,32 +8,30 @@ import 'dart:convert' as _i13;
 import 'dart:typed_data' as _i15;
 
 import 'package:flutter/foundation.dart' as _i6;
-import 'package:flutter/widgets.dart' as _i23;
+import 'package:flutter/widgets.dart' as _i22;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i11;
 import 'package:http/http.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i14;
 import 'package:solid_auth/solid_auth.dart' as _i5;
-import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart'
-    as _i19;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart'
     as _i18;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart'
-    as _i20;
+    as _i19;
 import 'package:solid_task/ext/solid/auth/interfaces/solid_provider_service.dart'
     as _i17;
 import 'package:solid_task/ext/solid/auth/models/auth_result.dart' as _i4;
-import 'package:solid_task/ext/solid/sync/sync_manager.dart' as _i22;
+import 'package:solid_task/ext/solid/sync/sync_manager.dart' as _i21;
 import 'package:solid_task/ext/solid/sync/sync_service.dart' as _i8;
 import 'package:solid_task/ext/solid/sync/sync_status.dart' as _i9;
 import 'package:solid_task/ext/solid_flutter/auth/integration/jwt_decoder_wrapper.dart'
-    as _i24;
+    as _i23;
 import 'package:solid_task/ext/solid_flutter/auth/integration/solid_authentication_backend.dart'
     as _i10;
 import 'package:solid_task/models/item.dart' as _i7;
-import 'package:solid_task/services/client_id_service.dart' as _i25;
+import 'package:solid_task/services/client_id_service.dart' as _i24;
 import 'package:solid_task/services/logger_service.dart' as _i2;
-import 'package:solid_task/services/repository/item_repository.dart' as _i21;
+import 'package:solid_task/services/repository/item_repository.dart' as _i20;
 import 'package:solid_task/services/storage/local_storage_service.dart' as _i16;
 
 // ignore_for_file: type=lint
@@ -906,11 +904,17 @@ class MockSolidAuthOperations<C> extends _i1.Mock
       ) as _i5.DPoP);
 }
 
-/// A class which mocks [AuthStateChangeProvider].
+/// A class which mocks [SolidAuthState].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAuthStateChangeProvider extends _i1.Mock
-    implements _i19.AuthStateChangeProvider {
+class MockSolidAuthState extends _i1.Mock implements _i19.SolidAuthState {
+  @override
+  bool get isAuthenticated => (super.noSuchMethod(
+        Invocation.getter(#isAuthenticated),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
   @override
   _i6.ValueListenable<bool> get authStateChanges => (super.noSuchMethod(
         Invocation.getter(#authStateChanges),
@@ -925,22 +929,10 @@ class MockAuthStateChangeProvider extends _i1.Mock
       ) as _i6.ValueListenable<bool>);
 }
 
-/// A class which mocks [SolidAuthState].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockSolidAuthState extends _i1.Mock implements _i20.SolidAuthState {
-  @override
-  bool get isAuthenticated => (super.noSuchMethod(
-        Invocation.getter(#isAuthenticated),
-        returnValue: false,
-        returnValueForMissingStub: false,
-      ) as bool);
-}
-
 /// A class which mocks [ItemRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockItemRepository extends _i1.Mock implements _i21.ItemRepository {
+class MockItemRepository extends _i1.Mock implements _i20.ItemRepository {
   @override
   List<_i7.Item> getAllItems() => (super.noSuchMethod(
         Invocation.method(
@@ -1210,7 +1202,7 @@ class MockSyncService extends _i1.Mock implements _i8.SyncService {
 /// A class which mocks [SyncManager].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSyncManager extends _i1.Mock implements _i22.SyncManager {
+class MockSyncManager extends _i1.Mock implements _i21.SyncManager {
   @override
   _i12.Stream<_i9.SyncStatus> get syncStatusStream => (super.noSuchMethod(
         Invocation.getter(#syncStatusStream),
@@ -1363,7 +1355,7 @@ class MockSolidAuthenticationBackend extends _i1.Mock
   _i12.Future<_i10.AuthResponse> authenticate(
     String? webIdOrIssuerUri,
     List<String>? scopes,
-    _i23.BuildContext? context,
+    _i22.BuildContext? context,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -1850,7 +1842,7 @@ class MockContextLogger extends _i1.Mock implements _i2.ContextLogger {
 /// A class which mocks [JwtDecoderWrapper].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockJwtDecoderWrapper extends _i1.Mock implements _i24.JwtDecoderWrapper {
+class MockJwtDecoderWrapper extends _i1.Mock implements _i23.JwtDecoderWrapper {
   @override
   Map<String, dynamic> decode(String? token) => (super.noSuchMethod(
         Invocation.method(
@@ -1897,7 +1889,7 @@ class MockJwtDecoderWrapper extends _i1.Mock implements _i24.JwtDecoderWrapper {
 /// A class which mocks [ClientIdService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockClientIdService extends _i1.Mock implements _i25.ClientIdService {
+class MockClientIdService extends _i1.Mock implements _i24.ClientIdService {
   @override
   _i12.Future<String> getClientId() => (super.noSuchMethod(
         Invocation.method(

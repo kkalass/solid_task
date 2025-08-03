@@ -1,38 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-
-import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
-import 'package:solid_task/services/logger_service.dart';
+import 'package:solid_task/ext/solid/auth/models/user_identity.dart';
 import 'package:solid_task/ext/solid/sync/sync_manager.dart';
 import 'package:solid_task/ext/solid/sync/sync_service.dart';
 import 'package:solid_task/ext/solid/sync/sync_state.dart';
+import 'package:solid_task/services/logger_service.dart';
 
-import '../../../mocks/mock_auth_state_change_provider.dart';
-@GenerateNiceMocks([
-  MockSpec<SyncService>(),
-  MockSpec<SolidAuthState>(),
-  MockSpec<ContextLogger>(),
-])
+import '../../../mocks/mock_solid_auth_state.dart';
+@GenerateNiceMocks([MockSpec<SyncService>(), MockSpec<ContextLogger>()])
 import 'sync_manager_test.mocks.dart';
+
+UserIdentity createMockUserIdentity({
+  String webId = 'https://alice.example.org/profile#me',
+}) {
+  return UserIdentity(webId: webId);
+}
 
 void main() {
   group('SyncManager', () {
     late MockSyncService mockSyncService;
     late MockSolidAuthState mockSolidAuthState;
-    late MockAuthStateChangeProvider mockAuthStateChangeProvider;
     late SyncManager syncManager;
 
     setUp(() {
       mockSyncService = MockSyncService();
       mockSolidAuthState = MockSolidAuthState();
-      mockAuthStateChangeProvider = MockAuthStateChangeProvider();
 
-      syncManager = SyncManager(
-        mockSyncService,
-        mockSolidAuthState,
-        mockAuthStateChangeProvider,
-      );
+      syncManager = SyncManager(mockSyncService, mockSolidAuthState);
     });
 
     tearDown(() {
@@ -41,40 +36,38 @@ void main() {
 
     test('initialize should start sync if already authenticated', () async {
       // Arrange
-      when(mockSolidAuthState.isAuthenticated).thenReturn(true);
+
       when(mockSyncService.fullSync()).thenAnswer(
         (_) async =>
             SyncResult(success: true, itemsUploaded: 5, itemsDownloaded: 3),
       );
+      mockSolidAuthState.emitAuthStateChange(createMockUserIdentity());
 
       // Act
       await syncManager.initialize();
 
       // Assert
-      verify(mockSolidAuthState.isAuthenticated).called(1);
       verify(mockSyncService.fullSync()).called(1);
       expect(syncManager.currentStatus.state, equals(SyncState.synced));
     });
 
     test('initialize should not start sync if not authenticated', () async {
       // Arrange
-      when(mockSolidAuthState.isAuthenticated).thenReturn(false);
 
       // Act
       await syncManager.initialize();
 
       // Assert
-      verify(mockSolidAuthState.isAuthenticated).called(1);
       verifyNever(mockSyncService.fullSync());
     });
 
     test('startSynchronization should handle successful sync', () async {
       // Arrange
-      when(mockSolidAuthState.isAuthenticated).thenReturn(true);
       when(mockSyncService.fullSync()).thenAnswer(
         (_) async =>
             SyncResult(success: true, itemsUploaded: 2, itemsDownloaded: 3),
       );
+      mockSolidAuthState.emitAuthStateChange(createMockUserIdentity());
 
       // Act
       final result = await syncManager.startSynchronization();
@@ -90,10 +83,10 @@ void main() {
 
     test('startSynchronization should handle failed sync', () async {
       // Arrange
-      when(mockSolidAuthState.isAuthenticated).thenReturn(true);
       when(mockSyncService.fullSync()).thenAnswer(
         (_) async => SyncResult(success: false, errorMessage: 'Network error'),
       );
+      mockSolidAuthState.emitAuthStateChange(createMockUserIdentity());
 
       // Act
       final result = await syncManager.startSynchronization();
@@ -107,8 +100,8 @@ void main() {
 
     test('startSynchronization should handle exceptions', () async {
       // Arrange
-      when(mockSolidAuthState.isAuthenticated).thenReturn(true);
       when(mockSyncService.fullSync()).thenThrow(Exception('Test exception'));
+      mockSolidAuthState.emitAuthStateChange(createMockUserIdentity());
 
       // Act
       final result = await syncManager.startSynchronization();
@@ -126,11 +119,9 @@ void main() {
     test('syncToRemote should update status correctly', () async {
       // Arrange
       when(
-        mockSolidAuthState.isAuthenticated,
-      ).thenReturn(true); // Add missing auth mock
-      when(
         mockSyncService.syncToRemote(),
       ).thenAnswer((_) async => SyncResult(success: true, itemsUploaded: 2));
+      mockSolidAuthState.emitAuthStateChange(createMockUserIdentity());
 
       // Act
       final result = await syncManager.syncToRemote();
@@ -147,8 +138,7 @@ void main() {
       () async {
         // Act
         // Arrange
-        mockAuthStateChangeProvider.emitAuthStateChange(false);
-        when(mockSolidAuthState.isAuthenticated).thenReturn(false);
+        mockSolidAuthState.emitAuthStateChange(null);
 
         // Assert
         expect(syncManager.currentStatus.state, equals(SyncState.idle));

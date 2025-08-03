@@ -6,7 +6,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:solid_auth/solid_auth.dart';
-import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_provider_service.dart';
@@ -20,10 +19,7 @@ final _log = Logger("solid_flutter");
 
 /// Implementation of the SolidAuthService interface using the SOLID authentication protocol
 class SolidAuthServiceImpl
-    implements
-        SolidAuthState,
-        SolidAuthOperations<BuildContext>,
-        AuthStateChangeProvider {
+    implements SolidAuthState, SolidAuthOperations<BuildContext> {
   final http.Client _client;
   final FlutterSecureStorage _secureStorage;
   final SolidAuthenticationBackend _authBackend;
@@ -39,7 +35,7 @@ class SolidAuthServiceImpl
   late final Future<void> _initializationFuture;
 
   @override
-  bool get isAuthenticated => _authBackend.isAuthenticatedNotifier.value;
+  bool get isAuthenticated => authStateChanges.value;
 
   @override
   UserIdentity? get currentUser {

@@ -2,7 +2,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:solid_task/bootstrap/service_locator_builder.dart';
-import 'package:solid_task/ext/solid/auth/interfaces/auth_state_change_provider.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_operations.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_auth_state.dart';
 import 'package:solid_task/ext/solid/auth/interfaces/solid_provider_service.dart';
@@ -38,13 +37,6 @@ extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
     SolidAuthState Function(GetIt)? factory,
   ) {
     _configs[this]!._authStateFactory = factory;
-    return this;
-  }
-
-  ServiceLocatorBuilder withAuthStateChangeProviderFactory(
-    AuthStateChangeProvider Function(GetIt)? factory,
-  ) {
-    _configs[this]!._authStateChangeProviderFactory = factory;
     return this;
   }
 
@@ -93,8 +85,7 @@ extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
       // Auth service - use async registration since creation is asynchronous
       // Register all interfaces from the same implementation if they're not explicitly provided
       if (config._authOperationsFactory == null ||
-          config._authStateFactory == null ||
-          config._authStateChangeProviderFactory == null) {
+          config._authStateFactory == null) {
         sl.registerSingletonAsync<SolidAuthServiceImpl>(() async {
           // Create the standard auth service
           return await SolidAuthServiceImpl.create(
@@ -119,12 +110,6 @@ extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
             () => sl<SolidAuthServiceImpl>(),
           );
         }
-
-        if (config._authStateChangeProviderFactory == null) {
-          sl.registerLazySingleton<AuthStateChangeProvider>(
-            () => sl<SolidAuthServiceImpl>(),
-          );
-        }
       }
 
       // Register custom implementations if provided
@@ -140,12 +125,6 @@ extension AuthServiceLocatorBuilderExtension on ServiceLocatorBuilder {
         });
       }
 
-      final authStateChangeProvider = config._authStateChangeProviderFactory;
-      if (authStateChangeProvider != null) {
-        sl.registerLazySingleton<AuthStateChangeProvider>(
-          () => authStateChangeProvider(sl),
-        );
-      }
       // Clean up after registration
       _configs.remove(this);
     });
@@ -157,7 +136,6 @@ class _AuthConfig {
   SolidProviderService Function(GetIt)? _providerServiceFactory;
   SolidAuthenticationBackend Function(GetIt)? _solidAuthFactory;
   SolidAuthState Function(GetIt)? _authStateFactory;
-  AuthStateChangeProvider Function(GetIt)? _authStateChangeProviderFactory;
   SolidAuthOperations Function(GetIt)? _authOperationsFactory;
 
   _AuthConfig();
