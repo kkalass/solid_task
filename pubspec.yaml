@@ -39,7 +39,8 @@ dependencies:
   solid_auth:
     git:
       url: https://github.com/kkalass/solid_auth.git
-      ref: feat/migrate-to-bdaya-oidc-security-fix
+      ref: b49f3f65e5e5f8943269cab373d4cca51afa23ae
+      #ref: feat/migrate-to-bdaya-oidc-security-fix
 
   url_launcher: ^6.2.5
   http: ^1.2.0

@@ -1038,7 +1038,7 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "feat/migrate-to-bdaya-oidc-security-fix"
+      ref: b49f3f65e5e5f8943269cab373d4cca51afa23ae
       resolved-ref: b49f3f65e5e5f8943269cab373d4cca51afa23ae
       url: "https://github.com/kkalass/solid_auth.git"
     source: git
