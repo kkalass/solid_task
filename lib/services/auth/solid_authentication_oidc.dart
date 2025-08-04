@@ -21,6 +21,8 @@ class SolidAuthenticationOidc implements SolidAuthenticationBackend {
          appUrlScheme: AppConfig.urlScheme,
          frontendRedirectUrl: AppConfig.getWebRedirectUrl(),
          settings: SolidAuthSettings(
+           strictJwtVerification: true,
+           supportOfflineAuth: true,
            getIssuers: (webIdOrIssuer) async {
              // Use the WebIdProfileLoader to resolve the issuer URI
              if (webIdProfileLoader != null) {
