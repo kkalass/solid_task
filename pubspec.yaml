@@ -67,17 +67,9 @@ dependencies:
   rdf_vocabularies_schema: ^0.4.1
   rdf_vocabularies_core: ^0.4.1
   rdf_mapper_annotations: ^0.10.0 
-  oidc:
-    git:
-      url: https://github.com/kkalass/oidc.git
-      ref: fix/oidc-hook-execute-stack-overflow
-      path: packages/oidc
-  oidc_default_store:
-    git:
-      url: https://github.com/kkalass/oidc.git
-      ref: fix/oidc-hook-execute-stack-overflow
-      path: packages/oidc_default_store
-
+  oidc: ^0.12.1+2
+  oidc_default_store: ^0.4.0+3
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -145,8 +137,4 @@ dependency_overrides:
       url: https://github.com/kkalass/oidc.git
       ref: fix/oidc-hook-execute-stack-overflow
       path: packages/oidc_core
-  oidc_platform_interface:
-    git:
-      url: https://github.com/kkalass/oidc.git
-      ref: fix/oidc-hook-execute-stack-overflow
-      path: packages/oidc_platform_interface
+

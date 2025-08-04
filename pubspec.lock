@@ -644,11 +644,10 @@ packages:
   oidc:
     dependency: "direct main"
     description:
-      path: "packages/oidc"
-      ref: "fix/oidc-hook-execute-stack-overflow"
-      resolved-ref: "1c9fd5bedcbb729fc0e6285ed5f086eb851e5938"
-      url: "https://github.com/kkalass/oidc.git"
-    source: git
+      name: oidc
+      sha256: "4ae699ec07966845cb397dd593583669281d992cebf9972fcffc306f4ddbf7d2"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.12.1+2"
   oidc_android:
     dependency: transitive
@@ -670,11 +669,10 @@ packages:
   oidc_default_store:
     dependency: "direct main"
     description:
-      path: "packages/oidc_default_store"
-      ref: "fix/oidc-hook-execute-stack-overflow"
-      resolved-ref: "1c9fd5bedcbb729fc0e6285ed5f086eb851e5938"
-      url: "https://github.com/kkalass/oidc.git"
-    source: git
+      name: oidc_default_store
+      sha256: b522f6970e49aae4aa21bf6232000a760f143d2a998455f9caaffb251cdc9cff
+      url: "https://pub.dev"
+    source: hosted
     version: "0.4.0+3"
   oidc_desktop:
     dependency: transitive
@@ -725,13 +723,12 @@ packages:
     source: hosted
     version: "0.7.0+5"
   oidc_platform_interface:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "packages/oidc_platform_interface"
-      ref: "fix/oidc-hook-execute-stack-overflow"
-      resolved-ref: "1c9fd5bedcbb729fc0e6285ed5f086eb851e5938"
-      url: "https://github.com/kkalass/oidc.git"
-    source: git
+      name: oidc_platform_interface
+      sha256: "6bbf02dde677326242795da24a67960435b3457335e16fc712d45da9342b226a"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.6.0+9"
   oidc_web:
     dependency: transitive
@@ -1039,7 +1036,7 @@ packages:
     description:
       path: "."
       ref: "feat/migrate-to-bdaya-oidc-security-fix"
-      resolved-ref: e41e2f63161dc55837f0ada470261c2509df2559
+      resolved-ref: b39c8b95521eda61002cb97a5daeba4a29a5a0e5
       url: "https://github.com/kkalass/solid_auth.git"
     source: git
     version: "0.2.0-dev.1"
