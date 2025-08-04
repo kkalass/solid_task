@@ -97,7 +97,7 @@ class SolidSyncService implements SyncService {
         graph,
       );
       int uploadedCount = 0;
-
+      int errorCount = 0;
       // Upload each file
       for (final entry in triplesByStorageIri.entries) {
         try {
@@ -135,11 +135,13 @@ class SolidSyncService implements SyncService {
           if (response.statusCode >= 200 && response.statusCode < 300) {
             uploadedCount++;
           } else {
+            errorCount++;
             _log.warning(
               'Failed to sync file $fileUrl to pod with headers $headers  : ${response.statusCode} - ${response.body} - ${response.headers}',
             );
           }
         } catch (e, stackTrace) {
+          errorCount++;
           _log.severe(
             'Error syncing file ${entry.key.iri} to pod',
             e,
@@ -147,11 +149,27 @@ class SolidSyncService implements SyncService {
           );
         }
       }
-
-      _log.info(
-        'Successfully synced $uploadedCount/${objectsToSync.length} objects to pod',
+      if (uploadedCount > 0 && errorCount == 0) {
+        _log.info(
+          'Successfully synced $uploadedCount/${objectsToSync.length} objects to pod',
+        );
+      } else if (uploadedCount == 0 && errorCount == 0) {
+        _log.fine('No objects to sync to pod');
+      } else if (uploadedCount == 0 && errorCount > 0) {
+        _log.warning(
+          'Failed to sync $errorCount/${objectsToSync.length} objects to pod',
+        );
+        return SyncResult.error('Failed to sync $errorCount objects to pod');
+      } else {
+        _log.info(
+          'Partially synced $uploadedCount/${objectsToSync.length} objects to pod with $errorCount errors',
+        );
+      }
+      return SyncResult(
+        success: true,
+        itemsUploaded: uploadedCount,
+        itemsUploadedFailed: errorCount,
       );
-      return SyncResult(success: true, itemsUploaded: uploadedCount);
     } catch (e, stackTrace) {
       _log.severe('Error syncing to pod', e, stackTrace);
       return SyncResult.error('Error syncing to pod: $e');

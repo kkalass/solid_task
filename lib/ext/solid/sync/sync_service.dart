@@ -9,6 +9,9 @@ class SyncResult {
   /// Number of items uploaded during sync
   final int itemsUploaded;
 
+  /// Number of items that failed to upload
+  final int itemsUploadedFailed;
+
   /// Error message in case of failure
   final String? errorMessage;
 
@@ -17,6 +20,7 @@ class SyncResult {
     required this.success,
     this.itemsDownloaded = 0,
     this.itemsUploaded = 0,
+    this.itemsUploadedFailed = 0,
     this.errorMessage,
   });
 
