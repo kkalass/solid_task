@@ -62,7 +62,7 @@ dependencies:
   rxdart: ^0.28.0
   uuid: ^4.5.1
   meta: ^1.16.0
-  rdf_core: ^0.9.11
+  rdf_core: ^0.9.13
   rdf_mapper: ^0.10.0
   rdf_vocabularies_schema: ^0.4.1
   rdf_vocabularies_core: ^0.4.1
