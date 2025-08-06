@@ -59,11 +59,11 @@
   "@syncAcrossDevices": {
     "description": "Description for Solid connection"
   },
-  "enterWebId": "Enter your WebID or Solid Pod issuer URL to enable cloud synchronization",
+  "enterWebId": "Enter your Solid WebID or Issuer URL to enable cloud synchronization",
   "@enterWebId": {
     "description": "Instructions for entering WebID"
   },
-  "webIdHint": "Enter your WebID or Pod URL",
+  "webIdHint": "Enter your WebID or Issuer URL",
   "@webIdHint": {
     "description": "Hint text for WebID input"
   },

@@ -67,10 +67,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get enterWebId =>
-      'Gib deine WebID oder Solid Pod-URL ein, um die Cloud-Synchronisierung zu aktivieren';
+      'Gib deine Solid WebID oder Issuer-URL ein, um die Cloud-Synchronisierung zu aktivieren';
 
   @override
-  String get webIdHint => 'Deine WebID oder Pod-URL eingeben';
+  String get webIdHint => 'Deine WebID oder Issuer-URL eingeben';
 
   @override
   String get webIdExample =>

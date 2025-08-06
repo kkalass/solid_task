@@ -161,13 +161,13 @@ abstract class AppLocalizations {
   /// Instructions for entering WebID
   ///
   /// In en, this message translates to:
-  /// **'Enter your WebID or Solid Pod issuer URL to enable cloud synchronization'**
+  /// **'Enter your Solid WebID or Issuer URL to enable cloud synchronization'**
   String get enterWebId;
 
   /// Hint text for WebID input
   ///
   /// In en, this message translates to:
-  /// **'Enter your WebID or Pod URL'**
+  /// **'Enter your WebID or Issuer URL'**
   String get webIdHint;
 
   /// Example WebID URL
