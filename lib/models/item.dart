@@ -9,14 +9,14 @@ part 'item.g.dart';
 
 @RdfGlobalResource(
   SolidTaskVectorClockEntry.classIri,
-  IriStrategy('{+storageRoot}/solidtask/task/{taskId}.ttl#vclck-{clientId}'),
+  IriStrategy('{+storageRoot}/solidtask/task/{taskId}#vclck-{clientId}'),
   registerGlobally: false,
 )
 class VectorClockEntry {
   @RdfIriPart()
   @RdfProperty(
     SolidTaskVectorClockEntry.clientId,
-    iri: IriMapping('{+storageRoot}/solidtask/appinstance/{clientId}.ttl'),
+    iri: IriMapping('{+storageRoot}/solidtask/appinstance/{clientId}#instance'),
   )
   @RdfMapKey()
   final String clientId;
@@ -31,7 +31,7 @@ class VectorClockEntry {
 
 @RdfGlobalResource(
   SolidTaskTask.classIri,
-  IriStrategy('{+storageRoot}/solidtask/task/{id}.ttl'),
+  IriStrategy('{+storageRoot}/solidtask/task/{id}#task'),
 )
 @HiveType(typeId: 0)
 class Item extends HiveObject {
@@ -63,7 +63,7 @@ class Item extends HiveObject {
   @RdfProperty(
     Dcterms.creator,
     iri: IriMapping(
-      '{+storageRoot}/solidtask/appinstance/{lastModifiedBy}.ttl',
+      '{+storageRoot}/solidtask/appinstance/{lastModifiedBy}#instance',
     ),
   )
   @HiveField(5)

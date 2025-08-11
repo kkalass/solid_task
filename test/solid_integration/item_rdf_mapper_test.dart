@@ -47,7 +47,7 @@ void main() {
       // Convert back to item
       final reconstructedItem = rdfMapper.graph.decodeObject<Item>(
         graph,
-        subject: IriTerm("${storageRoot}solidtask/task/graph-test-456.ttl"),
+        subject: IriTerm("${storageRoot}solidtask/task/graph-test-456#task"),
       );
       final reconstructedItem2 = rdfMapper.graph.decodeObject<Item>(graph);
 

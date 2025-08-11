@@ -22,7 +22,7 @@ import 'package:rdf_vocabularies_core/dcterms.dart';
 /// and RDF terms for iri terms of type `String`.
 class VectorClockEntryClientIdMapper implements IriTermMapper<String> {
   static final RegExp _regex = RegExp(
-      r'^(?<storageRoot>.*)/solidtask/appinstance/(?<clientId>[^/]*)\.ttl$');
+      r'^(?<storageRoot>.*)/solidtask/appinstance/(?<clientId>[^/]*)#instance$');
 
   final String Function() _storageRootProvider;
 
@@ -51,7 +51,7 @@ class VectorClockEntryClientIdMapper implements IriTermMapper<String> {
   }) {
     final clientId = iriTermValue.toString();
     final storageRoot = _storageRootProvider();
-    return IriTerm('${storageRoot}/solidtask/appinstance/${clientId}.ttl');
+    return IriTerm('${storageRoot}/solidtask/appinstance/${clientId}#instance');
   }
 }
 
@@ -111,7 +111,7 @@ class VectorClockEntryMapper
     final clientId = resource.clientId;
     final storageRoot = _storageRootProvider();
     final taskId = _taskIdProvider();
-    return '${storageRoot}/solidtask/task/${taskId}.ttl#vclck-${clientId}';
+    return '${storageRoot}/solidtask/task/${taskId}#vclck-${clientId}';
   }
 }
 
@@ -121,7 +121,7 @@ class VectorClockEntryMapper
 /// and RDF terms for iri terms of type `String`.
 class ItemLastModifiedByMapper implements IriTermMapper<String> {
   static final RegExp _regex = RegExp(
-      r'^(?<storageRoot>.*)/solidtask/appinstance/(?<lastModifiedBy>[^/]*)\.ttl$');
+      r'^(?<storageRoot>.*)/solidtask/appinstance/(?<lastModifiedBy>[^/]*)#instance$');
 
   final String Function() _storageRootProvider;
 
@@ -151,7 +151,7 @@ class ItemLastModifiedByMapper implements IriTermMapper<String> {
     final lastModifiedBy = iriTermValue.toString();
     final storageRoot = _storageRootProvider();
     return IriTerm(
-        '${storageRoot}/solidtask/appinstance/${lastModifiedBy}.ttl');
+        '${storageRoot}/solidtask/appinstance/${lastModifiedBy}#instance');
   }
 }
 
@@ -161,7 +161,7 @@ class ItemLastModifiedByMapper implements IriTermMapper<String> {
 /// and RDF triples for resources of type item.Item.
 class ItemMapper implements GlobalResourceMapper<item.Item> {
   static final RegExp _regex =
-      RegExp(r'^(?<storageRoot>.*)/solidtask/task/(?<id>[^/]*)\.ttl$');
+      RegExp(r'^(?<storageRoot>.*)/solidtask/task/(?<id>[^/]*)#task$');
 
   late final IriTermMapper<String> _lastModifiedByMapper;
   final String Function() _storageRootProvider;
@@ -238,6 +238,6 @@ class ItemMapper implements GlobalResourceMapper<item.Item> {
   String _buildIri(item.Item resource) {
     final id = resource.id;
     final storageRoot = _storageRootProvider();
-    return '${storageRoot}/solidtask/task/${id}.ttl';
+    return '${storageRoot}/solidtask/task/${id}#task';
   }
 }

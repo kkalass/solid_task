@@ -33,8 +33,6 @@ class SolidSyncService implements SyncService {
   Timer? _syncTimer;
   final Lock _syncLock = Lock();
 
-  // Container constants
-  static const String _turtleExtension = '.ttl';
 
   SolidSyncService({
     required RdfRepository repository,
@@ -198,8 +196,7 @@ class SolidSyncService implements SyncService {
 
       // Download and parse each file
       for (final fileUrl in fileUrls) {
-        // Skip non-Turtle files
-        if (!fileUrl.endsWith(_turtleExtension)) continue;
+        // Process all files - content type determined by HTTP headers
 
         try {
           // Generate DPoP token for the request
