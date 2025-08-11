@@ -1,3 +1,4 @@
+import 'package:rdf_core/rdf_core.dart';
 import 'package:rdf_mapper/rdf_mapper.dart';
 import 'package:solid_task/ext/solid/pod/profile/web_id_profile.dart';
 import 'package:http/http.dart' as http;
@@ -23,11 +24,16 @@ class WebIdProfileLoader {
       headers: {'Accept': 'text/turtle, application/ld+json;q=0.9, */*;q=0.8'},
     );
     if (response.statusCode == 200) {
-      return _rdfMapper.decodeObject<WebIdProfile>(
-        response.body,
-        documentUrl: webId,
-        completeness: CompletenessMode.infoOnly,
-      );
+      final body = response.body;
+      // should be turtle or JSON-LD
+      if (turtle.canParse(body) || jsonldGraph.canParse(body)) {
+        // Use the RDF mapper to decode the WebIdProfile) {
+        return _rdfMapper.decodeObject<WebIdProfile>(
+          body,
+          documentUrl: webId,
+          completeness: CompletenessMode.infoOnly,
+        );
+      }
     }
     throw Exception(
       "Failed to load WebIdProfile. Status code ${response.statusCode}",
