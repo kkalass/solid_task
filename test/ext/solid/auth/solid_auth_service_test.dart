@@ -144,10 +144,14 @@ void main() {
 
       when(
         mockSolidAuth.authenticate('https://mock-issuer.com', any, any),
-      ).thenAnswer(
-        (_) async =>
-            AuthResponse(webId: 'https://mock-user.example/profile/card#me'),
-      );
+      ).thenAnswer((_) async {
+        // Simulate successful authentication by updating the notifier
+        isAuthenticatedNotifier.value = true;
+        return AuthResponse(webId: 'https://mock-user.example/profile/card#me');
+      });
+
+      // Mock currentWebId to return the WebID after authentication
+      when(mockSolidAuth.currentWebId).thenReturn('https://mock-user.example/profile/card#me');
 
       // Mock profile fetching with valid Turtle
       when(mockHttpClient.get(any, headers: anyNamed('headers'))).thenAnswer(
@@ -210,15 +214,24 @@ void main() {
       when(
         mockSecureStorage.delete(key: anyNamed('key')),
       ).thenAnswer((_) async {});
-      when(mockSolidAuth.logout()).thenAnswer((_) async => true);
+      when(mockSolidAuth.logout()).thenAnswer((_) async {
+        // Simulate successful logout by updating the notifier and clearing WebID
+        isAuthenticatedNotifier.value = false;
+        when(mockSolidAuth.currentWebId).thenReturn(null);
+        return true;
+      });
 
       // Mock the authentication response
       when(
         mockSolidAuth.authenticate('https://mock-issuer.com', any, any),
-      ).thenAnswer(
-        (_) async =>
-            AuthResponse(webId: 'https://mock-user.example/profile/card#me'),
-      );
+      ).thenAnswer((_) async {
+        // Simulate successful authentication by updating the notifier
+        isAuthenticatedNotifier.value = true;
+        return AuthResponse(webId: 'https://mock-user.example/profile/card#me');
+      });
+
+      // Mock currentWebId to return the WebID after authentication
+      when(mockSolidAuth.currentWebId).thenReturn('https://mock-user.example/profile/card#me');
 
       // Mock storage write operations (needed for authenticate)
       when(
@@ -253,12 +266,6 @@ void main() {
       // Verify authenticate succeeded
       expect(authResult.isSuccess, isTrue);
 
-      // Simulate that the auth backend is now authenticated after successful authenticate call
-      isAuthenticatedNotifier.value = true;
-      when(
-        mockSolidAuth.currentWebId,
-      ).thenReturn('https://mock-user.example/profile/card#me');
-
       // Verify authenticated state before logout
       expect(authService.isAuthenticated, isTrue);
       expect(authService.currentUser?.webId, isNotNull);
@@ -269,10 +276,9 @@ void main() {
 
       // Execute
       await authService.logout();
-
-      // Simulate that the auth backend is now logged out
-      isAuthenticatedNotifier.value = false;
-      when(mockSolidAuth.currentWebId).thenReturn(null);
+      
+      // Wait for state change callback to complete
+      await Future.delayed(Duration(milliseconds: 1));
 
       // Verify
       verify(mockSecureStorage.delete(key: 'solid_pod_url')).called(1);
