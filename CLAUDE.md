@@ -164,3 +164,4 @@ The project relies heavily on code generation:
 - RDF mapping changes require regeneration and may affect Solid Pod compatibility
 - Service locator initialization order is critical - follow the established pattern
 - Authentication testing requires compatible Solid Pod providers
+- Never refer in code comments to previous state of the code, always refer to the status quo. The reader does not care about how it was, but about how it is.
