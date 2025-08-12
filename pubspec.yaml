@@ -64,7 +64,7 @@ dependencies:
   meta: ^1.16.0
   rdf_core: ^0.9.13
   rdf_mapper: ^0.10.0
-  rdf_vocabularies_schema: ^0.4.1
+  rdf_vocabularies_schema: ^0.4.4
   rdf_vocabularies_core: ^0.4.1
   rdf_mapper_annotations: ^0.10.0 
   oidc: ^0.12.1+2
