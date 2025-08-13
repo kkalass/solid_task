@@ -58,7 +58,7 @@ class VectorClockEntryClientIdMapper implements IriTermMapper<String> {
 /// Generated mapper for [item.VectorClockEntry] global resources.
 ///
 /// This mapper handles serialization and deserialization between Dart objects
-/// and RDF triples for resources of type item.VectorClockEntry.
+/// and RDF triples for resources of type `item.VectorClockEntry`.
 class VectorClockEntryMapper
     implements GlobalResourceMapper<item.VectorClockEntry> {
   late final IriTermMapper<String> _clientIdMapper;
@@ -158,7 +158,7 @@ class ItemLastModifiedByMapper implements IriTermMapper<String> {
 /// Generated mapper for [item.Item] global resources.
 ///
 /// This mapper handles serialization and deserialization between Dart objects
-/// and RDF triples for resources of type item.Item.
+/// and RDF triples for resources of type `item.Item`.
 class ItemMapper implements GlobalResourceMapper<item.Item> {
   static final RegExp _regex =
       RegExp(r'^(?<storageRoot>.*)/solidtask/task/(?<id>[^/]*)#task$');

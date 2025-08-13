@@ -19,7 +19,7 @@ import 'package:rdf_vocabularies_core/solid.dart';
 /// Generated mapper for [wip.WebIdProfile] global resources.
 ///
 /// This mapper handles serialization and deserialization between Dart objects
-/// and RDF triples for resources of type wip.WebIdProfile.
+/// and RDF triples for resources of type `wip.WebIdProfile`.
 class WebIdProfileMapper implements GlobalResourceMapper<wip.WebIdProfile> {
   final IriTermMapper<String> _issuersMapper;
   final IriTermMapper<String> _storageMapper;
