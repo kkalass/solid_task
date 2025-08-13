@@ -878,50 +878,50 @@ packages:
     dependency: "direct main"
     description:
       name: rdf_core
-      sha256: "106624bbc2137d190839fd2ab8fac708afcf3ddc8b5169e81d1f7a157f9e6be2"
+      sha256: "30245c9b2cb7ab42b4db9c6e5bc9a099fd7d870fe3b0f278998fb76260b48650"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.13"
+    version: "0.9.14"
   rdf_mapper:
     dependency: "direct main"
     description:
       name: rdf_mapper
-      sha256: "40571724565284e86033d5ae7a38d615bc967475b90bbfcdb61bc386b1ba0b90"
+      sha256: "86eda5c4a70c5647e00015c161285c47c5d2089e1e944ed170d87534942e73aa"
       url: "https://pub.dev"
     source: hosted
-    version: "0.10.0"
+    version: "0.10.1"
   rdf_mapper_annotations:
     dependency: "direct main"
     description:
       name: rdf_mapper_annotations
-      sha256: "9ba441c8fdc1183a288d99fde6d56802769c72b7331439d4ce4c0240105d3ad2"
+      sha256: f6e5927fe50c181ef4290ee29287963178fd9a30095fe044cf77dd7a23d2219b
       url: "https://pub.dev"
     source: hosted
-    version: "0.10.0"
+    version: "0.10.1"
   rdf_mapper_generator:
     dependency: "direct dev"
     description:
       name: rdf_mapper_generator
-      sha256: "66575f774f5b6c7eba555e2fc0f902e721cc3318f85727686a0fb94d18cc249c"
+      sha256: "32fbd5039cc07e2e5c67cbd3568b3540cb0ca14b9bcad9aba99e2b9ca948f955"
       url: "https://pub.dev"
     source: hosted
-    version: "0.10.0"
+    version: "0.10.1"
   rdf_vocabularies_core:
     dependency: "direct main"
     description:
       name: rdf_vocabularies_core
-      sha256: "4df79e7b24430b20b13d9acc634b5ab1e37985a113db180baf5371a083723fa5"
+      sha256: ae04ee8c0ba2f2e12c6d23cd510e826592a68bba12506df16f5aa54885f61f72
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.2"
+    version: "0.4.4"
   rdf_vocabularies_schema:
     dependency: "direct main"
     description:
       name: rdf_vocabularies_schema
-      sha256: "79654f1a69b6905e40758dbdb604395dfb34f767b4a06832fb69facd3d1b302e"
+      sha256: "2169000ca4119d021da5db144932f2a396d72a9ae2c0fd7f325933876667768f"
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.2"
+    version: "0.4.4"
   retry:
     dependency: transitive
     description:
